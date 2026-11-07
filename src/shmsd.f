@@ -1,0 +1,184 @@
+C*DECK SHMSD
+      SUBROUTINE SHMSD(NHLF,NHST,NHWN,NHWQ,NHWCSL,NHVN,NHVQ,NHVCSL,
+     *  ITSTA, NL2,NL1,LSI,LRI,NL3,NL4,LSF,LRF,LST,LRT,NHT,W )
+      IMPLICIT REAL*8(A-H,O-Z)
+      DIMENSION NHWN(*),NHWQ(*),NHWCSL(*),NHVN(*),NHVQ(*),NHVCSL(*)
+      DIMENSION NHLF(*),NHST(*)
+C     DIMENSION RT(*),ICONNT(9,*)
+      include 'include/COMWIG'
+      include 'include/COMCFP'
+      DIMENSION IRB(13),ISB(13),JMSHL(9),KMSHL(9),IMSHL(9),MT(12)
+      DIMENSION IM(12),IS(13),IR(13),JS(13),JR(13),KS(13),KR(13)
+      DIMENSION ILS(12),ILR(12)
+      DIMENSION IGS(12),IGR(12),AFA(13),LFACI(12),LFACF(12),MSH(12)
+      DIMENSION ISAD(12)
+C     DIMENSION CFACI(LCFC),CFACF(LCFC),IMSLT(LCFC)
+      DIMENSION CFACI(1000),CFACF(1000),IMSLT(1000)
+      save icdrmx, LCFC
+      DATA AFA(1)/ 1.0D0 /
+      DATA ITEST,ISAD(1),IS(1),IR(1),JS(1),JR(1),KS(1),KR(1)/2*0,6*1/
+      data icdrmx/0/
+      data LCFC/1000/
+C
+      lcfc = 1000
+C
+      IF(NHT.GT.12) GO TO 9002
+C     IF(NRNFG.EQ.3) GO TO 9010
+      W=0.0D0
+      ICADR=0
+      DO 294 M=1,NHT
+      JMM=NHWN(M)
+      KMM=NHVN(M)
+      JPM=NHWQ(M)
+      KPM=NHVQ(M)
+      CALL FISHL(NL1,NL2,JMM,JPM,M,LSI,   JSHT,JNP,JMSHL)
+      CALL FISHL(NL3,NL4,KMM,KPM,M,LSF,   KSHT,KNP,KMSHL)
+      CALL COMSH(JSHT,JNP,JMSHL,KSHT,KNP,KMSHL,   ISHT,INP,IMSHL)
+      IF(ITSTA.NE.0) WRITE(6,9500) NL1,NL2,JMM,JPM,LSI,JSHT,JNP,JMSHL,
+     1                 M,          NL3,NL4,KMM,KPM,LSF,KSHT,KNP,KMSHL,
+     2   ISHT,INP,IMSHL
+ 9500 FORMAT(' SHMS   ',5I6,2X,2I6,2X,9I6/I6,I8,4I6,2X,2I6,2X,9I6/
+     1   40X,2I6,2X,9I6)
+      IF(ISHT.EQ.0) RETURN
+      L=1
+      IF(M-NL1) 1,2,3
+    1 L=L+3
+    2 L=L+3
+    3 IF(M-NL2) 4,5,6
+    4 L=L+1
+    5 L=L+1
+    6 LFACI(M)=L
+      L=1
+      IF(M-NL3)  7,8,9
+    7 L=L+3
+    8 L=L+3
+    9 IF(M-NL4) 10,11,12
+   10 L=L+1
+   11 L=L+1
+   12 LFACF(M)=L
+      IF(ISHT.GT.0) GO TO 223
+      CALL CFAC(IMSHL(1),JMM,JPM,LSI,LRI,LFACI(M),   CIX)
+      IF(CIX.EQ.0.0D0) RETURN
+      CALL CFAC(IMSHL(1),KMM,KPM,LSF,LRF,LFACF(M),   CFX)
+      IF(CFX.EQ.0.0D0) RETURN
+      ICADR=ICADR+1
+      IF(ICADR.GT.LCFC) GO TO 264
+      CFACI(ICADR)=CIX
+      CFACF(ICADR)=CFX
+      IMSLT(ICADR)=IMSHL(1)
+      MSH(M)=1
+C     LPX=IMSHL(1)
+C     LMTX=LP3
+C     KT=MTX
+      kt = imshl(1)/256
+      GO TO 284
+  264 WRITE(6,9005) ICADR
+ 9005 FORMAT('0ICADR RANGE OVER  ',I10,'   ERROR  ****************')
+      GO TO 294
+  223 MSH(M)=0
+      DO 293 K=1,ISHT
+      KT=IMSHL(K)
+      JMAX=ICONNT(4,KT)
+      DO 293 J=1,JMAX
+C     MTX=IMSHL(K)
+C     LP3=LMTX
+C     MTX=J
+C     LP4=LMTX
+C     IMT=LPX
+      imt = 256*and(255,imshl(k))+j
+      CALL CFAC(IMT,JMM,JPM,LSI,LRI,LFACI(M),   CIX)
+      IF(CIX.EQ.0.0D0) GO TO 293
+      CALL CFAC(IMT,KMM,KPM,LSF,LRF,LFACF(M),   CFX)
+      IF(CFX.EQ.0.0D0) GO TO 293
+      ICADR=ICADR+1
+      IF(ICADR.GT.LCFC) GO TO 265
+      CFACI(ICADR)=CIX
+      CFACF(ICADR)=CFX
+      IMSLT(ICADR)=IMT
+      MSH(M)=MSH(M)+1
+      GO TO 293
+  265 WRITE(6,9005) ICADR
+  293 CONTINUE
+      IF(MSH(M).EQ.0) RETURN
+  284 IF(M.LT.NHT) ISAD(M+1)=ICADR
+C     LPX=NHWCSL(M)
+C     LMTX=LP3
+C     JS(M+1)=MTX
+C     LMTX=LP4
+C     JR(M+1)=MTX
+      js(m+1) = nhwcsl(m)/256
+      jr(m+1) = and(255,nhwcsl(m))
+C     LPX=NHVCSL(M)
+C     LMTX=LP3
+C     KS(M+1)=MTX
+C     LMTX=LP4
+C     KR(M+1)=MTX
+      ks(m+1) = nhvcsl(m)/256
+      kr(m+1) = and(255,nhvcsl(m))
+      ISB(M)=2
+      IRB(M)=ICONNT(1,KT)
+  294 CONTINUE
+C
+      ICDRMX=MAX0(ICADR,ICDRMX)
+      N=NHT+1
+      DO 295 M=N,13
+      ISB(M)=1
+  295 IRB(M)=1
+      M=0
+  100 M=M+1
+      MT(M)=0
+  160 MT(M)=MT(M)+1
+      KT=ISAD(M)+MT(M)
+      IM(M)=IMSLT(KT)
+      CALL FIANG(ISB,IRB,
+     1   NL1,NL2,LFACI(M),LSI,LRI,M,NHWN,JS,JR,IM,IS,IR,
+     1   JLS,JGS,JLR,JGR)
+      CALL FIANG(ISB,IRB,
+     1   NL3,NL4,LFACF(M),LSF,LRF,M,NHVN,KS,KR,IM,IS,IR,
+     1   KLS,KGS,KLR,KGR)
+      IGSP=MIN0(JGS,KGS)
+      IF(IGSP.LE.0) GO TO 120
+      ILSP=MAX0(JLS,KLS)
+      IF(IGSP.LT.ILSP) GO TO 120
+      ILOR=MAX0(JLR,KLR)
+      IGOR=MIN0(JGR,KGR)
+      IF(IGOR.LT.ILOR) GO TO 120
+      ILS(M)=ILSP
+      IGS(M)=IGSP
+      ILR(M)=ILOR
+      IGR(M)=IGOR
+      IS(M+1)=ILS(M)-2
+  150 IS(M+1)=IS(M+1)+2
+      IR(M+1)=ILR(M)-2
+  140 IR(M+1)=IR(M+1)+2
+      CALL AFACT(ISB,IRB,
+     1   NL1,NL2,LFACI(M),LSI,LRI,M,NHWN,NHWQ,JS,JR,IM,IS,IR,
+     1   CFACI(KT),     AFACI)
+      CALL AFACT(ISB,IRB,
+     1   NL3,NL4,LFACF(M),LSF,LRF,M,NHVN,NHVQ,KS,KR,IM,IS,IR,
+     1   CFACF(KT),     AFACF)
+      AFA(M+1)=AFACI*AFACF*AFA(M)
+      IF(AFA(M+1).EQ.0.0D0) GO TO 170
+      IF(M.LT.NHT) GO TO 100
+      W=W+AFA(N)* DFLOAT((MOD(IRB(NL1)-IRB(NL2)-LRI-ISB(NL1)+ISB(NL2)
+     1   +LSI+LRF+IR(N)+KR(N)-LSF-IS(N)-KS(N)+882,4)-1)*IS(N)*IR(N))*
+     2   WIG6J(LSI,LSF,LST,KS(N),JS(N),IS(N))*RT(LST+1)*RT(LRT+1)*
+     3   WIG6J(LRI,LRF,LRT,KR(N),JR(N),IR(N))
+  170 CONTINUE
+      IF(IR(M+1).LE.IGR(M)-2) GO TO 140
+      IF(IS(M+1).LE.IGS(M)-2) GO TO 150
+  120 IF(MT(M).LE.MSH(M)-1) GO TO 160
+      M=M-1
+      KT=ISAD(M)+MT(M)
+      IF(M.GE.1) GO TO 170
+      RETURN
+C
+ 9002 WRITE(6,9003)  NHT
+ 9003 FORMAT('SHMS   TOO MANY OPEN SHELLS      NHT =',I10,'   ERROR *')
+      RETURN
+C
+      ENTRY QSHMSC(ITOT)
+      ITOT=ICDRMX
+      RETURN
+C
+      END

@@ -1,0 +1,3 @@
+      common/comexp/NOPEN,IWAD(12),IVAD(12),     IWVAD(130)
+      common/comexp/IWADS,     IWVADS
+      integer* 4    NOPEN,IWAD,IVAD,IWVAD,IWADS,  IWVADS

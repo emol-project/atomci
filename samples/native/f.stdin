@@ -1,0 +1,46 @@
+opEN UNIT=10 FILE=./CFPTBL BINARY STATUS=OLD
+#OPEN UNIT=10 FILE=CFPTBL BINARY STATUS=OLD
+OPEN UNIT=27 FILE=f.NO BINARY
+OPEN UNIT=2 FILE=f.csf STATUS=OLD
+OPEN UNIT=3 FILE=f.bas STATUS=OLD
+OPEN UNIT=7 FILE=f.time  
+END
+"                                                                               
+"  SCF CI 
+"                                                                               
+            aimcwftrptexcirs
+ &CNTL NRNFG=1,1,1,1,0,0,1,1, TITLE=' F DOUBLET P ', /                       
+ &AI IUNIT=3, Z=9.0D0, NTYPE=2, IDPRNT=0, /                                  
+ &MC ITNEL=9, ISPIN=2, IORB=3, IPAR=1, NSET=1, 
+     CLOSED='  1S )',
+     CSFS=' 2S*2) 2P*5 ))',
+          ' )))', /           
+ &WF ITNEL=9, ISPIN=2, IORB=3, IPAR=1, RULE=1, NPFLG=0, IUNIT=2, /           
+ &TR NSYM=4, NBF=13,11,6,5, NOB=13,11,6,5,                              
+     MPOB=13,12,11,10,9,8,7,6,5,4,3,2,1,                                        
+          11,10,9,8,7,6,5,4,3,2,1,                                              
+          6,5,4,3,2,1,                                                          
+          5,4,3,2,1,    ITVCI=1, /
+ &GET IVCS=27, NIND=4,                                                          
+      IND= 1,0,1,13, 1,1,1,11, 1,2,1,6, 1,3,1,5, 
+           /                         
+ &CI NSTATE=1, NSDIM=100, IPS=7, NRNFG=1,1,1,0,1,1,                             
+     MAXIT=100, IOFLG=0,-1,-1,0,0, /                                         
+ &RS RULE=2, PTHR=-0.001, NRNFG=0, /                                       
+"                                                                               
+" SD-CI WITH NATURAL ORBITALS                                                   
+"                                                                               
+ &CNTL NRNFG=0,0,0,1,0,0,1,1, TITLE=' F DOUBLET P (NO 1) ', /                
+ &TR NSYM=4, NBF=13,11,6,5, NOB=13,11,6,5,                              
+     MPOB=13,12,11,10,9,8,7,6,5,4,3,2,1,                                        
+          11,10,9,8,7,6,5,4,3,2,1,                                              
+          6,5,4,3,2,1,                                                          
+          5,4,3,2,1,     ITVCI=1, /                                          
+ &GET IVCS=27, NIND=4,                                                          
+      IND=2,0,1,13, 2,1,1,11,                                
+          2,2,1,6,  2,3,1,5,  /                         
+ &CI NSTATE=1, NSDIM=100, IPS=7, NRNFG=1,1,1,0,1,1,                             
+     MAXIT=100, IOFLG=0,-1,-1,0,0, /                                         
+ &RS RULE=2, PTHR=-0.001, NRNFG=0, /                                       
+ &CNTL NRNFG=0,0,0,0,0,0,0,1, TITLE=' F DOUBLET P (NO 1) ', /                
+ &RS RULE=1, PTHR=-0.001, NRNFG=0, /                                       

@@ -1,0 +1,94 @@
+# B 2s2 2p 2P (odd) -- samples/native/boron.stdin as an .inp.
+# General CI (&WF RULE=0) over a hand-written CSF list, STF basis and
+# orbital coefficients given in the deck, no MCSCF. These have no short
+# form, so every group is a raw block, and the basis, the CSF list and the
+# coefficients are copied from boron.basis.txt, boron.csf.txt and
+# boron.basvc.txt (keep them next to this file).
+# Answer: ET = -24.6461953967
+
+title:  " B (DOUBLET P ODD) "
+deck:   boron.deck
+
+atom:
+  z:     5
+  ang:   P
+  spin:  2
+
+files:
+  cfptable:  ./CFPTBL
+  open:
+    - unit: 7, file: boron.time
+
+orbital:
+reference:
+ctrl:
+
+raw:
+  -
+    group: CNTL
+    params:
+      nrnfg: 1,0,1,1,0,1,1,1
+      title: " B (DOUBLET P ODD) "
+  -
+    group: AI
+    params:
+      iunit: 5
+      nwt: 47
+      z: 5.0D0
+      iiprnt: 0
+      idprnt: 0
+    payload:
+      kind: basis
+      path: boron.basis.txt
+  -
+    group: WF
+    params:
+      rule: 0
+      iunit: 5
+      nfwfa: 11
+      ispin: 2
+      ipar: 1
+      iorb: 3
+      itnel: 5
+    payload:
+      kind: csf
+      path: boron.csf.txt
+  -
+    group: TR
+    params:
+      nsym: 7
+      nbf: 10,9,8,8,6,4,2
+      nob: 8,7,6,5,4,3,2
+      mpob: 3,4,5,6,7,8,1,2,2,3,4,5,6,7,1,1,2,3,4,5,6,1,2,3,4,5,1,2,3,4,1,2,3,1,2
+      itvci: 0
+      iordr: 0
+      itrns: 2
+  -
+    group: BASVC
+    params:
+      idprnt: 0
+      iunit: 5
+    payload:
+      kind: vectors
+      path: boron.basvc.txt
+  -
+    group: EX
+    params:
+      retry: 0
+  -
+    group: CI
+    params:
+      nrun: 1
+      nstate: 1
+      nsdim: 100
+      ips: 7
+      nrnfg: 1,1,1,0,1,1
+      nfiv: 0
+      maxit: 150
+      ioflg: 0,0,0,0,0,1
+      idtyp: 0,0
+  -
+    group: RS
+    params:
+      rule: 1
+      pthr: -0.001

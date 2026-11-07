@@ -1,0 +1,36 @@
+# Ti 3d2 4s2 3F -- samples/native/ti.stdin and ti.atg as an .inp: cc-pVTZ,
+# SCF of the 3d2 4s2 configuration, SD-CI of the 4s and 3d electrons with
+# 1s 2s 2p 3s 3p frozen. Needs ti.bas (next to this file) in the work
+# directory.
+# Answer: MCSCF -848.40561072, SD-CI = -848.458805
+
+title:  " TI TRIPLET F "
+deck:   ti.deck
+csf:    ti.csf
+
+atom:
+  z:     22
+  ang:   F
+  spin:  3
+
+files:
+  cfptable:  ./CFPTBL
+  basis:     ti.bas
+  open:
+    - unit: 27, file: ti.NO, format: binary, status: unknown
+
+orbital:
+  frozen_core:  1S, 2S, 2P, 3S, 3P
+  active:       4S, 3D
+  outer:        3S, 4P, 3D, 2F, 1G
+
+reference:
+  - scf: true, occ: 4S*2 3D*2
+
+ctrl:
+  ai:  type: 2, idprnt: 0
+  mc:  itmax: 30
+  wf:  rule: 1, npflg: 0
+  tr:  from_record: 1
+  ci:  ips: 7, maxit: 100, nsdim: 100, nstate: 1
+  rs:  print: -0.001

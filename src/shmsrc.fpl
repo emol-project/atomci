@@ -1,0 +1,745 @@
+   %%DEBUG  /* %
+   PROCESS       FILE   'shmsrc.f'  
+   %%SUBNAME  SHMSRC %
+   PROCESS    NO LIST      MAP    HEADER  %SUBNAME
+   SUBROUTINE %SUBNAME --
+         (NWLF,NHST,NHWN,GN,NHWCSL,NHVN,FN,NHVCSL, --
+          ITEST,  NL1,NL2,LSI,LRI,NL3,NL4,LSF,LRF,LST,LRT,NHT,   W)
+  %UPDATE
+  /*
+  /*    FUNCTION : GENERATE MATRIX ELEMENTS OF
+  /*
+  /*              ((NL1)LS1,LR1)*NL2)*LS2,LR2)*NL3)LS3,LR3)NL4)LST,LRT
+  /*                   NL1<NL2<NL3<NL4
+  /*
+  /*    CALLING SEQUENCE
+  /*
+  /*        SHMSRC --> FACTOR --> WT9X --> CFP
+  /*                                       XXCFAC --> CFP
+  /*                                       WIG6J  --> DELTA ETC.
+  /*                                       WIG9X  --> XWIG9X --> WIG6J
+  /*    FUNCTION OF SUBROUTINE
+  /*
+  /*     SHMSRC :  REARRANGE OPERATOR AND PHASE FACTOR
+  /*     FACTOR :  GENERATE OPERATOR COUPLING SCHEME IF RCPL CASE
+  /*     WT9X   :  USING RECOUPLING ( RCPL ) FORMULA
+  /*                  ( F. SASAKI : IJQC VOL 14 ??? (1974) )
+  /*     CFP    : COEFFICIENTS OF FRACTIONAL PARENTAGE
+  /*     XXCFAC : USING WIGNER-ECKART THEOREM
+  /*
+  /*       REFERENCE  SECOND QUANTIZATION AND ATOMIC SPECTROSCOPY
+  /*
+  /*                    B. R. JUDD  ( 1967 )
+  /*
+  /*
+  /*                          PROGRAMMED BY M. SEKIYA 11-23-1986
+  /*                          CHANGED   BY TASHI     10-24-1989
+  /*
+  /*                          FORTRAN77 AND FPL ( FORTRAN PRE PROSESOR )
+  /*
+  /* DCL PARAMETER */
+  IMPLICIT REAL*8(A-H,O-Z)
+     EXTERNAL IOR,ISP,FACTOR
+     %%MAX_SHELL  11%
+     INTEGER * 4 NWLF( * ), NHST(*)
+     INTEGER * 4 NL1,NL2,NL3,NL4,LSI,LRI,LSF,LRF,LST,LRT,NHT
+     REAL    * 8 W,PHASE,FACTOR
+     LOGICAL  MP
+  /* DCL LOCAL     */
+     INTEGER * 4 NHWN (%MAX_SHELL),NHWCSL(%MAX_SHELL)
+     INTEGER * 4 NHVN (%MAX_SHELL),NHVCSL(%MAX_SHELL)
+     INTEGER * 4 FN  (%MAX_SHELL)
+     INTEGER * 4 GN  (%MAX_SHELL)
+     INTEGER * 4 HSX (%MAX_SHELL),HRX (%MAX_SHELL)
+     INTEGER * 4 FSX (%MAX_SHELL),FRX (%MAX_SHELL)
+     INTEGER * 4 GSX (%MAX_SHELL),GRX (%MAX_SHELL)
+     INTEGER * 4 HSC (0:%MAX_SHELL),HRC (0:%MAX_SHELL)
+     INTEGER * 4 FSC (0:%MAX_SHELL),FRC (0:%MAX_SHELL)
+     INTEGER * 4 GSC (0:%MAX_SHELL),GRC (0:%MAX_SHELL)
+     INTEGER * 4 C1,C2,A1,A2,LC1,LA1,LC2,LA2
+     INTEGER * 4 CC12,AA12,CA11,CA12,CA22,AC12
+     INTEGER * 4 HL(4),MD(4),NL(4)
+     INTEGER * 4 MODE,CODE(2)
+     INTEGER * 4 CASEI,CASEJ,CASEK,CASEL
+     REAL    * 8 ZP
+     INTEGER * 4 III
+     INTEGER * 4 BYT
+     REAL    * 8 SLES
+     CHARACTER * 4 A(0:15)
+     DATA A/'   E','C   ','  C ',' A  ','   A','C C ',' A A',  --
+     'CA  ','  CA','C  A',' AC ','C CA','CAC ','CA A',' ACA','CACA'/
+     DATA BYT/256/ ;
+     DATA SLES/1.0D-10/ ;
+     /* PHASE FACTOR & OPERATOR PHASE PHACTOR & RECOUPLING PHASE
+     /* NO RECPOUPLING COEFFICIENT
+     /*MABCD --> A,B,C,D IS INDEX OF INPUT NLX
+     /*FOR EXAMPLE M21 IS NL2 < NL1 ( COUPLING ORDER )
+     /*    OP COMUTATION   NL1 -> INPUT  HL(1) -> SORT BY COUPLING ORDER
+     %%M12   1.0D0 ; MP = .FALSE.;%
+     /*M21   ODD + D + NL1 + D + NL2  - LSI - LRI  */
+     %%M21   ZP( 2 + 2 + LC1 + 2 + LA1 - LSI - LRI - 2 ) ; MP=.FALSE.;%
+     %%M1234   1.0D0 ; MP = .FALSE. %
+     %%M1243 ZP( 2 + 2 + LA2 + 2 + LC2 - LSF - LRF - 2 ) ; MP=.FALSE.;%
+     %%M2134 ZP( 2 + 2 + LC1 + 2 + LA1 - LSI - LRI - 2 ) ; MP=.FALSE.;%
+     %%M2143 ZP( 0 + 2 + LC1 + 2 + LA1 - LSI - LRI --
+                   + 2 + LC2 + 2 + LA2 - LSF - LRF - 4 ) ; MP=.FALSE.;%
+
+     /* RECOUPLING
+     %%M1324 ZP( 2 + 2 + LA1 + 2 + LC2 + LSI + LRI - 6 ) ; MP= .TRUE.;%
+     %%M2413 ZP( 2 + 2 + LA1 + 2 + LC2 + LSI + LRI - 6 ) ; MP= .TRUE.;%
+     %%M1342 ZP( 0 + 2 + LC2 - 2 - LA2 + LSI + LRI - 2 ) ; MP=.FALSE.;%
+     %%M4213 ZP( 0 + 2 + LC2 - 2 - LA2 + LSI + LRI - 2 ) ; MP=.FALSE.;%
+
+     /* RECOUPLING
+     %%M1423 ZP( 0 + 4 + 2 * LC1 + 2 + LA1 + 2 + LC2 -8) ; MP= .TRUE.;%
+     %%M1432 ZP( 2 + 4 + 2 * LC1 - 4 ) ; MP = .FALSE.;%
+     %%M4123 ZP( 2 + 2 + LC1 - 2 - LA2 + 2 + LA1 + 2 + LC2 - 4) ; --
+     MP = .FALSE.;%
+     %%M4132 ZP( 0 + 2 + LC1 - 2 - LA2 ) ; MP = .TRUE.;%
+
+     %%P1234 ZP( 0 + LC1 + LA1 + LC2 + LA2 - 4); MP = .FALSE.;%
+     %%P1342 ZP( 0 + 4 + 2 * LA1 + 2 + LA2 + 2 + LC2 - LSI - LRI - 6 )--
+     ; MP=.FALSE.;%
+     %%P1243 ZP( 2 + LSF + LRF + 2 + LC1 + 2 + LA1 - 6 ) ; MP=.FALSE.;%
+     %%P4123 ZP( 2 + 4 + 2 * LC2 - 4 ) ; MP=.FALSE. %
+     %%P2143 ZP( 0 + 8 - LC1 - LA1 - LC2 - LA2 - 8 ) ; MP=.FALSE. %
+     %%P2134 ZP( 2 + LSI + LRI + 2 + LC2 + 2 + LA2 - 6 ) ; MP=.FALSE.;%
+  /* PREPROCESSOR      SINGLET DOUBLET .... */
+     %%D    2%
+     /* OPERATOR TYPE*/
+     %%I   0%
+     %%CXXX   1%
+     %%XXCX   2%
+     %%XAXX   3%
+     %%XXXA   4%
+     %%CXCX   5%
+     %%XAXA   6%
+     %%CAXX   7%
+     %%XXCA   8%
+     %%CXXA   9%
+     %%XACX  10%
+     %%CXCA  11%
+     %%CACX  12%
+     %%CAXA  13%
+     %%XACA  14%
+     %%CACA  15%
+     /* RECOUPLING TYPE
+     %%NONE    1%
+     %%NONEC12 2%
+     %%NORMAL  3%
+     %%NC12    4%
+     %%NC34    5%
+     %%NC123   6%
+     %%NC234   7%
+     %%NC12C34 8%
+     %%NC1234  9%
+     %%NM23   10%
+     %%NR23   11%
+     %%NR123  12%
+     %%NR234  13%
+     %%NR1234 14%
+  /*     (HSI,HSX)--> HST
+  /*     (HRI,HRX)--> HRT
+  /*     NHWS: SHELL STATE
+  /*   NHWNUM: # OF ELECTRON IN OPEN SHELL
+  /*   GSC: COUPLING SCHEME
+  /*   GSX ***: LEFT STATE VECTOR
+  /*   FSX ***: RIGHT STATE VECTOR
+
+  /* STATEMENT FUNCTION
+     ZP( IH )  = 1.0D0 - 2.0D0*(MOD( (IH+8888)/2, 2 ) ); /* RC
+  BEGIN
+     IF ITEST > 0 THEN EXEC DEBUG_PRINT_FIRST
+     EXEC X_SHMSRC
+     IF ITEST > 0 THEN EXEC FIN_SHMSRC
+     END
+  >X_SHMSRC
+     EXEC SET_SHELL
+     /* SET INITIAL VALUE */
+     C1 = NL1 ; C2 = NL3 ; A1 = NL2 ; A2 = NL4 ;
+     CODE(1) = 2; CODE(2) = 1;
+     W = 0.0D0 ;
+     MODE = 0 ;
+     LC1 = NWLF( C1 ) ; LC2 = NWLF( C2 ) ;
+     LA1 = NWLF( A1 ) ; LA2 = NWLF( A2 ) ;
+     /*
+     /*       ASSUMPTION
+     /*            C1 < C2
+     IF NHT < C2 THEN DO ;   /* 1 EL OPERATOR
+     /* CALC 1EL OPERATOR */
+        CA11 = C1 - A1
+        DO CASE OF  CA11
+           *  DO ;
+                  NL(1) = C1 ; NL(2) = A1 ;
+                  HL(1) =LC1 ; HL(2) =LA1 ;
+                  MD(1)=%CXXX; MD(2)=%XAXX;
+                  MODE = %NONE
+                  PHASE= %M12
+                  END ;
+           0 : DO
+                  NL(1) = C1 ; NL(2) = A1 ;
+                  HL(1) =LC1 ; HL(2) =LA1 ;
+                  MD(1)=%CAXX; MD(2)=%CAXX;
+                  MODE = %NONEC12
+                  PHASE= %M12
+                  END ;
+           /* NO CHECK IDENTITY OF OTHER SHELL
+           *   DO
+                  NL(1) = A1 ; NL(2) = C1 ;
+                  HL(1) =LA1 ; HL(2) =LC1 ;
+                  MD(1)=%XAXX; MD(2)=%CXXX;
+                  MODE = %NONE
+                  PHASE= %M21
+                  END
+           END OF CASE CA11
+        W =     FACTOR  --
+           ( ITEST, FSX, FRX, FSC, FRC, GSX, GRX, GSC, GRC, --
+             HSX, HRX, HSC, HRC, NHVN, NHWN, FN, GN,   --
+             NL,HL,MD,LSI,LRI,LSF,LRF,LST,LRT,NHT,MODE,CODE,PHASE,MP)
+        END
+     ELSE
+     DO  ;
+     /* CALC 2EL OPERATOR */
+        CC12 = C1 - C2 ; AA12 = A1 - A2 ;
+        CA11 = C1 - A1 ; CA22 = C2 - A2 ;
+        DO CASE  OF CC12
+           *    CASEK = 0
+           0 :  DO CASE OF AA12
+              *   CASEK = 10 ; /* OK
+              0 : CASEK = 20
+              *   DO ;         /* REPLACE (A1 TO A2)
+                 CASEK = 10
+                 III   = LA1 ; LA1 = LA2 ; LA2 = III ;
+                 III   =  A1 ;  A1 =  A2 ;  A2 = III ;
+                 AA12 = A1 - A2 ;
+                 END
+              END OF DO CASE AA12 ;
+
+           *    DO ;          /* REPLACE (C1 TO C2) (A1 TO A2 )
+              III   = LC1 ; LC1 = LC2 ; LC2 = III ;
+              III   =  C1 ;  C1 =  C2 ;  C2 = III ;
+              III   = LA1 ; LA1 = LA2 ; LA2 = III ;
+              III   =  A1 ;  A1 =  A2 ;  A2 = III ;
+              CASEK = 0 ;
+              AA12 = A1 - A2 ;
+              END
+           END OF DO CASE OF CC12
+        CA22 = C2 - A2 ; CA11 = C1 - A1 ;
+        CA12 = C1 - A2 ; AC12 = A1 - C2 ;
+
+        DO CASE  OF CA11 ;
+           *    CASEI = 0 ;   /*
+           0 :  CASEI = 3
+           *    CASEI = 6
+           END OF DO CASE CA11 ;
+
+        DO CASE  OF CA22
+           *    CASEJ = 0 ;   /*
+           0 :  CASEJ = 1
+           *    CASEJ = 2
+           END OF DO CASE CA22 ;
+
+        CASEL = CASEI + CASEJ + CASEK
+     /* ---------- */
+     /*  ORDERING  */
+     /* ---------- */
+        DO CASE OF CASEL
+           0 :  DO CASE OF AC12
+    /* C1<A1<C2<A2
+              *   DO ;
+                  NL(1) = C1 ; NL(2) = A1 ; NL(3) = C2 ; NL(4) = A2 ;
+                  HL(1) =LC1 ; HL(2) =LA1 ; HL(3) =LC2 ; HL(4) =LA2 ;
+                  MD(1)=%CXXX; MD(2)=%XAXX; MD(3)=%XXCX; MD(4)=%XXXA;
+                  MODE = %NORMAL
+                  PHASE= %M1234
+                  END ;
+    /* C1<A1=C2<A2
+              0 : DO ;
+                  NL(1) = C1 ; NL(2) = A1 ; NL(3) = C2 ; NL(4) = A2 ;
+                  HL(1) =LC1 ; HL(2) =LA1 ; HL(3) =LC2 ; HL(4) =LA2 ;
+                  MD(1)=%CXXX; MD(2)=%XACX; MD(3)=%XACX; MD(4)=%XXXA;
+                  MODE = %NM23   ;
+                  PHASE= %P1234  ;
+                  END ;
+              *   DO CASE OF AA12
+    /* C1<C2<A1<A2  RECOUPLING
+                 *   DO ;      /* C1<C2<A1<A2  RECOUPLING
+                  NL(1) = C1 ; NL(2) = C2 ; NL(3) = A1 ; NL(4) = A2 ;
+                  HL(1) =LC1 ; HL(2) =LC2 ; HL(3) =LA1 ; HL(4) =LA2 ;
+                  MD(1)=%CXXX; MD(2)=%XXCX; MD(3)=%XAXX; MD(4)=%XXXA;
+                  CODE(1) = 3; CODE(2) = 4;
+                  MODE = %NR23
+                  PHASE= %M1324
+                  END ;
+    /* C1<C2<A1=A2  RECOUPLING
+                 0 : DO ;      /* C1<C2<A1=A2  RECOUPLING
+                  NL(1) = C1 ; NL(2) = C2 ; NL(3) = A1 ; NL(4) = A2 ;
+                  HL(1) =LC1 ; HL(2) =LC2 ; HL(3) =LA1 ; HL(4) =LA2 ;
+                  MD(1)=%CXXX; MD(2)=%XXCX; MD(3)=%XAXA; MD(4)=%XAXA;
+                  CODE(1) = 3; CODE(2) = 4;
+                  MODE = %NR234
+                  PHASE= %M1324
+                  END ;
+    /* C1<C2<A2<A1
+                 *   DO ;      /* C1<C2<A2<A1
+                  NL(1) = C1 ; NL(2) = C2 ; NL(3) = A2 ; NL(4) = A1 ;
+                  HL(1) =LC1 ; HL(2) =LC2 ; HL(3) =LA2 ; HL(4) =LA1 ;
+                  MD(1)=%CXXX; MD(2)=%XXCX; MD(3)=%XXXA; MD(4)=%XAXX;
+                  CODE(1) = 4; CODE(2) = 3;
+                  MODE = %NR23
+                  PHASE= %M1342
+                  END ;
+                  END OF DO CASE AA12
+               END OF DO CASE OF AC12
+           1       :  DO CASE OF AC12
+    /* C1<A1<C2=A2
+              *   DO ;             /* C1<A1<C2=A2
+                  NL(1) = C1 ; NL(2) = A1 ; NL(3) = C2 ; NL(4) = A2 ;
+                  HL(1) =LC1 ; HL(2) =LA1 ; HL(3) =LC2 ; HL(4) =LA2 ;
+                  MD(1)=%CXXX; MD(2)=%XAXX; MD(3)=%XXCA; MD(4)=%XXCA;
+                  MODE = %NC34 ;
+                  PHASE= %M1234
+                  END ;
+    /* C1<A1=C2=A2
+              0 : DO ;             /* C1<A1=C2=A2
+                  NL(1) = C1 ; NL(2) = A1 ; NL(3) = C2 ; NL(4) = A2 ;
+                  HL(1) =LC1 ; HL(2) =LA1 ; HL(3) =LC2 ; HL(4) =LA2 ;
+                  MD(1)=%CXXX; MD(2)=%XACA; MD(3)=%XACA; MD(4)=%XACA;
+                  MODE = %NC234;
+                  PHASE= %M1234
+                  END ;
+    /* C1<C2=A2<A1
+              *   DO ;             /* C1<C2=A2<A1
+                  NL(1) = C1 ; NL(2) = C2 ; NL(3) = A2 ; NL(4) = A1 ;
+                  HL(1) =LC1 ; HL(2) =LC2 ; HL(3) =LA2 ; HL(4) =LA1 ;
+                  MD(1)=%CXXX; MD(2)=%XXCA; MD(3)=%XXCA; MD(4)=%XAXX;
+                  CODE(1) = 4; CODE(2) = 3;
+                  MODE = %NM23
+                  PHASE= %P1342
+                  END ;
+              END OF DO CASE AC12
+
+           2       :  DO CASE OF AA12
+    /* C1<A1<A2<C2  34->RCPL
+              *   DO ;
+                  NL(1) = C1 ; NL(2) = A1 ; NL(3) = A2 ; NL(4) = C2 ;
+                  HL(1) =LC1 ; HL(2) =LA1 ; HL(3) =LA2 ; HL(4) =LC2 ;
+                  MD(1)=%CXXX; MD(2)=%XAXX; MD(3)=%XXXA; MD(4)=%XXCX;
+                  MODE = %NORMAL
+                  PHASE= %M1243
+                  END ;
+    /* C1<A1=A2<C2  RCPL
+              0 : DO ;             /* C1<A1=A2<C2  RCPL
+                  NL(1) = C1 ; NL(2) = A1 ; NL(3) = A2 ; NL(4) = C2 ;
+                  HL(1) =LC1 ; HL(2) =LA1 ; HL(3) =LA2 ; HL(4) =LC2 ;
+                  MD(1)=%CXXX; MD(2)=%XAXA; MD(3)=%XAXA; MD(4)=%XXCX;
+                  MODE = %NM23
+                  PHASE= %P1243
+                  END ;
+              *   DO CASE OF CA12
+                 *   DO CASE OF AC12 ;
+    /* C1<A2<A1<C2  RCPL
+                    *   DO ;
+                  NL(1) = C1 ; NL(2) = A2 ; NL(3) = A1 ; NL(4) = C2 ;
+                  HL(1) =LC1 ; HL(2) =LA2 ; HL(3) =LA1 ; HL(4) =LC2 ;
+                  MD(1)=%CXXX; MD(2)=%XXXA; MD(3)=%XAXX; MD(4)=%XXCX;
+                  CODE(1) = 3; CODE(2) = 4;
+                  MODE = %NR23
+                  PHASE= %M1423
+                  END
+    /* C1<A2<A1=C2  RCPL
+                    0 : DO ;       /* C1<A2<A1=C2  RCPL
+                  NL(1) = C1 ; NL(2) = A2 ; NL(3) = A1 ; NL(4) = C2 ;
+                  HL(1) =LC1 ; HL(2) =LA2 ; HL(3) =LA1 ; HL(4) =LC2 ;
+                  MD(1)=%CXXX; MD(2)=%XXXA; MD(3)=%XACX; MD(4)=%XACX;
+                  CODE(1) = 3; CODE(2) = 4;
+                  MODE = %NR234
+                  PHASE= %M1423
+                  END ;
+
+    /* C1<A2<C2<A1  RCPL
+                    *   DO ;       /* C1<A2<C2<A1  RCPL
+                  NL(1) = C1 ; NL(2) = A2 ; NL(3) = C2 ; NL(4) = A1 ;
+                  HL(1) =LC1 ; HL(2) =LA2 ; HL(3) =LC2 ; HL(4) =LA1 ;
+                  MD(1)=%CXXX; MD(2)=%XXXA; MD(3)=%XXCX; MD(4)=%XAXX;
+                  CODE(1) = 4; CODE(2) = 3;
+                  MODE = %NR23
+                  PHASE= %M1432
+                        END ;
+                     END OF DO CASE
+                 0 : DO CASE OF AC12 ;
+    /* C1=A2<A1<C2  RCPL
+                    *   DO ;
+                  NL(1) = C1 ; NL(2) = A2 ; NL(3) = A1 ; NL(4) = C2 ;
+                  HL(1) =LC1 ; HL(2) =LA2 ; HL(3) =LA1 ; HL(4) =LC2 ;
+                  MD(1)=%CXXA; MD(2)=%CXXA; MD(3)=%XAXX; MD(4)=%XXCX;
+                  CODE(1) = 3; CODE(2) = 4;
+                  MODE = %NR123
+                  PHASE= %M1423
+                  END
+    /* C1=A2<A1=C2  RCPL
+                    0 : DO ;       /* C1<A2<A1=C2  RCPL
+                  NL(1) = C1 ; NL(2) = A2 ; NL(3) = A1 ; NL(4) = C2 ;
+                  HL(1) =LC1 ; HL(2) =LA2 ; HL(3) =LA1 ; HL(4) =LC2 ;
+                  MD(1)=%CXXA; MD(2)=%CXXA; MD(3)=%XACX; MD(4)=%XACX;
+                  CODE(1) = 3; CODE(2) = 4;
+                  MODE = %NR1234
+                  PHASE= %M1423
+                  END ;
+
+    /* C1=A2<C2<A1  RCPL
+                    *   DO ;       /* C1<A2<C2<A1  RCPL
+                  NL(1) = C1 ; NL(2) = A2 ; NL(3) = C2 ; NL(4) = A1 ;
+                  HL(1) =LC1 ; HL(2) =LA2 ; HL(3) =LC2 ; HL(4) =LA1 ;
+                  MD(1)=%CXXA; MD(2)=%CXXA; MD(3)=%XXCX; MD(4)=%XAXX;
+                  CODE(1) = 4; CODE(2) = 3;
+                  MODE = %NR123
+                  PHASE= %M1432
+                        END ;
+                     END OF DO CASE
+                 *   DO CASE OF AC12 ;
+    /* A2<C1<A1<C2  RCPL
+                    *   DO ;
+                  NL(1) = A2 ; NL(2) = C1 ; NL(3) = A1 ; NL(4) = C2 ;
+                  HL(1) =LA2 ; HL(2) =LC1 ; HL(3) =LA1 ; HL(4) =LC2 ;
+                  MD(1)=%XXXA; MD(2)=%CXXX; MD(3)=%XAXX; MD(4)=%XXCX;
+                  CODE(1) = 4; CODE(2) = 3;
+                  MODE = %NR23
+                  PHASE= %M4123
+                  END
+    /* A2<C1<A1=C2  RCPL
+                    0 : DO ;       /* C1<A2<A1=C2  RCPL
+                  NL(1) = A2 ; NL(2) = C1 ; NL(3) = A1 ; NL(4) = C2 ;
+                  HL(1) =LA2 ; HL(2) =LC1 ; HL(3) =LA1 ; HL(4) =LC2 ;
+                  MD(1)=%XXXA; MD(2)=%CXXX; MD(3)=%XACX; MD(4)=%XACX;
+                  CODE(1) = 4; CODE(2) = 3;
+                  MODE = %NR234
+                  PHASE= %M4123
+                  END ;
+
+    /* A2<C1<C2<A1  RCPL
+                    *   DO ;       /* C1<A2<C2<A1  RCPL
+                  NL(1) = A2 ; NL(2) = C1 ; NL(3) = C2 ; NL(4) = A1 ;
+                  HL(1) =LA2 ; HL(2) =LC1 ; HL(3) =LC2 ; HL(4) =LA1 ;
+                  MD(1)=%XXXA; MD(2)=%CXXX; MD(3)=%XXCX; MD(4)=%XAXX;
+                  MODE = %NR23
+                  PHASE= %M4132
+                  CODE(1) = 3; CODE(2) = 4;
+                  END ;
+                  END OF DO CASE
+                 END OF DO CASE AC12
+              END OF DO CASE AA12
+
+    /* C1=A1<C2<A2
+           3       : DO ;                    /* C1=A1<C2<A2
+                  NL(1) = C1 ; NL(2) = A1 ; NL(3) = C2 ; NL(4) = A2 ;
+                  HL(1) =LC1 ; HL(2) =LA1 ; HL(3) =LC2 ; HL(4) =LA2 ;
+                  MD(1)=%CAXX; MD(2)=%CAXX; MD(3)=%XXCX; MD(4)=%XXXA;
+                  MODE = %NC12
+                  PHASE= %M1234
+                  END ;
+
+
+    /* C1=A1<C2=A2
+           4       : DO ;                    /* C1=A1<C2=A2
+                  NL(1) = C1 ; NL(2) = A1 ; NL(3) = C2 ; NL(4) = A2 ;
+                  HL(1) =LC1 ; HL(2) =LA1 ; HL(3) =LC2 ; HL(4) =LA2 ;
+                  MD(1)=%CAXX; MD(2)=%CAXX; MD(3)=%XXCA; MD(4)=%XXCA;
+                  MODE = %NC12C34
+                  PHASE= %M1234
+                  END ;
+
+
+           5       :  DO CASE OF AA12
+    /* C1=A1<A2<C2
+              *   DO ;             /* C1=A1<A2<C2
+                  NL(1) = C1 ; NL(2) = A1 ; NL(3) = A2 ; NL(4) = C2 ;
+                  HL(1) =LC1 ; HL(2) =LA1 ; HL(3) =LA2 ; HL(4) =LC2 ;
+                  MD(1)=%CAXX; MD(2)=%CAXX; MD(3)=%XXXA; MD(4)=%XXCX;
+                  MODE = %NC12
+                  PHASE= %M1243
+                  END ;
+
+    /* C1=A1=A2<C2
+              0 : DO ;             /* C1=A1=A2<C2
+                  NL(1) = C1 ; NL(2) = A1 ; NL(3) = A2 ; NL(4) = C2 ;
+                  HL(1) =LC1 ; HL(2) =LA1 ; HL(3) =LA2 ; HL(4) =LC2 ;
+                  MD(1)=%CAXA; MD(2)=%CAXA; MD(3)=%CAXA; MD(4)=%XXCX;
+                  MODE = %NC123
+                  PHASE= %M1243
+                  END ;
+
+
+    /* A2<C1=A1<C2
+              *   DO ;             /* A2<C1=A1<C2
+                  NL(1) = A2 ; NL(2) = C1 ; NL(3) = A1 ; NL(4) = C2 ;
+                  HL(1) =LA2 ; HL(2) =LC1 ; HL(3) =LA1 ; HL(4) =LC2 ;
+                  MD(1)=%XXXA; MD(2)=%CAXX; MD(3)=%CAXX; MD(4)=%XXCX;
+                  CODE(1) = 4; CODE(2) = 3;
+                  MODE = %NM23
+                  PHASE= %P4123
+                  END ;
+
+              END OF DO CASE OF AA12
+    /* A1<C1<C2<A2
+           6       : DO ;                    /* A1<C1<C2<A2
+                  NL(1) = A1 ; NL(2) = C1 ; NL(3) = C2 ; NL(4) = A2 ;
+                  HL(1) =LA1 ; HL(2) =LC1 ; HL(3) =LC2 ; HL(4) =LA2 ;
+                  MD(1)=%XAXX; MD(2)=%CXXX; MD(3)=%XXCX; MD(4)=%XXXA;
+                  MODE = %NORMAL
+                  PHASE= %M2134
+                  END ;
+
+    /* A1<C1<C2=A2
+           7       : DO ;                    /* A1<C1<C2=A2
+                  NL(1) = A1 ; NL(2) = C1 ; NL(3) = C2 ; NL(4) = A2 ;
+                  HL(1) =LA1 ; HL(2) =LC1 ; HL(3) =LC2 ; HL(4) =LA2 ;
+                  MD(1)=%XAXX; MD(2)=%CXXX; MD(3)=%XXCA; MD(4)=%XXCA;
+                  MODE = %NC34
+                  PHASE= %M2134
+                  END ;
+
+           8       :  DO CASE OF CA12
+    /* A1<C1<A2<C2
+              *   DO ;             /* A1<C1<A2<C2
+                  NL(1) = A1 ; NL(2) = C1 ; NL(3) = A2 ; NL(4) = C2 ;
+                  HL(1) =LA1 ; HL(2) =LC1 ; HL(3) =LA2 ; HL(4) =LC2 ;
+                  MD(1)=%XAXX; MD(2)=%CXXX; MD(3)=%XXXA; MD(4)=%XXCX;
+                  MODE = %NORMAL
+                  PHASE= %M2143
+                  END ;
+
+    /* A1<C1=A2<C2  RCPL
+              0 : DO ;             /* A1<C1=A2<C2  RCPL
+                  NL(1) = A1 ; NL(2) = C1 ; NL(3) = A2 ; NL(4) = C2 ;
+                  HL(1) =LA1 ; HL(2) =LC1 ; HL(3) =LA2 ; HL(4) =LC2 ;
+                  MD(1)=%XAXX; MD(2)=%CXXA; MD(3)=%CXXA; MD(4)=%XXCX;
+                  MODE = %NM23
+                  PHASE= %P2143
+                  END ;
+
+
+              *   DO CASE OF AA12
+    /* A1<A2<C1<C2  RCPL
+                 *   DO ;
+                  NL(1) = A1 ; NL(2) = A2 ; NL(3) = C1 ; NL(4) = C2 ;
+                  HL(1) =LA1 ; HL(2) =LA2 ; HL(3) =LC1 ; HL(4) =LC2 ;
+                  MD(1)=%XAXX; MD(2)=%XXXA; MD(3)=%CXXX; MD(4)=%XXCX;
+                  CODE(1) = 3; CODE(2) = 4;
+                  MODE = %NR23
+                  PHASE= %M2413
+                  END ;
+    /* A1=A2<C1<C2  RCPL
+                 0 : DO ;
+                  NL(1) = A1 ; NL(2) = A2 ; NL(3) = C1 ; NL(4) = C2 ;
+                  HL(1) =LA1 ; HL(2) =LA2 ; HL(3) =LC1 ; HL(4) =LC2 ;
+                  MD(1)=%XAXA; MD(2)=%XAXA; MD(3)=%CXXX; MD(4)=%XXCX;
+                  CODE(1) = 3; CODE(2) = 4;
+                  MODE = %NR123
+                  PHASE= %M2413
+                  END ;
+    /* A2<A1<C1<C2  RCPL
+                 *   DO ;
+                  NL(1) = A2 ; NL(2) = A1 ; NL(3) = C1 ; NL(4) = C2 ;
+                  HL(1) =LA2 ; HL(2) =LA1 ; HL(3) =LC1 ; HL(4) =LC2 ;
+                  MD(1)=%XXXA; MD(2)=%XAXX; MD(3)=%CXXX; MD(4)=%XXCX;
+                  CODE(1) = 4; CODE(2) = 3;
+                  MODE = %NR23
+                  PHASE= %M4213
+                  END ;
+                 END OF DO CASE AA12
+              END OF DO CASE CA12
+
+    /* C1=C2<A1<A2
+           10       : DO ;                    /* C1=C2<A1<A2
+                  NL(1) = C1 ; NL(2) = C2 ; NL(3) = A1 ; NL(4) = A2 ;
+                  HL(1) =LC1 ; HL(2) =LC2 ; HL(3) =LA1 ; HL(4) =LA2 ;
+                  MD(1)=%CXCX; MD(2)=%CXCX; MD(3)=%XAXX; MD(4)=%XXXA;
+                  CODE(1) = 3; CODE(2) = 4;
+                  MODE = %NR123
+                  PHASE= %M1324
+                  END ;
+
+           11       : EXEC ERROR ;            /* C1=C2=A2<A1
+           12       : EXEC ERROR ;            /* A2<C1=C2<A1
+    /* C1=A1=C2<A2
+           13       : DO ;                    /* C1=A1=C2<A2
+                  NL(1) = C1 ; NL(2) = A1 ; NL(3) = C2 ; NL(4) = A2 ;
+                  HL(1) =LC1 ; HL(2) =LA1 ; HL(3) =LC2 ; HL(4) =LA2 ;
+                  MD(1)=%CACX; MD(2)=%CACX; MD(3)=%CACX; MD(4)=%XXXA;
+                  MODE = %NC123
+                  PHASE= %M1234
+                  END ;
+
+           /* 14       : IDENTICAL TO CASE 24    /* C1=A1=C2=A2
+           15       : EXEC ERROR ;            /* A2<C1=C2=A1
+    /* A1<C1=C2<A2
+           16       : DO ;                    /* A1<C1=C2<A2
+                  NL(1) = A1 ; NL(2) = C1 ; NL(3) = C2 ; NL(4) = A2 ;
+                  HL(1) =LA1 ; HL(2) =LC1 ; HL(3) =LC2 ; HL(4) =LA2 ;
+                  MD(1)=%XAXX; MD(2)=%CXCX; MD(3)=%CXCX; MD(4)=%XXXA;
+                  MODE = %NM23
+                  PHASE= %P2134
+                  END ;
+
+    /* A1<C1=C2=A2
+           17       :  DO ;                   /* A1<C1=C2=A2
+                  NL(1) = A1 ; NL(2) = C1 ; NL(3) = C2 ; NL(4) = A2 ;
+                  HL(1) =LA1 ; HL(2) =LC1 ; HL(3) =LC2 ; HL(4) =LA2 ;
+                  MD(1)=%XAXX; MD(2)=%CXCA; MD(3)=%CXCA; MD(4)=%CXCA;
+                  MODE = %NC234
+                  PHASE= %M2134
+                  END ;
+
+    /* A1<A2<C1=C2
+           18       : DO ;                    /* A1<A2<C1=C2
+                  NL(1) = A1 ; NL(2) = A2 ; NL(3) = C1 ; NL(4) = C2 ;
+                  HL(1) =LA1 ; HL(2) =LA2 ; HL(3) =LC1 ; HL(4) =LC2 ;
+                  MD(1)=%XAXX; MD(2)=%XXXA; MD(3)=%CXCX; MD(4)=%CXCX;
+                  CODE(1) = 3; CODE(2) = 4;
+                  MODE = %NR234
+                  PHASE= %M2413
+                  END ;
+
+    /* C1=C2<A1=A2
+           20       : DO ;                    /* C1=C2<A1=A2
+                  NL(1) = C1 ; NL(2) = C2 ; NL(3) = A1 ; NL(4) = A2 ;
+                  HL(1) =LC1 ; HL(2) =LC2 ; HL(3) =LA1 ; HL(4) =LA2 ;
+                  MD(1)=%CXCX; MD(2)=%CXCX; MD(3)=%XAXA; MD(4)=%XAXA;
+                  CODE(1) = 3; CODE(2) = 4;
+                  MODE = %NR1234
+                  PHASE= %M1324
+                  END ;
+
+    /* C1=A1=C2=A2
+           24       : DO ;                    /* C1=A1=C2=A2
+                  NL(1) = C1 ; NL(2) = A1 ; NL(3) = C2 ; NL(4) = A2 ;
+                  HL(1) =LC1 ; HL(2) =LA1 ; HL(3) =LC2 ; HL(4) =LA2 ;
+                  MD(1)=%CACA; MD(2)=%CACA; MD(3)=%CACA; MD(4)=%CACA;
+                  MODE = %NC1234 ;
+                  PHASE= %M1234
+                  END ;
+
+    /* A1=A2<C1=C2
+           28       : DO ;                    /* A1=A2<C1=C2
+                  NL(1) = A1 ; NL(2) = A2 ; NL(3) = C1 ; NL(4) = C2 ;
+                  HL(1) =LA1 ; HL(2) =LA2 ; HL(3) =LC1 ; HL(4) =LC2 ;
+                  MD(1)=%XAXA; MD(2)=%XAXA; MD(3)=%CXCX; MD(4)=%CXCX;
+                  CODE(1) = 3; CODE(2) = 4;
+                  MODE = %NR1234
+                  PHASE= %M2413
+                  END ;
+
+           OTHERWISE   EXEC ERROR
+        W =     FACTOR  --
+           ( ITEST, FSX, FRX, FSC, FRC, GSX, GRX, GSC, GRC, --
+             HSX, HRX, HSC, HRC, NHVN, NHWN, FN, GN,   --
+             NL,HL,MD,LSI,LRI,LSF,LRF,LST,LRT,NHT,MODE,CODE,PHASE,MP)
+        END /* ELSE
+     END
+
+     /* END OF SUBROUTINE SHMSRC
+
+
+  PROCEDURE   FIN_SHMSRC
+     IF ITEST > 2 THEN DO ;
+        FORMAT WRITE --
+        '   NHT, NL1, NL2, NL3, NL4,    CODE,  MODE    ' ; ( A );
+        FORMAT WRITE --
+        NL(1),NL(2),NL(3),NL(4), CODE(1),CODE(2), --
+        A(MD(1)),A(MD(2)),A(MD(3)),A(MD(4)) ;
+        ( 1X,5I5,3X,2I3,'|',4(A4,'|')  ) ;
+        FORMAT WRITE --
+        ' CASEL,   I,   J,   K,                            ' ; ( A );
+        FORMAT WRITE --
+            CASEL,CASEI,CASEJ,CASEK ; ( 1X, 5I5 ) ;
+ /*     CALL CLOCK(CPUOUT,5)
+ /*     USECPU = ( CPUOUT - CPUIN  ) * 1000.0D0
+ /*     CALL TIMER(TIME1,TIME2)
+ /*     USECPU = TIME1 * 1000.0D0
+ /*     FORMAT WRITE    '   FACTOR IS ',W, --
+ /*     '   USED CPU TIME IN SHMSRC ',USECPU,' M SEC ' ;
+ /*     ( A,F15.10,A,F10.3,A ) ;
+        END
+     FORMAT  WRITE --
+             '---<---< EXIT  SHMSRC ---<---< '; ( A ) ;
+     END
+
+  PROCEDURE   ERROR
+     FORMAT WRITE   ' >> ERROR >>  IN SHMSRC >> ERRROR >> ERRRRROR >> ';
+     ( A ) ;
+     1L; 3X; 'INPUT DATA PRINTING';
+     1L; 3X; 'NL1' ; PUT NL1 I5; 3X ; 'NL2' ; PUT NL2 I5;
+         3X; 'NL3' ; PUT NL3 I5; 3X ; 'NL4' ; PUT NL4 I5;
+         3X; 'NHT' ; PUT NHT I5;
+     1L; 3X; 'LSI' ; PUT LSI I5; 3X ; 'LRI' ; PUT LRI I5;
+         3X; 'LSF' ; PUT LSI I5; 3X ; 'LRF' ; PUT LRI I5;
+         3X; 'LST' ; PUT LSI I5; 3X ; 'LRT' ; PUT LRI I5;
+     1L; 3X; 'LEFT STATE VECTOR  ' ;
+     1L; 3X; 'SHELL STATE ' ;
+         FOR N = 1, NHT ; ( 1X; PUT NHWN(N) I4 )
+     1L; 3X; 'OCCUPATION ';
+         FOR N = 1, NHT ; PUT   FN(N) I5 ;
+     1L; 3X; 'COUPLING   ';
+         FOR N = 1, NHT+1 ; ( 1X; PUT NHWCSL(N) I4)
+     1L; 3X; 'RIGHT STATE VECTOR' ;
+     1L; 3X; 'SHELL STATE ';
+         FOR N = 1, NHT ; ( 1X; PUT NHVN(N) I4 )
+     1L; 3X; 'OCCUPATION ';
+         FOR N = 1, NHT ; PUT   GN(N) I5 ;
+     1L; 3X; 'COUPLING   ';
+         FOR N = 1, NHT+1 ; ( 1X; PUT NHVCSL(N) I4)
+     1L ;
+     END
+
+  PROCEDURE   DEBUG_PRINT_FIRST
+     IF ITEST >  0 THEN DO ;
+        FORMAT WRITE --
+                '--->---> ENTER SHMSRC --->---> '; ( A ) ;
+        IF ITEST > 1 THEN DO ;
+           FORMAT WRITE ' >> SHMSRC DATA PRINTING >> ' ; ( A ) ;
+           FORMAT WRITE --
+           '   NHT, NL1, NL2, NL3, NL4, LSI, LRI, LSF, LRF, LST, LRT ';
+           ( A )
+           FORMAT WRITE --
+               NHT, NL1, NL2, NL3, NL4, LSI, LRI, LSF, LRF, LST, LRT ;
+               ( 1X,11I5 ) ;
+ /*           CALL CLOCK(CPUIN,5) ;
+ /*           CALL TIMER(TIME1,TIME2) ;
+           END
+        END
+        3X ; '    ' ;
+     END ;
+  PROCEDURE  SET_SHELL
+   / FOR N = 1, NHT + 1 ; / Error detected by mas at Aug 27 1994
+     FOR N = 1, NHT  ;
+     DO ;
+        FSX( N ) = ISP( NHVN( N ) )
+        FRX( N ) = IOR( NHVN( N ) )
+        GSX( N ) = ISP( NHWN( N ) )
+        GRX( N ) = IOR( NHWN( N ) )
+        END ;
+     FSC ( 0 ) = 1 ;
+     FRC ( 0 ) = 1 ;
+     GSC ( 0 ) = 1 ;
+     GRC ( 0 ) = 1 ;
+     FOR N = 1, NHT ;
+     DO ;
+        FSC( N ) = NHVCSL( N ) / BYT
+        FRC( N ) = MOD ( NHVCSL( N ) , BYT )
+        GSC( N ) = NHWCSL( N ) / BYT
+        GRC( N ) = MOD ( NHWCSL( N ) , BYT )
+        END
+     IF ITEST > 2 THEN DO ;
+        FORMAT WRITE ' LEFT  STATE VECTOR  ' ; ( A )
+        FORMAT WRITE ' SHELL SPIN> ', (GSX(N),N=1,NHT) ; ( A,3X,11I5 ) ;
+        FORMAT WRITE ' COUPLING  > ', (GSC(N),N=0,NHT) ; ( A,11I5 ) ;
+        FORMAT WRITE ' SHELL ORB > ', (GRX(N),N=1,NHT) ; ( A,3X,11I5 ) ;
+        FORMAT WRITE ' COUPLING  > ', (GRC(N),N=0,NHT) ; ( A,11I5 ) ;
+        FORMAT WRITE ' RIGHT STATE VECTOR  ' ; ( A )
+        FORMAT WRITE ' SHELL SPIN> ', (FSX(N),N=1,NHT) ; ( A,3X,11I5 ) ;
+        FORMAT WRITE ' COUPLING  > ', (FSC(N),N=0,NHT) ; ( A,11I5 ) ;
+        FORMAT WRITE ' SHELL ORB > ', (FRX(N),N=1,NHT) ; ( A,3X,11I5 ) ;
+        FORMAT WRITE ' COUPLING  > ', (FRC(N),N=0,NHT) ; ( A,11I5 ) ;
+        END ;
+     END OF PROC

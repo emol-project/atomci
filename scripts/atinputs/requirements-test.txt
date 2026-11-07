@@ -1,0 +1,6 @@
+# Test-only dependencies for scripts/atinputs/tests/. Not needed to run
+# scripts/atinputs itself -- pytest and hypothesis are only used by
+# test_property_sweep.py (property-based differential sweep against
+# native atgen).
+pytest
+hypothesis

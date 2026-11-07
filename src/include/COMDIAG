@@ -1,0 +1,4 @@
+          COMMON /HMATOF/HOFF(2382),IROW(2382),ICOL(2382)
+          INTEGER * 4 LEMBF,IROW,ICOL
+          REAL * 8 HOFF
+          DATA LEMBF/2382/

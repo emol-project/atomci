@@ -1,0 +1,37 @@
+# B 2s2 2p 2P -- Slater-type basis (the basis of samples/native/boron.stdin, in
+# boron.basis.txt), SCF, then SD-CI with fewer correlating orbitals than
+# the basis allows: NOB = 8,7,6,5,4,2,1 of NBF = 10,9,8,8,6,4,2 (the
+# highest SCF vectors of each symmetry are left out).
+# golden: MCSCF -24.52906028, SD-CI = -24.599517
+# (with all orbitals, outer 8S, 8P, 8D, 8F, 6G, 4H, 2I: SD-CI = -24.599527)
+
+title:  " B DOUBLET P ODD "
+deck:   b_stf.deck
+csf:    b_stf.csf
+
+atom:
+  z:     5
+  ang:   P
+  spin:  2
+
+files:
+  cfptable:  ./CFPTBL
+  basis:     boron.basis.txt
+  open:
+    - unit: 27, file: b.NO, format: binary, status: unknown
+
+orbital:
+  frozen_core:  1S
+  active:       2S, 2P
+  outer:        6S, 6P, 6D, 5F, 4G, 2H, 1I
+
+reference:
+  - scf: true, occ: 2S*2 2P*1
+
+ctrl:
+  ai:  type: 1                  # Slater-type functions
+  mc:  itmax: 40
+  wf:  rule: 1
+  tr:  from_record: 1
+  ci:  ips: 7, maxit: 200, nsdim: 100, nstate: 1
+  rs:  print: -0.001

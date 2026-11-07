@@ -1,0 +1,70 @@
+       /*
+       /*
+       /*  JNAME(80) ( METHOD(80) in xxMAIN ) STRUCTURE
+       /*
+       /*  1- 2  USER ID
+       /*  3- 4  JOB SEQ ID
+       /*  5- 6  STEP NAME
+       /*  7- 8  METHOD
+       /*  9-10  DATE ( START )
+       /* 11-12  TIME ( START )
+       /* 13-14  DATE ( END   )
+       /* 15-16  TIME ( END   )
+       /* 17-18  SUB ROUTINE NAME
+       /* 19     RUN FLAG
+       /* 20     RETURN CODE
+       /* 21-28  USE CPU
+       /*    29  TOTAL
+       /* 30     READ FLAGS                                      default
+       /*     NAMELIST   COMMENT                   USING ROUTINE  UNIT
+       /* 31 : NFWFB0>  WF --> WF                  EX               11
+       /* 32 : NFWFB1>  WF --> WF                  EX               12
+       /* 33 : RESERVE
+       /* 35 : NFWFE >  WF --> CI (SEC 1)          CI(1)            15
+       /* 35 : NFWFP >  WF --> PT (SEC 1)          PT(1)            14
+       /* 36 : NFWFW >  WORK FILE                                   09
+       /* 37 : NFTBL >  WORK FILE                                   88
+       /* 38 : RESERVE
+       /* 39 : RESERVE
+       /* 40 : RESERVE
+       /* 41 : NFAII >  AO INTEGRAL                TR               18
+       /* 42 : NFAII2>  AO INTEGRAL                ( NOT USE )      19
+       /* 43 : NFAIO >  ORBITAL EXPONENT           CI(6)            55
+       /* 44 : RESERVE
+       /* 45 : RESERVE
+       /* 46 : NFTRI >  TRANSFORMED INTEGRAL       CI(1-5) PT(1)    16
+       /* 47 : NFTRI2>  TRANSFORMED INTEGRAL       ( NOT USE )      17
+       /* 48 : NFTRC1>  TR COEFFICIENTS ( PERM )   CI(5)            27
+       /* 49 : NFTRC2>  TR COEFFICIENTS ( TEMP )   CI(3-6)          21
+       /* 50 : NFTD  >  WORK FILE DA FILE                           20
+       /* 51 : NFPTV >  PT CI VECTOR               PT(3)            31
+       /* 52 : NFPTH1>  DIAGONAL H-MATRIX          PT(2)            32
+       /* 53 : NFPTH2>  OFF-DIAG H-MATRIX          PT(2) RS(1)      33
+       /* 54 : NFPTL >  LABEL                      PT(3)            35
+       /* 55 : NFPTB >  SELECTED WF                EX               11
+       /* 56 : RESERVE
+       /* 57 : RESERVE
+       /* 58 : RESERVE
+       /* 59 : RESERVE
+       /* 60 : RESERVE
+       /* 61 : NFEXE >  ENERGY EXPRESSION          CI(1) CI(6)      15
+       /* 62 : NFEXW >  UNCOMPLETED EE TAPE        EX                0
+       /* 63 : RESERVE
+       /* 64 : RESERVE
+       /* 65 : RESERVE
+       /* 66 : RESERVE
+       /* 67 : RESERVE
+       /* 68 : RESERVE
+       /* 69 : RESERVE
+       /* 70 : RESERVE
+       /* 71 : NFCIH >  DENSITY MATRIX ( TEMP )                     22
+       /* 72 : NFCID >  ONE ELECTRON EXPRESSION    CI(3)            24
+       /* 73 : NFCIC >  NATURAL ORBITALS                            27
+       /* 74 : NFCIW >  DENSITY & CI VECTOR                         28
+       /* 75 : NFCIV >     CI VECTOR               CI(3) CI(6)      37
+       /* 76 : NFCIH1>  DIAGONAL H-MATRIX          CI(2)            38
+       /* 77 : NFCIH2>  OFF-DIAG H-MATRIX          CI(2) CI(6)      39
+       /* 78 : NFCII >  INITIAL CI VECTOR          CI(2)             0
+       /* 79 : NFCIS >  SUMARY FILES               RS               62
+       /* 80 : NFTF  >  CFP TAPE                                    10
+       /*

@@ -1,0 +1,48 @@
+ > ERROR_INFORMATION
+      %ERMSG
+      DO CASE OF ERRCD
+         6001 : ( ' == PLEASE CHECK INPUT OF UNIT # ( NFTPB ) ' )
+         6101 :
+         6110 :
+         6111 :
+         6112 :
+         6113 : ( ' == IO ERROR IN READING FROM NFWFB0 OR NFPTB ' ;
+                  PUT NFTB  I4 ; ' * ' )
+         6121 : ( ' == IO ERROR IN READING from NFEXW ';
+                  PUT NFTCX I4 ; ' * ' )
+         6201 : ( ' == IO ERROR IN READING FROM NFEXW ' ;
+                  PUT NFTCX  I4 ; ' * ' )
+         6202 :
+         6203 :
+         6204 : ( ' == IO ERROR IN WRITING ON NFEXE OR NFWFE' ;
+                  PUT NFTE  I4 ; ' * ' )
+         6210 : ( ' == DUPLICATION OF CSF INPUT ' ;
+                  ' PLEASE CHECK INPUT DATA   * ' )
+         6211 : ( ' == IO ERROR IN READING FROM NFEXE OR NFWFE' ;
+                  PUT NFTE  I4 ; ' * ' )
+         6212 : ( ' == IO ERROR IN WRITING ON NFEXW' ;
+                  PUT NFTCX  I4 ; ' * ' )
+         6221 :
+         6222 : ( FORMAT WRITE JSTART, KS, NOE ;
+                  ( '  == FILE NOT COMPLETED '/ --
+                    '  == JSTART =', I7, '    KS =', I7, --
+                    '      NOE =', I7) )
+         6231 :
+         6232 : ( FORMAT WRITE RULE, JSTART  ;
+                  ( '  == START FLAG IS NOT FOUND '/ --
+                     ' == JSTART =', I7, '  LAST RECORD', I7 ) )
+         6233 : ( ' == CAN NOT RESTART !! PLEASE START '
+                  ' FROM THE BIGNNING ' )
+
+         6301 : ( ' == IO ERROR IN READING form NFEXW ' ;
+                  PUT NFTCX I4 ; ' * ' )
+         6399 : ( ' == CAN NOT RESTART !! PLEASE START '
+                  ' FROM THE BEGINNING ' )
+         9611 : ' ==== READ BUFFER LIJB IS TOO SMALL '
+         9613 :
+         9614 : ' ==== READ BUFFER LTRI IS TOO SMALL '
+         9620 : ( ' == IO ERROR IN WRITING NFEXE ' ;
+                  PUT NFTE  I4 ; ' * ' )
+         OTHERWISE ( ' * PLEASE CHECK YOUR INPUT DATA * ' )
+      1l ;
+      END

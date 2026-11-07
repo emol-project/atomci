@@ -1,0 +1,180 @@
+ process no list file 'mcvut.f'
+ %%subname  xnorm% 
+ function %subname (znorm,v1,s,v2,nbfi,w)
+ real * 8 xnorm,znorm,v1(nbfi),v2(nbfi),s(nbfi,nbfi),w(nbfi)
+ real * 8 dot
+ integer nbfi
+ /* function znorm = v1*s*v2 
+ begin 
+    call zero(w,nbfi)
+    call mxmab(w,nbfi,1,s,v2,nbfi)
+    znorm= dot(v1,w,nbfi) 
+    xnorm = dabs(znorm) 
+    end  
+ %%subname expsqr%
+ subroutine %subname (nsym,nbf,in,out)
+ real * 8  in(*),out(*)
+ integer * 4 nbf(nsym) 
+ /* function: tri --> sqr form 
+ begin
+ iin = 1 ; iout = 1 
+   for i = 1, nsym;
+   do 
+      call sqmx2(in(iin),out(iout),nbf(i))
+      iin = iin + nbf(i)*(nbf(i)+1)/2 
+      iout= iout+ nbf(i)*nbf(i)
+      end 
+   end 
+ %%subname sqmx2%
+ subroutine %subname (in,out,n)
+ real * 8  in(*),out(n,n)
+ /* function: tri --> sqr form 
+ begin
+   ij = 0 
+   for i = 1, n
+   for j = 1, i 
+   do
+      ij=ij+1
+      out(i,j) = in(ij)  
+      out(j,i) = in(ij)
+      end 
+   end 
+ %%subname zero%
+ subroutine %subname (out,n)
+ real * 8  out(n)
+ integer * 4 n 
+ begin 
+   for i = 1, n ; out(i) =0.0d0 
+   end 
+ %%subname xmove%
+ subroutine %subname (out,in,n)
+ real * 8  in(n),out(n)
+ integer * 4 n 
+ begin 
+   for i = 1, n ; out(i) = in(i) 
+   end 
+
+ %%subname mxadd%
+ subroutine %subname (out,in,n)
+ real * 8  in(n),out(n)
+ integer * 4 n 
+ begin 
+   for i = 1, n ; out(i) = out(i)+in(i) 
+   end 
+
+ %%subname mxsub%
+ subroutine %subname (out,in,n)
+ real * 8  in(n),out(n)
+ integer * 4 n 
+ begin 
+   for i = 1, n ; out(i) = out(i)-in(i) 
+   end 
+
+ %%subname mxmab%
+ subroutine %subname (out,ni,nj,a,b,ns)
+ /*
+ /*  function : out(i,j) = a(i,l) * b(l,j)  
+ /* 
+ real * 8  out(ni,nj),a(ni,ns),b(ns,nj)
+ begin 
+   for j = 1, nj ;
+   for l = 1, ns
+   for i = 1, ni ;
+   out(i,j) = out(i,j) + a(i,l)*b(l,j)
+   end 
+
+ %%subname mxmabt%
+ subroutine %subname (out,ni,nj,a,b,ns)
+ /*
+ /*  function : out(i,j) = a(i,l) * b(j,l)  
+ /* 
+ real * 8  out(ni,nj),a(ni,ns),b(nj,ns)
+ begin 
+   for j = 1, nj ;
+   for l = 1, ns
+   for i = 1, ni ;
+   out(i,j) = out(i,j) + a(i,l)*b(j,l)
+   end 
+
+ %%subname mxmatb%
+ subroutine %subname (out,ni,nj,a,b,ns)
+ /*
+ /*  function : out(i,j) = a(l,i) * b(l,j)  
+ /* 
+ real * 8  out(ni,nj),a(ns,ni),b(ns,nj)
+ begin 
+   for j = 1, nj ;
+   for l = 1, ns
+   for i = 1, ni ;
+   out(i,j) = out(i,j) + a(l,i)*b(l,j)
+   end 
+ %%subname dot%
+ function %subname (x,v,nv)
+ /*
+ /*  function : dot  = x(j) * v(j)  
+ /* 
+   real * 8 dot,x(nv),v(nv)
+ begin 
+   dot = 0 
+   for i = 1, nv ;
+   dot = dot + x(i) * v(i) 
+   end 
+ %%subname slow%
+ subroutine %subname --
+	    ( out, wt, c, xint, ns) 
+ implicit integer ( a- z ) 
+ real * 8 c(ns),xint(ns,ns),wt,out,w
+ begin 
+    w=0.d0
+    for i = 1, ns ; for j = 1,ns
+    w = w + xint(i,j)*c(i)*c(j)
+    out = out + w * wt
+    end
+ %%subname mxfact%
+ subroutine %subname --
+	    ( out, in, wt, n)
+ implicit integer ( a- z ) 
+ real * 8 out(n),in(n),wt
+ begin 
+    for i = 1, n
+    out(i) = out(i) + wt * in(i) 
+    end
+ %%subname xymove%
+ subroutine %subname (in,n)
+ real * 8  in(n,n)
+ integer * 4 n 
+ begin 
+   for i = 1, n ; for j = 1, i-1; 
+   in(i,j) = (in(i,j)+in(j,i))* 0.5d0
+   for i = 1, n ; for j = 1, i-1; 
+   in(j,i)=in(i,j)
+   end 
+ %%subname mccplr%
+ subroutine   %subname (r,f1,f2,z1,z2,nbfi,c,s,w1,w2,w3)
+ implicit integer ( a - z )
+ real * 8 r(nbfi,nbfi)
+ real * 8 f1(nbfi,nbfi),f2(nbfi,nbfi),--
+	  c(nbfi),s(nbfi,nbfi)
+ real * 8 w1(nbfi),w2(nbfi),w3(nbfi,nbfi)
+ real * 8 z1,z2,zz
+ begin
+    if z1 = z2 ! z2 = 0.d0 then exit
+
+    nbfi2= nbfi*nbfi
+    zz = -1.0d0 / ( z1 - z2 )
+    /* gij = (z1*f1-z2*f2)/(z1-z2)
+    for i = 1, nbfi ; for j = 1, nbfi
+    w3(i,j)=  (z1*f1(i,j)-z2*f2(i,j)) 
+    call zero(w1,nbfi)  
+    call zero(w2,nbfi)  
+ /*  R = - [ SCi(gijCi) + (gijCi)*SCi ] 
+    call mxmab(w1,nbfi,1,s,c,nbfi)
+    call mxmab(w2,nbfi,1,w3,c,nbfi)
+    for i = 1, nbfi ; for j = 1, nbfi ;
+    r(i,j)=r(i,j)+ zz*(w1(i)*w2(j) + w1(j)*w2(i))
+  / call zero(w2,nbfi)  
+  / call mxmab(w2,nbfi,1,f1,c,nbfi)
+  / for i = 1, nbfi ; 
+  / for j = 1, nbfi ;
+  / r(i,j)=r(i,j)- (w1(i)*w2(j) + w1(j)*w2(i))
+    end 

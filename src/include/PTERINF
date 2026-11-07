@@ -1,0 +1,56 @@
+ > ERROR_INF
+      %ERMSG
+      DO CASE OF ERRCD
+       5001 :
+       5002 :
+       5003 : ( ' == PLEASE CHECK YOUR INPUT DATA == ' )
+       5010 :
+       5011 : ( ' == IO ERROR IN READING FROM NFWFP == ' ;
+                  PUT NFWFP I4  ; 1L )
+       5020 : ( ' == IO ERROR IN READING FROM NFPTV == ' ;
+                  PUT NFPTV I4  ; 1L )
+       5021 :
+       5022 :
+       5023 :
+       5024 :
+       5025 : ( ' == ERROR ! PLEASE CHECK YOUR INPUT!' ; 1L )
+       5201 : ( ' == ERROR ! NO REFERENCE CSFS       ' ; 1L )
+       5211 : ( ' == ERROR ! PLEASE CHECK YOUR INPUT!' ; 1L )
+       5310 :
+       5311 :
+       5312 :
+       5313 :
+       5314 :
+       5315 : ( ' == IO ERROR IN READING FROM NFPTL == ' ;
+                  PUT NFPTL I4  ; 1L )
+       5321 : ( ' == IO ERROR IN WRITING ON NFPTL == ' ;
+                  PUT NFPTL I4  ; 1L )
+       5331 :
+       5332 :
+       5333 : ( ' == ERROR ! PLEASE CHECK YOUR INPUT!' ; 1L )
+       5321 : ( ' == IO ERROR IN READING REFERENCE '
+                ' CSFS FROM NFWFP ' ; PUT NFWFP I4  ; 1L )
+       5401 : ( ' == ERROR ! PLEASE CHECK YOUR INPUT!' ; 1L )
+       5601 : ( ' == SORTING FAILED ! YOU SHOULD SET NBOX > 10 ' )
+       5711 :
+       5712 :
+       5721 :
+       5722 :
+       5731 : ( ' == IO ERROR IN READING FROM NFWFP == ' ;
+                  PUT NFWFP I4  ; 1L )
+       5811 :
+       5812 : ( ' == IO ERROR IN READING FROM NFPTH1 == ' ;
+                  PUT NFPTH1 I4  ; 1L )
+       5821 : ( ' == ERROR ! PLEASE CHECK YOUR INPUT!' ; 1L )
+       5831 :
+       5832 : ( ' == IO ERROR IN READING FROM NFPTV == ' ;
+                  PUT NFPTV I4  ; 1L )
+       5841 : ( ' == ERROR ! PLEASE CHECK YOUR INPUT!' ; 1L )
+       5842 : ( ' == ERROR ! PLEASE CHECK YOUR INPUT!' ; 1L )
+       5911 :
+       5912 : ( ' == IO ERROR IN WRITING ON NFPTB == ' ;
+                  PUT NFPTB I4  ; 1L )
+       5988 :
+       5999 : ( ' == ERROR CSF SELECTIONS   == ' )
+        OTHERWISE ' === PLEASE CHECK YOUR INPUT DATA === ' ; 1L ;
+      END

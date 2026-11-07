@@ -1,0 +1,923 @@
+C*DECK LDIAG
+C
+C ##### LARGE-SCALE EIGENVALUE PROBLEM #####
+C
+      SUBROUTINE LDIAG(C,D,X,Y,T1,T2,W1,W2)
+C
+C                THIS ROUTINE WAS CODED BY DR. NOBUHIRO KOSUGI
+C                AND IS COPIED FROM A LIBRARY OF IMS IN OKAZAKI JAPAN.
+C
+C                                 CHECKED TASHI 10/25/89 HUCC
+C
+      IMPLICIT REAL*8(A-H,O-Z)
+C
+      COMMON/COMPRM/IND(100),NL,NS,M,M2,M1,M12,IT,IPS,IO,IOA,IOB,IOF,ICV
+C
+C     COMMON/SEKIBN/HI(2382),IM(2382),IN(2382)
+      REAL * 4 TIME1,TIME2
+C
+      DIMENSION C(NL,*),D(NL,*),X(NL,*),Y(*)
+      DIMENSION T1(M2,M2),T2(M2,M2),W1(*),W2(*)
+C     INCLUDE (COMDIAG)
+          COMMON /HMATOF/HOFF(2382),IROW(2382),ICOL(2382)
+          INTEGER * 4 LEMBF,IROW,ICOL
+          REAL * 8 HOFF
+C         INTEGER*4 view of the REAL*8 HOFF heap (Bucket-1 convention):
+C         DIAG's IORD arg is INTEGER*4 scratch, but the caller lends it a
+C         REAL*8 HOFF slice -- pass the same bytes typed as INTEGER*4.
+C         An R8 datum at HOFF(k) is IHF4(2k-1).
+          INTEGER * 4 IHF4(4764)
+          EQUIVALENCE (HOFF(1),IHF4(1))
+          DATA LEMBF/2382/
+C
+C ## 1 ## INITIALIZATION ##
+C
+*     CALL CLOCK
+*     CALL CLOCK(TIME1,5)
+C     CALL CLOCKM(TIME1)
+      CALL CLOCKM(ITIME1)
+      TIME1=ITIME1/1000.0
+C
+      ICYCLE=0
+      IPRM=0
+C
+      READ(IOA) NX,NX,(Y(I),I=1,NL)
+      NX=NX
+      REWIND IOA
+C
+      M4=M2+M2
+      K1=1
+      K2=K1+M4
+      K3=K2+M4
+      K4=K3+M4
+      K5=K4+M4
+C
+      CALL REVRS1(C,D,X,M)
+      CALL HAMLTN(D,X,M)
+      CALL REVRS2(X,C,D,X,M)
+      DO 1200 I=1,M
+      DO 1200 K=1,NL
+ 1200 D(K,I)=Y(K)*C(K,I)
+      DO 1300 I=1,M
+      DO 1300 K=1,NL
+ 1300 X(K,I)=X(K,I)+D(K,I)
+C
+      DO 1400 I=1,M
+      DO 1400 J=1,I
+ 1400 T1(J,I)=0.D0
+      DO 1500 I=1,M
+      DO 1500 J=1,I
+      IF(J.NE.I.AND.(IND(I).EQ.0.OR.IND(J).EQ.0)) GO TO 1500
+      DO 1510 K=1,NL
+ 1510 T1(J,I)=T1(J,I)+X(K,I)*C(K,J)
+ 1500 CONTINUE
+C
+      DO 1600 I=1,M
+      DO 1600 K=1,NL
+ 1600 D(K,I)=X(K,I)
+C
+      DO 1700 I=M1,M2
+      DO 1700 K=1,NL
+ 1700 D(K,I)=0.D0
+      DO 1800 I=M1,M2
+ 1800 D(I,I)=1.D0
+C
+C ##### ITERATION #####
+C
+      DO 10000 ITER=1,IT,5
+      DO 10000 IDIAG=1,5
+C
+C ## 2 ## RESIDUAL VECTORS ##
+C
+      DO 2100 I=1,M
+      IF(IND(I).EQ.0) GO TO 2100
+      DO 2110 K=1,NL
+ 2110 X(K,I)=X(K,I)-T1(I,I)*C(K,I)
+ 2100 CONTINUE
+C
+      SMAX=0.D0
+      SMIN=999999999.D0
+      DO 2200 I=1,M
+      W2(I)=0.D0
+      IF(IND(I).EQ.0) GO TO 2200
+      S=0.D0
+      DO 2210 K=1,NL
+ 2210 S=S+X(K,I)*X(K,I)
+      W2(I)=S
+C#START-OF-MODIFICATION  #84-10-16-A1  #S.YAMAMOTO
+C  SELECT ABSOLUTE ERROR OR RELATIVE ERROR
+C#    S=S/DABS(T1(I,I))
+C#CLOSE-OF-MODIFICATION  #84-10-16-A1  #S.YAMAMOTO
+      IF(SMAX.LT.S) SMAX=S
+      IF(SMIN.GT.S) SMIN=S
+      IF(S.LE.1.D0/10.D0**IPS) IND(I)=1
+ 2200 CONTINUE
+C
+*     CALL CLOCK(TIME)    REVISED BY MAS
+*     CALL CLOCK
+C     CALL CLOCK(TIME2,5)
+C     CALL CLOCKM(TIME2)
+      CALL CLOCKM(ITIME2)
+      TIME2=ITIME2/1000.0
+C
+      ICYCLE=ICYCLE+1
+C*ALM
+      IF ( SMIN .LE. 10.D0/10.D0**IPS )  THEN
+      WRITE(6,1) ICYCLE,TIME2 - TIME1, (IND(I),I=1,M)
+    1 FORMAT('  THE ',I3,'-TH CYCLE  (',F10.5,' SEC)',7X,'INDEX ',50I1)
+      WRITE(6,2) (W2(I),I=1,M)
+    2 FORMAT(1H ,5X,4E15.7,6X,4E15.7/6(6X,4E15.7,6X,4E15.7/))
+      WRITE(6,3) SMAX,SMIN
+    3 FORMAT(1H ,10X,'SMAX=',E14.7,'   SMIN=',E14.7/)
+      END IF
+C*ALM
+C     CALL CLOCK(TIME1,5)
+C     CALL CLOCKM(TIME1)
+      CALL CLOCKM(ITIME1)
+      TIME1=ITIME1/1000.0
+C
+      ISOLV=0
+      DO 2300 I=1,M
+ 2300 IF(IND(I).EQ.2) ISOLV=ISOLV+1
+      IF(ISOLV.EQ.0) GO TO 8001
+C
+C ## 3 ## CORRECTION VECTORS ##
+C
+      ML=M
+      IF(C(1,1).EQ.1.D0) GO TO 3501
+C
+C ## 3-2 ##           ## TWO-POINT EXTRAPOLATION ##
+C           ( NEW MODIFICATION OF DAVIDSON'S EXPANSION METHOD )
+C
+      IF(IPRM.EQ.0) GO TO 3101
+C
+      DO 3200 I=1,IPRM
+      ML=ML+1
+      DO 3200 K=1,NL
+ 3200 C(K,ML)=D(K,I+M)
+C
+C ## 3-1 ## THE ORIGINAL COOPER-NESBET-DAVIDSON ALGORITHM ##
+C
+ 3101 DO 3100 I=1,M
+      IF(IND(I).NE.2.AND.IND(I).NE.3) GO TO 3100
+      IF(ML.EQ.M2) GO TO 4001
+      ML=ML+1
+      DO 3110 K=1,NL
+ 3110 C(K,ML)=Y(K)-T1(I,I)
+      DO 3120 K=1,NL
+ 3120 C(K,ML)=X(K,I)/C(K,ML)
+ 3100 CONTINUE
+C
+C ## 3-3 ## GRADIENT METHOD ##
+C
+      IF(ICV.EQ.0) GO TO 3501
+C
+      DO 3300 I=1,M
+      IF(IND(I).NE.2) GO TO 3300
+      IF(ML.EQ.M2) GO TO 4001
+      ML=ML+1
+      DO 3310 K=1,NL
+ 3310 C(K,ML)=X(K,I)
+ 3300 CONTINUE
+C
+C ## 3-4 ## NEW MODIFICATION OF GRADIENT METHOD ##
+C
+      IF(ICV.GE.0) GO TO 3501
+C
+      DO 3400 I=1,M
+      IF(IND(I).NE.2) GO TO 3400
+      IF(ML.EQ.M2) GO TO 4001
+      ML=ML+1
+      DO 3410 K=1,NL
+ 3410 C(K,ML)=Y(K)-T1(I,I)
+      DO 3420 K=1,NL
+ 3420 C(K,ML)=D(K,I)/C(K,ML)
+ 3400 CONTINUE
+C
+C ## 3-5 ##          ## THREE-POINT EXTRAPOLATION ##
+C           ( NEW MODIFICATION OF DAVIDSON'S EXPANSION METHOD )
+C
+ 3501 MK=IPRM+M
+      DO 3500 I=1,M12
+      IF(ML.EQ.M2) GO TO 4001
+      ML=ML+1
+      MK=MK+1
+      DO 3500 K=1,NL
+ 3500 C(K,ML)=D(K,MK)
+C
+C ## 4 ## ORTHO- AND RE-NORMALIZATION ##
+C
+ 4001 DO 4000 I=1,M2
+      IF(IND(I).EQ.0) GO TO 4000
+      IF(I.EQ.1) GO TO 4201
+ 4101 DO 4100 J=1,I-1
+      S=0.D0
+      DO 4110 K=1,NL
+ 4110 S=S+C(K,J)*C(K,I)
+      S=-S
+      IF(DABS(S).LT.1.D-30) GO TO 4100
+      IF(DABS(S).LT.1.D-15.AND.I.LE.M) GO TO 4100
+      DO 4120 K=1,NL
+ 4120 C(K,I)=C(K,I)+S*C(K,J)
+ 4100 CONTINUE
+ 4201 S=0.D0
+      DO 4200 K=1,NL
+ 4200 S=S+C(K,I)*C(K,I)
+      IF(S.GT.1.D-20) GO TO 4301
+      C(I,I)=C(I,I)+0.01D0
+      WRITE(6,*) 'WARNING!! NEARLY LINEAR DEPENDENCE',I
+      GO TO 4101
+ 4301 S=1.D0/DSQRT(S)
+      DO 4300 K=1,NL
+ 4300 C(K,I)=C(K,I)*S
+ 4000 CONTINUE
+C
+C ## 5 ## INTERACTION MATRIX ##
+C
+      IF(IDIAG.EQ.5) GO TO 5101
+C
+      CALL REVRS1(C(1,M1),X,D(1,M1),M12)
+      CALL HAMLTN(X,D(1,M1),M12)
+      CALL REVRS2(D(1,M1),C(1,M1),X,D(1,M1),M12)
+      MI=M1
+      GO TO 5301
+C
+ 5101 CALL REVRS1(C,C,D,M2)
+      CALL HAMLTN(C,D,M2)
+      CALL REVRS3(D,C,C,D,X,C)
+      MI=1
+C
+      DO 5100 I=1,M
+      DO 5100 K=1,NL
+ 5100 X(K,I)=Y(K)*C(K,I)
+      DO 5200 I=1,M
+      DO 5200 K=1,NL
+ 5200 D(K,I)=D(K,I)+X(K,I)
+C
+ 5301 DO 5300 I=1,M12
+      DO 5300 K=1,NL
+ 5300 X(K,I)=Y(K)*C(K,I+M)
+      DO 5400 I=1,M12
+      DO 5400 K=1,NL
+ 5400 D(K,I+M)=D(K,I+M)+X(K,I)
+C
+C ## 6 ## REDUCED EIGENVALUE PROBLEM ##
+C
+      DO 6100 I=MI,M2
+      DO 6100 J=1,I
+ 6100 T1(J,I)=0.D0
+      DO 6200 I=MI,M2
+      DO 6200 J=1,I
+      IF(J.NE.I.AND.(IND(I).EQ.0.OR.IND(J).EQ.0)) GO TO 6200
+      DO 6210 K=1,NL
+ 6210 T1(J,I)=T1(J,I)+D(K,I)*C(K,J)
+ 6200 CONTINUE
+C
+C*ALM
+      IF ( SMIN .LE. 10.D0/10.D0**IPS )  THEN
+      WRITE(6,2) (T1(I,I),I=1,M)
+      WRITE(6,*) ' '
+      END IF
+C
+      DO 6300 I=1,M2
+      DO 6300 J=1,I
+ 6300 T2(J,I)=T1(J,I)
+      DO 6400 I=1,M2
+      DO 6400 J=1,I
+ 6400 T2(I,J)=T1(J,I)
+C
+      CALL DIAG(W1,T1,W2,HOFF(K1),HOFF(K2),HOFF(K3),
+     *                     HOFF(K4),HOFF(K5),IHF4(2*K5-1),M2,-M)
+C
+C ## 7 ## CORRECTED VECTORS ##
+C
+      DO 7100 I=1,M
+      IF(IND(I).EQ.0) GO TO 7100
+      DO 7110 K=1,NL
+ 7110 X(K,I)=0.D0
+ 7100 CONTINUE
+      DO 7200 I=1,M
+      IF(IND(I).EQ.0) GO TO 7200
+      DO 7210 J=1,M2
+      IF(IND(J).EQ.0) GO TO 7210
+      IF(DABS(T1(J,I)).LE.1.D-10) GO TO 7210
+      DO 7211 K=1,NL
+ 7211 X(K,I)=X(K,I)+D(K,J)*T1(J,I)
+ 7210 CONTINUE
+ 7200 CONTINUE
+      DO 7300 I=1,M
+      IF(IND(I).EQ.0) GO TO 7300
+      DO 7310 K=1,NL
+ 7310 D(K,I)=X(K,I)
+ 7300 CONTINUE
+C
+      IPRM=0
+      DO 7410 I=1,M
+      IF(IND(I).NE.2) GO TO 7410
+      IF(IPRM.GE.M12-ISOLV) GO TO 7421
+      IPRM=IPRM+1
+      DO 7411 K=1,NL
+ 7411 D(K,IPRM+M)=C(K,I)
+ 7410 CONTINUE
+ 7421 MK=IPRM+M
+      DO 7430 I=M1,M2
+      IF(MK.EQ.M2) GO TO 7501
+      MK=MK+1
+      DO 7431 K=1,NL
+ 7431 D(K,MK)=C(K,I)
+ 7430 CONTINUE
+C
+ 7501 DO 7500 I=1,M
+      IF(IND(I).EQ.0) GO TO 7500
+      DO 7510 K=1,NL
+ 7510 X(K,I)=0.D0
+ 7500 CONTINUE
+      DO 7600 I=1,M
+      IF(IND(I).EQ.0) GO TO 7600
+      DO 7610 J=1,M2
+      IF(IND(J).EQ.0) GO TO 7610
+      IF(DABS(T1(J,I)).LE.1.D-10) GO TO 7610
+      DO 7611 K=1,NL
+ 7611 X(K,I)=X(K,I)+C(K,J)*T1(J,I)
+ 7610 CONTINUE
+ 7600 CONTINUE
+      DO 7700 I=1,M
+      IF(IND(I).EQ.0) GO TO 7700
+      DO 7710 K=1,NL
+ 7710 C(K,I)=X(K,I)
+ 7700 CONTINUE
+C
+      DO 7800 I=1,M
+      IF(IND(I).EQ.0) GO TO 7800
+      DO 7810 K=1,NL
+ 7810 X(K,I)=D(K,I)
+ 7800 CONTINUE
+C
+      DO 7910 IJ=1,M*(M+1)/2
+ 7910 W1(IJ)=0.D0
+      IJ=0
+      DO 7920 I=1,M
+      DO 7921 L=1,M2
+ 7921 W2(L)=0.D0
+      DO 7922 L=1,M2
+      DO 7922 K=1,M2
+ 7922 W2(L)=W2(L)+T2(K,L)*T1(K,I)
+      DO 7920 J=1,I
+      IJ=IJ+1
+      DO 7920 L=1,M2
+ 7920 W1(IJ)=W1(IJ)+W2(L)*T1(L,J)
+      IJ=0
+      DO 7930 I=1,M
+      DO 7930 J=1,I
+      IJ=IJ+1
+ 7930 T1(J,I)=W1(IJ)
+C
+10000 CONTINUE
+C
+C ## 8 ## RESULT ##
+C
+ 8001 DO 8000 I=1,M
+ 8000 W2(I)=T1(I,I)
+C          DELETED BY MAS
+C     CALL LP(C,NL,M,W2,IO)
+C
+      RETURN
+      END
+C*DECK REVRS1
+C
+C ## C(MX,NL) <--- C(NL,MX) ##
+C ## D(MX,NL) <--- ZERO     ##
+C
+      SUBROUTINE REVRS1(B,C,D,MX)
+C
+      IMPLICIT REAL*8(A-H,O-Z)
+C
+      COMMON/COMPRM/IND(100),NL,NS,M,M2,M1,M12,IT,IPS,IO,IOA,IOB,IOF,ICV
+C
+      DIMENSION B(NL,*),D(MX,*),C(*)
+C
+      DO 100 I=1,MX
+      DO 100 K=1,NL
+  100 D(I,K)=B(K,I)
+C
+      DO 200 KI=1,NL*MX
+  200 C(KI)=0.D0
+C
+      RETURN
+      END
+C*DECK REVERS2
+C
+C ## C(NL,MX) <--- C(MX,NL) ##
+C ## D(NL,MX) <--- D(MX,NL) ##
+C
+      SUBROUTINE REVRS2(A,B,C,D,MX)
+C
+      IMPLICIT REAL*8(A-H,O-Z)
+C
+      COMMON/COMPRM/IND(100),NL,NS,M,M2,M1,M12,IT,IPS,IO,IOA,IOB,IOF,ICV
+C
+      DIMENSION A(NL,*),B(NL,*)
+      DIMENSION C(MX,*),D(MX,*)
+C
+      DO 200 I=1,MX
+      DO 200 K=1,NL
+  200 B(K,I)=D(I,K)
+C
+      DO 100 I=1,MX
+      DO 100 K=1,NL
+  100 A(K,I)=C(I,K)
+C
+      RETURN
+      END
+C*DECK REVRS3
+C
+C ## C(NL,M2) <--- C(M2,NL) ##
+C ## D(NL,M2) <--- D(M2,NL) ##
+C
+      SUBROUTINE REVRS3(A,B,C,D,W,BB)
+C
+      IMPLICIT REAL*8(A-H,O-Z)
+C
+      COMMON/COMPRM/IND(100),NL,NS,M,M2,M1,M12,IT,IPS,IO,IOA,IOB,IOF,ICV
+C
+      DIMENSION A(NL,*),B(NL,*)
+      DIMENSION C(M2,*),D(M2,*)
+      DIMENSION W(NL,*),BB(*)
+C
+      WRITE(IOF) NL,M,((D(I,K),K=1,NL),I=1,M)
+      REWIND IOF
+C
+      DO 300 I=1,M12
+      DO 300 K=1,NL
+  300 W(K,I)=D(I+M,K)
+C
+      DO 200 I=1,M2
+      DO 200 K=1,NL
+  200 A(K,I)=C(I,K)
+C
+      DO 100 I=1,M12
+      DO 100 K=1,NL
+  100 B(K,I+M)=W(K,I)
+C
+      READ(IOF) NL,M,(BB(KI),KI=1,NL*M)
+      REWIND IOF
+C
+      RETURN
+      END
+C*DECK EXPAND
+C
+C ## C(NL,M) <--- C(NS,M) ##
+C
+      SUBROUTINE EXPAND(HA,HB)
+C
+      IMPLICIT REAL*8(A-H,O-Z)
+C
+      COMMON/COMPRM/IND(100),NL,NS,M,M2,M1,M12,IT,IPS,IO,IOA,IOB,IOF,ICV
+C
+      DIMENSION HA(NS,*),HB(NL,*)
+C
+      DO 100 I=M,1,-1
+      DO 110 K=NL,NS+1,-1
+  110 HB(K,I)=0.D0
+      DO 100 K=NS,1,-1
+  100 HB(K,I)=HA(K,I)
+C
+      RETURN
+      END
+C*DECK SDIAG
+C
+C ## INITIAL GUESS FOR EIGEN-VALUES AND -VECTORS ##
+C
+      SUBROUTINE SDIAG(HT,NT,HH,ET,IDIM)
+C
+      IMPLICIT REAL*8(A-H,O-Z)
+C
+      COMMON/COMPRM/IND(100),NL,NS,M,M2,M1,M12,IT,IPS,IO,IOA,IOB,IOF,ICV
+C
+      REAL*4 ZERO,TIME1,TIME2
+
+      DIMENSION HT(*),HH(NS,NS),ET(M)
+C     NT is an INTEGER*4 view of the same heap as HT (same base), passed
+C     down from DIAGDR so DIAG's INTEGER*4 IORD scratch arg gets a
+C     correctly-typed actual.  An R8 datum at HT(k) is NT(2k-1).
+      INTEGER * 4 NT(*)
+C     INCLUDE (COMDIAG)
+          COMMON /HMATOF/HOFF(2382),IROW(2382),ICOL(2382)
+          INTEGER * 4 LEMBF,IROW,ICOL
+          REAL * 8 HOFF
+          DATA LEMBF/2382/
+C
+C         REVISED BY MAS
+C         REVISED BY TASHI ON 10/25/89 AT HUCC
+C     CALL CLOCK
+C     CALL CLOCK(TIME1,5)
+C     CALL CLOCKM(TIME1)
+      CALL CLOCKM(ITIME1)
+      TIME1=ITIME1/1000.0
+C
+      DO 100 I=1,NS*NS
+  100 HT(I)=0.D0
+C
+      READ(IOA) NCOUNT,NCOUNT,(HH(I,I),I=1,NS)
+      REWIND IOA
+C               SKIP HEADDER
+      READ(IOB)
+C
+  201 READ(IOB) HOFF,IROW,ICOL
+      ICOUNT=ICOL(LEMBF)
+      IF(ICOUNT.EQ.0) GO TO 202
+      DO 200 KL=1,ICOUNT
+      NCOUNT=NCOUNT+1
+      IF(IROW(KL).GT.NS) GO TO 200
+      HH(ICOL(KL),IROW(KL))=HOFF(KL)
+  200 CONTINUE
+C == REVISED  BY M. SEKIYA  AT IMS    ON 1988-03--07
+C        SKIP IF ICOL(ICONT) > NS  NOT FULL OFF - DIAG HMAT
+C        ONLY IF NS = NREF, HOFF IS EXACT
+      IF(ICOL(ICOUNT).GT.NS) GO TO 202
+C == REVISED  BY M. SEKIYA  AT IMS    ON 1988-03--07
+      IF(IROW(LEMBF).EQ.1) GO TO 201
+  202 REWIND IOB
+C
+      ZERO=100.0*DFLOAT(NCOUNT)/DFLOAT(NL*(NL+1)/2)
+      WRITE(6,*) '             NONZERO ELEMENT   ',ZERO,'%'
+      WRITE(6,*) ' '
+C
+      K1=1+NS*NS
+      K2=K1+NS*(NS+1)/2
+      K3=K2+NS
+      K4=K3+NS
+      K5=K4+NS
+      K6=K5+NS
+      K7=K6+NS
+      IF(K7+NS.GT.IDIM) STOP '#GUESS IS TOO LARGE'
+C
+      CALL DIAG(HT(K1),HH,HT(K2),HT(K3),HT(K4),HT(K5),
+     *                             HT(K6),HT(K7),NT(2*K7-1),NS,M)
+C         DELETED BY MAS
+C     CALL LP(HH,NS,M,HT(K2),IO)
+C         ADDED BY MAS
+      DO 300 I = 1, M
+         ET(I) = HT(K2-1+I)
+  300    CONTINUE
+C
+C         REVISED BY MAS
+C     CALL CLOCK(TIME2,5)
+C     CALL CLOCKM(TIME2)
+      CALL CLOCKM(ITIME2)
+      TIME2=ITIME2/1000.0
+C
+      WRITE(6,1) TIME2 - TIME1
+    1 FORMAT(1H ,25X,'GUESS CONSTRUCTION TIME=',F10.5,' SEC'///)
+C
+      RETURN
+      END
+C*DECK DIAG
+C
+C ## HOUSEHOLDER & BISECTION OR QR & INVERSE-ITERATION ##
+C
+C     FLOW CHART
+C                    !--  STEP 2  --  STEP 4-6  --  STEP 7
+C                    !
+C          STEP 1  --!
+C                    !
+C                    !--  STEP 3  --  STEP 4-6
+C
+      SUBROUTINE DIAG(A,V,E,W1,W2,W3,W4,W5,IORD,N,NVV)
+C
+      IMPLICIT REAL*8(A-H,O-Z)
+C
+*                          CHANGED BY MAS 11/16/92 at HUCC
+      DIMENSION A(*),V(N,*),E(*)
+      DIMENSION W1(*),W2(*),W3(*),W4(*),W5(*),IORD(*)
+C
+C     EPS=5.D-9
+*  Chamge  by mas for N = 1 CASE
+      IF(N.EQ.1) THEN
+         E(1)=V(1,1)
+         V(1,1)= 1.d0
+         RETURN
+         END IF
+*       End of MAS -- NOV. 21 1991
+      EPS=5.D-13
+      NV=NVV
+      IF(NVV.LE.0) NV=N
+      IF(N.EQ.2) GO TO 1201
+C
+C ## 1 ## HOUSEHOLDER METHOD FOR TRIDIAGONALIZATION ##
+C
+      DO 1100 K=1,N-2
+      W2(K)=V(K,K)
+      S=0.D0
+      DO 1110 J=K+1,N
+      W2(J)=V(K,J)
+ 1110 S=S+W2(J)*W2(J)
+      S=DSIGN(DSQRT(S),W2(K+1))
+      W1(K)=-S
+      W2(K+1)=W2(K+1)+S
+      V(K,K+1)=W2(K+1)
+      H=W2(K+1)*S
+      IF(H.EQ.0.D0) GO TO 1100
+      SM=0.D0
+      DO 1120 I=K+1,N
+      S=0.D0
+      DO 1121 J=K+1,I
+ 1121 S=S+V(J,I)*W2(J)
+      IF(I.EQ.N) GO TO 1123
+      DO 1122 J=I+1,N
+ 1122 S=S+V(I,J)*W2(J)
+ 1123 W1(I)=S/H
+ 1120 SM=SM+W1(I)*W2(I)
+      U=SM*0.5D0/H
+      DO 1130 I=K+1,N
+ 1130 W1(I)=-W1(I)
+      DO 1140 I=K+1,N
+ 1140 W1(I)=W1(I)+U*W2(I)
+      DO 1150 I=K+1,N
+      DO 1151 J=K+1,I
+ 1151 V(J,I)=V(J,I)+W1(J)*W2(I)
+      DO 1150 J=K+1,I
+ 1150 V(J,I)=V(J,I)+W1(I)*W2(J)
+ 1100 V(K,K)=H
+C
+ 1201 W2(N-1)=V(N-1,N-1)
+      W2(N)=V(N,N)
+      W1(N-1)=V(N-1,N)
+      W1(N)=0.D0
+C
+      GE=DABS(W2(1))+DABS(W1(1))
+      DO 1200 I=1,N-1
+ 1200 GE=DMAX1(GE,DABS(W2(I+1))+DABS(W1(I))+DABS(W1(I+1)))
+      DEL=EPS*GE
+C
+      IJ=0
+      DO 1300 I=1,N
+      DO 1300 J=1,I
+      IJ=IJ+1
+ 1300 A(IJ)=V(J,I)
+C
+      IF(NVV.GE.0) GO TO 3001
+C
+C ## 2 ## QR METHOD FOR EIGENVALUES ##
+C
+      DO 2100 I=1,N
+      W3(I)=W1(I)
+      E(I)=W2(I)
+ 2100 V(I,NV)=E(I)
+C
+      IF(DEL.EQ.0.D0) GO TO 4001
+C
+      K=N
+ 2201 L=K
+ 2202 IF(DABS(W3(L-1)).LT.DEL) GO TO 2203
+      L=L-1
+      IF(L.GT.1) GO TO 2202
+ 2203 IF(L.EQ.K) GO TO 2206
+      WW=(E(K-1)+E(K))*0.5D0
+      R=E(K)-WW
+      Z=WW-DSIGN(DSQRT(W3(K-1)*W3(K-1)+R*R),WW)
+      EE=E(L)-Z
+      E(L)=EE
+      FF=W3(L)
+      R=DSQRT(EE*EE+FF*FF)
+      J=L
+      GO TO 2205
+ 2204 R=DSQRT(E(J)*E(J)+W3(J)*W3(J))
+      W3(J-1)=S*R
+      EE=E(J)*C
+      FF=W3(J)*C
+ 2205 C=E(J)/R
+      S=W3(J)/R
+      WW=E(J+1)-Z
+      E(J)=(FF*C+WW*S)*S+EE+Z
+      E(J+1)=C*WW-S*FF
+      J=J+1
+      IF(J.LT.K) GO TO 2204
+      W3(K-1)=E(K)*S
+      E(K)=E(K)*C+Z
+      GO TO 2201
+ 2206 K=K-1
+      IF(K.GT.1) GO TO 2201
+C
+      GO TO 4001
+C
+C ## 3 ## BISECTION METHOD FOR EIGENVALUES ##
+C
+ 3001 DO 3100 I=1,N
+ 3100 V(I,NV)=W2(I)
+C
+      DO 3200 I=1,NV
+      E(I)=GE
+ 3200 W3(I)=-GE
+C
+      DO 3300 I=1,N
+ 3300 W4(I)=W1(I)*W1(I)
+      DO 3400 I=1,N
+ 3400 W4(I)=-W4(I)
+C
+      DO 3500 K=1,NV
+ 3501 X=(E(K)+W3(K))*0.5D0
+      IF(DABS(W3(K)-X).LE.DEL) GO TO 3500
+      M=0
+      I=1
+ 3502 S=W2(I)-X
+ 3503 IF(S.LE.0.D0) M=M+1
+      IF(DABS(S).LT.1.D-30) GO TO 3504
+      I=I+1
+      IF(I.GT.N) GO TO 3505
+      S=W4(I-1)/S+W2(I)-X
+      GO TO 3503
+ 3504 I=I+2
+      IF(I.LE.N) GO TO 3502
+ 3505 IF(M.GE.K) GO TO 3506
+      DO 3520 J=K,NV
+ 3520 IF(X.GT.W3(J)) W3(J)=X
+      GO TO 3501
+ 3506 IF(M.GT.NV) M=NV
+      DO 3530 J=K,M
+ 3530 E(J)=X
+      GO TO 3501
+ 3500 E(K)=X
+C
+C ## 4 ## INVERSE-ITERATION METHOD FOR EIGENVECTORS ##
+C
+ 4001 EPS1=DSQRT(DFLOAT(N))*EPS
+      EPS2=(GE*1.D-6)/(DFLOAT(N)*DSQRT(EPS))
+      RN=0.D0
+      RA=EPS*0.6180339D0
+C
+      DO 4000 I=1,NV
+      DO 4100 J=1,N
+      W3(J)=0.D0
+      W4(J)=W1(J)
+ 4100 W5(J)=V(J,NV)-E(I)
+      IF(I.EQ.1) GO TO 4301
+      IF(DABS(E(I)-E(I-1)).GT.EPS2) GO TO 4301
+      DO 4200 J=1,N
+      RN=RN+RA
+      IF(RN.GE.EPS) RN=RN-EPS
+ 4200 V(J,I)=RN
+      GO TO 4401
+ 4301 DO 4300 J=1,N
+ 4300 V(J,I)=RA
+ 4401 DO 4400 J=1,N-1
+      IF(DABS(W5(J)).GE.DABS(W1(J))) GO TO 4410
+      W2(J)=-W5(J)/W1(J)
+      W5(J)=W1(J)
+      T=W5(J+1)
+      W5(J+1)=W4(J)
+      W4(J)=T
+      W3(J)=W4(J+1)
+      IF(W3(J).EQ.0.D0) W3(J)=DEL
+      W4(J+1)=0.D0
+      GO TO 4420
+ 4410 IF(W5(J).EQ.0.D0) W5(J)=DEL
+      W2(J)=-W1(J)/W5(J)
+ 4420 W4(J+1)=W4(J+1)+W3(J)*W2(J)
+ 4400 W5(J+1)=W5(J+1)+W4(J)*W2(J)
+      IF(W5(N).EQ.0.D0) W5(N)=DEL
+      DO 4500 IT=1,5
+      V(N,I)=V(N,I)/W5(N)
+      V(N-1,I)=(V(N-1,I)-V(N,I)*W4(N-1))/W5(N-1)
+      IF(N.EQ.2) GO TO 4521
+      DO 4510 K=N-2,1,-1
+ 4510 V(K,I)=(V(K,I)-V(K+1,I)*W4(K)-V(K+2,I)*W3(K))/W5(K)
+ 4521 VN=0.D0
+      DO 4520 K=1,N
+ 4520 VN=DMAX1(VN,DABS(V(K,I)))
+      S=EPS1/VN
+      DO 4530 J=1,N
+ 4530 V(J,I)=V(J,I)*S
+      IF((IT.GT.1.AND.VN.GT.1.D0).OR.IT.EQ.5) GO TO 4000
+      DO 4500 J=1,N-1
+      IF(W3(J).EQ.0.D0) GO TO 4500
+      T=V(J,I)
+      V(J,I)=V(J+1,I)
+      V(J+1,I)=T
+ 4500 V(J+1,I)=V(J+1,I)+V(J,I)*W2(J)
+ 4000 CONTINUE
+C
+C ## 5 ## TRANSFORMATION OF EIGENVECTORS ##
+C
+      IF(N.EQ.2) GO TO 6001
+C
+      DO 5000 K=N-1,2,-1
+      KKK=K*(K-1)/2
+      IF(A(KKK).EQ.0.D0) GO TO 5000
+      KKL=KKK+K-1
+      DO 5100 KK=K,N
+      W1(KK)=A(KKL)
+ 5100 KKL=KKL+KK
+      DO 5200 I=1,NV
+      S=0.D0
+      DO 5210 KK=K,N
+ 5210 S=S+W1(KK)*V(KK,I)
+      S=-S/A(KKK)
+      DO 5200 KK=K,N
+ 5200 V(KK,I)=V(KK,I)+W1(KK)*S
+ 5000 CONTINUE
+C
+C ## 6 ## ORTHONORMALIZATION OF EIGENVECTORS ##
+C
+ 6001 DO 6000 I=1,NV
+      IF(I.EQ.1) GO TO 6201
+      DO 6100 K=1,I-1
+      S=0.D0
+      DO 6110 J=1,N
+ 6110 S=S+V(J,K)*V(J,I)
+      S=-S
+      DO 6100 J=1,N
+ 6100 V(J,I)=V(J,I)+V(J,K)*S
+ 6201 S=0.D0
+      DO 6200 J=1,N
+ 6200 S=S+V(J,I)*V(J,I)
+      S=1.D0/DSQRT(S)
+      DO 6000 J=1,N
+ 6000 V(J,I)=V(J,I)*S
+C
+      IF(NVV.GE.0) RETURN
+C
+C ## 7 ## ROOT-HOMING PATTERN SEARCH ON EIGENVECTORS ##
+C
+      NV=-NVV
+C
+      DO 7100 I=1,N
+ 7100 IORD(N+I)=0
+      DO 7200 J=1,N
+      IMX=1
+      DO 7210 I=1,N
+      IF(DABS(V(J,I)).LT.DABS(V(J,IMX))) GO TO 7210
+      IF(IORD(N+I).EQ.0) IMX=I
+ 7210 CONTINUE
+      IORD(N+IMX)=J
+ 7200 IORD(J)=IMX
+C
+      GO TO 7341
+C
+ 7301 IF(IORD(N+I).GT.NV) GO TO 7321
+      WW=E(I)
+      DO 7310 J=1,N
+ 7310 W1(J)=V(J,I)
+ 7321 K=I
+      I=IORD(K)
+      IORD(K)=K
+      IF(I.EQ.IORD(I)) GO TO 7331
+      IF(K.GT.NV) GO TO 7321
+      E(K)=E(I)
+      DO 7320 J=1,N
+ 7320 V(J,K)=V(J,I)
+      GO TO 7321
+ 7331 IF(K.GT.NV) GO TO 7341
+      E(K)=WW
+      DO 7330 J=1,N
+ 7330 V(J,K)=W1(J)
+ 7341 DO 7340 I=1,NV
+ 7340 IF(I.NE.IORD(I)) GO TO 7301
+C
+      RETURN
+      END
+C*DECK HAMLTN
+C
+C
+C ## D(MX,NL) <--- V(NL,NL) * C(MX,NL) ##
+C             REVISED BY MAS   23/11/86
+C             REVISED BY TASHI 25/10/89
+C     SUBROUTINE HAMLTN(D,C,MX)
+      SUBROUTINE HAMLTN(D,C,MX)
+C
+      IMPLICIT REAL*8(A-H,O-Z)
+C             DELETE COMMON / CREATE ENTRY
+      COMMON/COMPRM/IND(100),NL,NS,M,M2,M1,M12,IT,IPS,IO,IOA,IOB,IOF,ICV
+C
+C     COMMON/SEKIBN/HI(2382),IM(2382),IN(2382)
+C
+C
+C     REAL*8    HI
+C     INTEGER*4 IM,IN
+C
+C
+      DIMENSION D(MX,*),C(MX,*)
+C     INCLUDE (COMDIAG)
+          COMMON /HMATOF/HOFF(2382),IROW(2382),ICOL(2382)
+          INTEGER * 4 LEMBF,IROW,ICOL
+          REAL * 8 HOFF
+          DATA LEMBF/2382/
+C        SKIP HEADDER
+      READ(IOB)
+C
+  101 READ(IOB) HOFF,IROW,ICOL
+      ICOUNT=ICOL(LEMBF)
+      IF(ICOUNT.EQ.0) GO TO  102
+      DO 100 KL=1,ICOUNT
+      K=IROW(KL)
+      L=ICOL(KL)
+      V=HOFF(KL)
+      DO 100 I=1,MX
+      D(I,L)=D(I,L)+V*C(I,K)
+  100 D(I,K)=D(I,K)+V*C(I,L)
+      IF(IROW(LEMBF).EQ.1) GO TO  101
+  102 REWIND IOB
+C
+      RETURN
+
+      END

@@ -1,0 +1,1594 @@
+  PROCESS       FILE      'cipt.f'
+
+  %%SUBNAME PTMAIN%
+  PROCESS     NO LIST      MAP    HEADER  %SUBNAME
+      SUBROUTINE %SUBNAME (TITLE, FILES, METHOD, USCPU,  RTNCD)
+  %CPYRIGHT
+  %UPDATE
+  /   MODIFIED BY M.S.  01/12/1987   AT IMS
+  /   MODIFIED BY TASHI 10/24/1989   AT HUCC
+  /*
+  /*     FUNCTION :  CSF SELECTION
+  /*
+  /*     CALLED   : ATOMCI
+  /*     CALLING  : BKBOX
+  /*                PTREES
+  /*                PTSCSF
+  /*                PTWCSF
+  /*                PTLCPY
+  /*                WRNFTF
+  /*
+  /*     INPUT    : NAMELIST  PT
+  /*
+  /*     RETURNS  : FILE NFPTB ( UNIT = 11 AS NORMALLY ) > WAVE FUNCTIONS
+  /*
+  IMPLICIT INTEGER   * 4 (A-Z)
+  %INCMAIN
+  %INCMACRO
+  %INCWORK
+  %param
+      INTEGER   * 4 VAR(%WORKCORE)
+      common/work/var
+   /* Typed views of the same /work/ heap as VAR (INTEGER*4), Bucket-1
+   /* convention.  VARR8(m) overlays VAR(2m-1:2m).  VARI2(2j-1:2j) overlays
+   /* VAR(j).  VARL4(j) overlays VAR(j) 1:1 (LOGICAL*4 is one word, same
+   /* width as INTEGER*4).  So an R8 datum at VAR(k) with k odd (guaranteed
+   /* for R8 regions) is VARR8((k+1)/2), an I2 datum is VARI2(2k-1), and an
+   /* L4 datum is VARL4(k).
+      REAL      * 8 VARR8(%WORKCORE/2)
+      INTEGER   * 2 VARI2(%WORKCORE*2)
+      LOGICAL   * 4 VARL4(%WORKCORE)
+      EQUIVALENCE (VAR(1),VARR8(1)),(VAR(1),VARI2(1)),(VAR(1),VARL4(1))
+   /*
+   /* DCL FOR LOCAL VAR
+   /*
+
+   INTEGER   * 4  --
+         RS4,            -- ADDR FOR  WORK REGION
+         RS8,            -- ADDR FOR  WORK REGION
+         NAME(30),       -- COMMENT ON NFPTB
+         BOXSIZ,          -- /100/,   -- NUMBER OF BOX
+         IDREC(100),      --/100*0/,--
+         ADD,             --  / 0/,    --
+         NRNFG(5),        -- RUN FLG ( 0 MEANS SKIP )
+         NPFLG(5),        -- PRINT FLAG
+         DEBUG(5),        -- PRINT FLAG
+         IDTYP(2),        -- CSF SELECTION FLAG
+         JDFLG(2),        -- PRCIVC's IDFLG (see cici.fpl JDFLG(2) "-- ??")
+         NSDIM,           -- INITIAL VECTOR
+                          -- = 0 : UNIT VECTOR
+                          -- > 0 : SOLUTION OF SMALL MATRIX ( # OF DIM )
+         IPS  ,         -- THRESHOLD IN DIAG 10 ** ( - IPS )
+         MAXIT,         -- # OF ITERATION
+         NHD(10),       -- FILE IO BUFFER ( EQUIV TO ...  )
+         NHE(50),       -- FILE IO BUFFER ( EQUIV TO NAMP )
+         NAMP(30),      -- FILE IO BUFFER FOR NAME
+         NCOR          ;/* CORE REGION
+
+
+  REAL      * 8  --
+         ETHR,          -- THRESHOLD FOR SELECTION
+         CTHR,          -- THRESHOLD FOR SELECTION
+         PTHR,          -- THRESHOLD FOR PRINT
+         THRBOX,        --/1.D-11/, --
+         EDT(61),       -- EQUIVALENCE TO ET, XREF, AND EONE
+         ET(20),        -- EIGEN VALUE
+         XREF(20),      -- REFERENCE ENERGY
+         EONE(20),      -- CHARGE DUMMY
+         THRCSF,        -- THRESHOLD FOR SELECTION OF CSF
+         THRVC  ;       /*
+
+  /* DCL LOCAL VAR
+  INTEGER   * 4    --  READ BUFFER FOR NFWFP
+                   ISPIN,IORB,       --*I* SPIN, ANG MULTI
+                   IPAR,ITNEL,       --*I* PARITY, # OF TOTAL ELECTRON
+                   NWT,NWF,          --*I* # OF SHELL, # OF CLOSED SHELL
+                   ITSTV,            --*I* NUMBER OF CSF
+                   LWFL,             --*I* LENGTH OF READ BUFFER
+                   LMAX,INT,         --*I* LMAX, # OF DIM (2 BYT) FOR WF
+                   NTYPE,            --*I* # OF CSF TYPES
+                   IDIAG,            --*I* ONLY 1
+                   ISSH,             --*I* # OF SHELLS IN EACH SYMM
+                   NWTN,             --*I* SHELL ID #(3 BYT), L(1 BYT)
+                   NWTC,             --*I* WAVE FUNCTION & BUFFER LENGTH
+                   NREF,             --*I* WAVE FUNCTION & BUFFER LENGTH
+                   NWSQ,             --*I* WAVE FUNCTION & BUFFER LENGTH
+                   LRPSMX,           --*I*
+                   NWFSG
+   INTEGER   * 4   NREFXX 
+   LOGICAL      IOERR,IOEND
+   INTEGER   * 4 INAME(18)
+   REAL      * 8   DELETE         ; /  DELETED CONTRIBUTION
+
+   / INTEGER   * 4 RTNCD    changed by msekiya Aug 30 1994
+
+      EQUIVALENCE  (NHE(1),NAMP(1))
+      EQUIVALENCE --
+       (EDT(2),ET(1)),(EDT(22),XREF(1)),(EDT(42),EONE(1))
+      EQUIVALENCE --
+       (NHD(1),ICVC),(NHD(2),NOCSF),   (NHD(3),NSTAT),      --
+       (NHD(4),NSYM),(NHD(5),KDFLG),(NHD(7),IDEN), (NHD(8),NKEEP),--
+       (NHD(9),NNUC)
+
+  %COMDIAG
+
+      DATA --
+           NRNFG/ 1, 1, 1, 0, 0/,--
+           NPFLG/ 0, 0, 0, 0, 0/,--
+           DEBUG/ 0, 0, 0, 0, 0/,--
+           IDTYP,NSOLVE,MAXIT,IPS/1,0,   1, 1000,  6/--
+           BOXSIZ /100/   -- NUMBER OF BOX
+           IDREC /100*0/--
+           ADD     /-1/    --
+           THRBOX/1.D-9/ --
+
+      %DATALTRI
+      %INCDATA
+
+  %%NAMELIST PT%
+  /* NAMELIST ITEM
+  NAMELIST /%NAMELIST/   --                   STATUS  DEFAULT DIM TY    PE
+            NFTF,    -- CFP TABLE            INPUT       10       I4
+            NFWFP ,  -- EE TPAE      FILES   INPUT       14       I4
+            NFTRI,   -- TR INTEG     FILES   INPUT       16       I4
+            NFPTB,   -- CSF : RETURN FILES   OUTPUT      11       I4
+            NFPTD,   -- HMAT DIAG    FILES   OUTPUT      32       I4
+            NFPTO,   -- HMAT OFFDIAG FILES   OUTPUT      33       I4
+            NFPTV,   -- VECTOR FILES         OUTPUT      31       I4
+            NFPTS,   -- == DELETE ==   AUG. 28 90         0       I4
+            NFPTL,   -- SAVING UNIT NUMBER               41       I4
+            NFPTI,   -- VECTOR FILES SAVED               34       I4
+            NAME,    -- COMMENT ON NFPTB                NONE    30*I4
+            NPFLG,   -- DEBUG PRINT FLAG                  0     3*I4
+            NRNFG,   -- DEBUG PRINT FLAG               1,1,1,   3*I4
+            NREFXX,  -- SELECTION REF                     0       I4
+            DEBUG,   -- DEBUG PRINT FLAG                  0     3*I4
+            LTRI,    -- LENGTH OF LTRI                    2       I4
+            HOW,     -- METHOD OF SELECTION               2       I4
+            IPS,     --
+            ISTATE,  -- STATE NUMBER TO BE SELECTED       1       I4
+            NSOLVE,  -- TO BE SOLVED                      1       I4
+            ADD ,    -- ADDING FLAGS                     -1       I4
+            IDREC,   -- LOADING REC  NUMBER 1 TO ADD      0   100*I4
+            NRLBL,   -- # OF IDREC                        0       I4
+            IDTYP,   -- # OF IDREC                        0       I4
+            CTHR,    -- THRESHOLD                         0       R8
+            ETHR,    -- THRESHOLD                         0       R8
+            PTHR,    -- THRESHOLD                         0       R8
+            THRVC,   -- THRESHOLD                         0       R8
+            THRCSF   -- THRESHOLD                         0       R8
+
+   DATA IOSTAT/0/
+
+   %%CHECK IF ERRCD > 0 THEN EXIT %FINISH ; %
+   %%CHECK_LIST IF ERRCD > 0 THEN EXIT EXEC ERROR_INF %
+   BEGIN
+      ERRCD =0 ; RTNCD = 0 ;
+      IOERR = .FALSE.; IOEND = .FALSE.
+      %START
+      EXEC SETUP         ;
+      FORTRAN READ(5,%NAMELIST,END=900)
+      EXEC PRINT_HEADER ;
+      FOR  I=9,12 ; NAME(I+18) = METHOD(I)
+      EXEC DATA_CHECK    ; %CHECK
+      EXEC READ_NFWFP_HEAD ; %CHECK
+      EXEC PRINT_HEADER_2 ;
+      IF NRNFG(1) > 0 THEN EXEC SECTION_1  ; %CHECK_LIST
+      IF NRNFG(2) > 0 THEN EXEC SECTION_2  ; %CHECK_LIST
+      IF NRNFG(3) > 0 THEN DO
+         EXEC CFPSET        ; %CHECK_LIST
+         EXEC SET_NSOLVE    ; %CHECK_LIST
+         EXEC ALLOC_BOX     ; %CHECK_LIST
+         EXEC READ_NFWFP    ; %CHECK_LIST
+         EXEC BK_SORT       ; %CHECK_LIST
+         IF NPFLG(3) >= 1 THEN %WK_LIST
+         END
+      IF NRNFG(4) > 0 THEN EXEC SECTION_4  ; %CHECK_LIST
+      EXIT %FINISH
+      FORTRAN 900 CONTINUE
+      FORMAT WRITE  --                                                  TA  '
+        '    NAMELIST - &%NAMELIST - IS NOT FOUND IN INPUT DATA '       TA  '
+      (/' ',A,20('*')////)
+      ERRCD = 5000
+      %FINISH
+      END
+  > SECTION_1
+      ICVC = 0 ; IDEN = 0 ; NNUC = 1  ; KDFLG = 0
+      FOR I = 1, 61 ; EDT(I) = 0.0D+00
+      NKEEP = ITSTV
+      NFDUMY = 0 ; LNIX = 0 ;  ND = 0  ;
+
+      FORMAT WRITE   ('********',I=1,12), --
+                     NAME,NAMP,NOCSF,IDIAG
+             ('1SECTION 1  ENERGY MATRIX',10X,12A8/'0(RUN)',5X,30A4/ --
+              '0(EXP)',5X,30A4//'0NOCSF=',I15,3X, --
+              'IDIAG=',I10)
+
+      REWIND NFPTO
+      / EQUIVALENCE NAME & NHE
+      WRITE (NFPTO) NOCSF,LEMBF,NHD,NHE,EDT,ND
+      ACTION = %REGION
+      %%VNAME  NCOR % ; TYPE = %I4 ; LENGTH = NDUMY ; %WKCORE
+      ACTION = %ALLOC
+      %%VNAME  RS4  % ; TYPE = %I4 ; LENGTH = NCOR  ; %WKCORE
+      IF NPFLG(1) > 0 THEN %WK_LIST
+      / CALL   CALHMD --  CHANGED BY MAS 1990 - 08 - 15
+      / (NFTRI,NFWFP,NFPTD,NFPTO,NFDUMY,NOCSF,LNIX,LTRI, --
+      / CHANGED BY msekiya 1998 - 06 - 03
+      // NFDUMY = 57;
+      NFDUMY = 0; 
+      CALL   CALHMD --  
+      (NFTRI,NFWFP,NFPTD,NFPTO,NFDUMY,NOCSF,LNIX,LTRI, --
+      NCOR,VAR(RS4),VARR8((RS4+1)/2),ERRCD)
+      IF ERRCD > 0 THEN EXIT
+      CALL PRTHMS (VAR(RS4),NKEEP,NREF,NFPTO,NPFLG(1))
+      ACTION = %FREE
+      %%VNAME  RS4  % ; TYPE = %I4 ; LENGTH = NCOR  ; %WKCORE
+      ACTION = %ALLOC
+      %%VNAME  HMAT  % ; TYPE = %R8 ; LENGTH = NKEEP  ; %WKCORE
+      %%VNAME  KEY   % ; TYPE = %I4 ; LENGTH = NSTAT ; %WKCORE
+      CALL PTEONE  --
+        ( VARR8((HMAT+1)/2), VAR(KEY), EONE, NREF, NSTAT, ERRCD )
+      2L ;
+      FORMAT WRITE (I,I,EONE(I),I=1,NSTAT) ;
+         (3X,'  ENERGY DIAG MATRIX (',I3,',',I3,' ) = ',E20.10 )  ; 2L ;
+      NPFLG(1)=0
+      ACTION = %FREEALL
+      %%VNAME  HMAT  % ; TYPE = %R8 ; LENGTH = NREF  ; %WKCORE
+      END
+
+    
+
+    PROCEDURE SECTION_4
+      ERRCD = DEBUG(4)
+      /* PRINT_SECTION_4_HEADER
+      FORMAT WRITE ('********',I=1,12),NAME
+          (///' SECTION 4  RS-PT          ',8X,12A8/'0(RUN)',5X,30A4)
+      IF NRNFG(1) = 0 THEN EXEC READ_INFORMATION_OF_ENERGY_MATRIX
+      EXEC READ_NFWFP    ; %CHECK_LIST
+
+      ACTION = %ALLOC
+      %%VNAME Hdig  % ; TYPE = %r8 ; LENGTH = ITSTV ; %WKCORE
+      %%VNAME Hbuff % ; TYPE = %r8 ; LENGTH = LEMBF*nref ; %WKCORE
+      %%VNAME ENERGY % ;TYPE = %r8 ; LENGTH = nref ; %WKCORE
+      %%VNAME Ework % ;TYPE = %r8 ; LENGTH = nref ; %WKCORE
+      %%VNAME Ecoef % ;TYPE = %r8 ; LENGTH = nref*nref ; %WKCORE
+      %%VNAME Ewwww % ;TYPE = %r8 ; LENGTH = nref*nref ; %WKCORE
+      if NPFLG(4) >= 1 then %WK_LIST
+      call mbptrs ( --
+           VAR(ENERGY), --*I*
+           VAR(HDIG  ), --*W*
+           VAR(HBUFF),  --*W*
+           HOFF, IROW, ICOL, LEMBF, --
+           VAR(NWFSG),  --*W*
+           ITSTV,       --*I*  DIMENSION OF NO TRUNCATION CSF
+           NREF,        --*I*  NUMBER OF REFERENCE
+           NSTATE,      --*I*  OBTAINED NUMBER OF STATE
+           LWREF,       --*I*  BUFFER LENGTH OF CSF
+           NFPTB, --*I*  SUMMARY FILE FOR SELECTION
+           NFPTD,NFPTO, --
+           Var(Ecoef),Var(Ewwww),Var(Ework), -- 
+           ERRCD )
+
+      end  
+    PROCEDURE SECTION_2
+      ERRCD = DEBUG(2)
+      /* PRINT_SECTION_2_HEADER
+      FORMAT WRITE ('********',I=1,12),NAME
+          (///' SECTION 2  DIAGONALIZATION',8X,12A8/'0(RUN)',5X,30A4)
+      ACTION = %ALLOC
+      %%VNAME IKEEP % ; TYPE = %I4 ; LENGTH = ITSTV ; %WKCORE
+      %%VNAME ICHAIN% ; TYPE = %I4 ; LENGTH = ITSTV+2 ; %WKCORE
+      %%VNAME INDEX % ; TYPE = %I4 ; LENGTH = ITSTV ; %WKCORE
+      %%VNAME CFBUF % ; TYPE = %R8 ; LENGTH = ITSTV ; %WKCORE
+      ACTION = %REGION
+      %%VNAME  NCOR % ; TYPE = %I4 ; LENGTH = NDUMY ; %WKCORE
+      NCOR = NCOR/2
+      ACTION = %ALLOC
+      %%VNAME  RS8  % ; TYPE = %R8 ; LENGTH = NCOR/2; %WKCORE
+      IF NPFLG(2) > 0 THEN %WK_LIST
+      FOR I = 1, NOCSF ; VAR(IKEEP+I-1) = I
+
+      NFIV = 0 ;
+      IF NREF <= 0 THEN EXIT ERRCD = 5201 ; ELSE NSDIM = NREF
+      IF NRNFG(1) = 0 THEN EXEC READ_INFORMATION_OF_ENERGY_MATRIX
+      IF NKEEP ^= ITSTV THEN EXIT ERRCD = 5211 ;
+      IF IPS < 5 ! IPS > 10 THEN IPS = 5
+      JDFLG(1) = IPS      ; JDFLG(2) = NSDIM
+
+      /*
+      /*  DIAGONALIZE H-MATRIX BY DAVIDSON'S SCHEME
+      /*                 USING EMOR1 ( KOSUGI )
+      /*                          REVISED BY MAS 23/11/86
+      /*
+      CALL   DIAGDR --
+       ( VARR8((RS8+1)/2), VAR(RS8), --
+         NCOR,   NFPTV,   NFPTD, NFPTO, NFPTI,  --
+         NSTAT,   IPS,    NSDIM,   NKEEP,  MAXIT, --
+         EDT(2),  ERRCD )
+
+      IF ERRCD > 1000 THEN EXIT
+      ELSE IF ERRCD > 0 THEN NSTAT = ERRCD
+
+      ERRCD = 0
+      EXEC PRINT_CIVECTOR
+      ACTION = %FREEALL
+      %%VNAME  RS4  % ; TYPE = %I4 ; LENGTH = NCOR  ; %WKCORE
+      END
+
+
+   PROCEDURE READ_INFORMATION_OF_ENERGY_MATRIX
+      REWIND NFPTO
+      BINARY READ :NFPTO    NOCSF,LEMBF,NHD,NHE
+      FORMAT WRITE  NAMP ;
+          ('0(EMX)',5X,30A4)
+      IF NOCSF ^= NKEEP THEN EXIT ERRCD = 5003
+      REWIND NFPTO
+      IF NSTAT ^= NSOLVE & NSOLVE > 0 THEN NSTAT = NSOLVE
+      END
+
+   PROCEDURE PRINT_CIVECTOR
+      KCVC = RS8  ; I = 0 ; NRUN = 0
+      DO UNTIL I = NSTAT
+        / SORT FOR COEF
+         I = I + 1
+         CALL    CFSORT  --
+        (NKEEP,VAR(KCVC),VAR(IKEEP),VAR(ICHAIN), --
+         THRVC,VAR(CFBUF),VAR(INDEX),NSELCT,NPFLG(2))
+         CALL PRCIVC (NRUN,NOCSF,NKEEP,VAR(INDEX),I,IDTYP,THRCSF,   --
+           JDFLG,ET(I),XREF(I),EONE(I),VAR(CFBUF),--
+           NSELCT)
+         KCVC=KCVC+NKEEP*2
+         END
+      END
+
+
+
+  > PRINT_HEADER
+     FORMAT WRITE (TITLE(I),I=1,18),(NAME(I), I=1,18),  --
+                   METHOD(80),NFTF,          --
+                   METHOD(35),NFWFP,         --
+                   METHOD(46),NFTRI,         --
+                   METHOD(51),NFPTV,         --
+                   METHOD(52),NFPTD,        --
+                   METHOD(53),NFPTO,        --
+                   METHOD(54),NFPTL,         --
+                   METHOD(55),NFPTB,         --
+                   FILES,NPFLG
+     ('1',45('*'),3X,'CSF SELECTION(%SUBNAME)'/      --
+        /' TITLE:  ',18A4 /                                   --
+        /' NAME :  ',18A4 /                                   --
+        /'  NFTF  :  CFP TABLE            (',I3,') =',I6,      --
+        /'  NFWFP :  PT-EE TAPE           (',I3,') =',I6,      --
+        /'  NFTRI :  TR INTEGRAL          (',I3,') =',I6,      --
+        /'  NFPTV :  PT-CI VECTOR         (',I3,') =',I6,      --
+        /'  NFPTH1:  HMAT-DIAGONAL        (',I3,') =',I6,      --
+        /'  NFPTH2:  HMAT-OFFDIAGONAL     (',I3,') =',I6,      --
+        /'  NFPTL :  SELECTED FLAGS       (',I3,') =',I6,      --
+        /'  NFPTB :  CSF TAPE (SELECTED)  (',I3,') =',I6,      --
+        /'  SUMMARY FILES UNIT = ',I3,'      PRINT FLAG = ',3I3 )
+        2L ;
+         '   > SELECTION RULE ('; PUT HOW I4 ; ' ) : ' ;
+         IF HOW = 0 THEN DO
+            PUT ISTATE I4 ; ' STATE  ===  ' ;
+            END
+         ELSE IF HOW = 1 THEN DO
+            ' 1 TO ' ; PUT NSOLVE I4 ; ' AVERAGED SELECTION  === '
+            END
+         ELSE DO
+            ' 1 TO ' ; PUT NSOLVE I4 ; ' MAXIMUM  SELECTION === '
+            HOW = 2
+            END
+         2L ;
+      END
+  > PRINT_HEADER_2
+      FORMAT WRITE ETHR, CTHR
+         ( /'  THRESHOLD ENERGY ( SUM UP ) : ',E8.2,' A.U. ' --
+           /'  THRESHOLD COEFFICIENTS      : ',E8.2)
+      FORMAT WRITE --
+        ISPIN,IORB,IPAR,ITNEL
+     ( //' STATES TO BE SOLVED: ',                         --
+        /'  ISPIN:  SPIN MULTIPLICITY         =',  I6,     --
+        /'  IORB:   ORBITAL MULTIPLICITY      =',  I6,     --
+        /'  IPAR:   PARITY (EVEN: 0, ODD: 1)  =',  I6,     --
+        /'  ITNEL:  TOTAL NUMBER OF ELECTRONS =',  I6,     --
+        //' ',30('--'),//)
+     END
+
+
+      PROCEDURE ALLOC_BOX
+         ACTION = %ALLOC
+         %%VNAME LBOX  % ; TYPE = %I4 ; LENGTH = BOXSIZ+1 ; %WKCORE
+         %%VNAME NBOX  % ; TYPE = %I4 ; LENGTH = BOXSIZ+1 ; %WKCORE
+         %%VNAME DBOX  % ; TYPE = %I4 ; LENGTH = BOXSIZ+1 ; %WKCORE
+         %%VNAME TOTAL % ; TYPE = %R8 ; LENGTH = BOXSIZ+1 ; %WKCORE
+         %%VNAME TBOX  % ; TYPE = %R8 ; LENGTH = BOXSIZ+1 ; %WKCORE
+         %%VNAME BOX   % ; TYPE = %R8 ; LENGTH = BOXSIZ + 2 ; %WKCORE
+         IF NPFLG(3) > 0 THEN %WK_LIST
+         CALL BKBOX(VARR8((BOX+1)/2),BOXSIZ,THRBOX,ERRCD)
+         END
+      PROCEDURE DATA_CHECK
+         IF METHOD(35) ^= NFWFP
+         THEN DO
+            IF METHOD(22) = 0 THEN METHOD(35) = NFWFP
+            ELSE ERRCD = 5001
+            END
+         IF METHOD(46) ^= NFTRI
+         THEN DO
+            IF METHOD(24) = 0 THEN METHOD(46) = NFTRI
+            ELSE ERRCD = 5002
+            END
+         IF ERRCD > 0 THEN EXIT EXEC ERROR_INF
+         METHOD(51) = NFPTV
+         METHOD(52) = NFPTD  ;  -- HMAT DIAG
+         METHOD(53) = NFPTO  ;  -- HMAT OFF
+         METHOD(54) = NFPTL   ;  -- LABEL
+         METHOD(55) = NFPTB   ;  -- WAVE FUNCTIONS
+         METHOD(57) = NFPTI   ;  --
+         NSTATE = ISTATE ; NSTAT = NSOLVE
+         END
+
+      PROCEDURE SETUP
+      /* OUTPUT FILE
+         NFPTV  = METHOD(51) ;  -- CI VECTOR
+         NFPTD  = METHOD(52) ;  -- HMAT DIAG
+         NFPTO  = METHOD(53) ;  -- HMAT OFF
+         NFPTL  = METHOD(54) ;  -- LABEL
+         NFPTB  = METHOD(55) ;  -- WAVE FUNCTIONS
+         NFPTS  = 0          ;  -- == DELETE == AUG 28 90
+         NFPTI  = METHOD(57) ;  --
+      /* INPUT FILE S
+         NFTF   = METHOD(80)  ;
+         NFWFP  = METHOD(35) ;
+         NFTRI  = METHOD(46) ;
+      /*KGN 07/90   L100 = 100
+         L100 = %BASIS
+         ETHR   = 1.0D-04 ; CTHR   = 1.0D-03 ; PTHR = -1.0 ;
+         HOW    = 0      ; ISTATE = 1 ; NSOLVE = 1 ;
+         NRLBL  = 0 ;
+         THRVC = 0.01 ;
+         NREFXX = 0 ;
+         FOR  I= 1,18 ; NAME(I) = TITLE(I)
+
+         FOR  I=19,30 ; call ctoi4 ( '    ', NAME(I) )
+         END
+
+      PROCEDURE SET_NSOLVE ; / CHECK NSOL & NSOLVE AND SET NSOL
+         REWIND NFPTV
+         BINARY READ : NFPTV --
+             ENDFLAG = IOEND ERRFLAG = IOERR IOSTAT = IOSTAT --
+             NSOL, NKEEP
+         IF IOERR ! IOEND THEN EXIT ERRCD = 5020 ;
+         IF  NSOL > NKEEP THEN EXIT ERRCD = 5021
+         ELSE IF NSOL = 0 THEN EXIT ERRCD = 5022
+         IF NSOLVE = 0 THEN NSOLVE = NSOL
+         ELSE IF NSOLVE > NSOL THEN NSOLVE = NSOL
+         IF NSOL = 1 THEN EXIT ( NSOLVE = 1 ; NSTATE = 1 ; HOW = 0 )
+         IF HOW = 0 THEN DO
+            IF NSTATE = 0 THEN ERRCD = 5023
+            ELSE IF NSTATE > NSOLVE  THEN ERRCD = 5024
+            END
+         END
+
+      PROCEDURE READ_NFWFP_HEAD
+         REWIND NFWFP
+         BINARY READ : NFWFP  --
+                ENDFLAG = IOEND ERRFLAG = IOERR IOSTAT = IOSTAT --
+                NAMP,ISPIN,IORB,IPAR,NWT,NWF,ITSTV,ITNEL,LIJB,--
+                IDIAG,LMAX,INT,LWFL,NTYPE,NREF,MXRPS
+         IF      IOERR THEN EXIT ERRCD = 5011
+         ELSE IF IOEND THEN EXIT ERRCD = 5012
+         REWIND NFWFP
+         NOCSF = ITSTV
+         END
+      PROCEDURE READ_NFWFP
+         ACTION = %ALLOC
+         %%VNAME LABEL % ; TYPE = %L4 ; LENGTH = ITSTV ; %WKCORE
+         %%VNAME ISSH  % ; TYPE = %I4 ; LENGTH = LMAX   ; %WKCORE
+         %%VNAME NWSQ  % ; TYPE = %I4 ; LENGTH = L100   ; %WKCORE
+         %%VNAME NWTC  % ; TYPE = %I4 ; LENGTH = NWF    ; %WKCORE
+         %%VNAME NWTN  % ; TYPE = %I4 ; LENGTH = NWT    ; %WKCORE
+         %%VNAME NWFSG % ; TYPE = %I2 ; LENGTH = INT    ; %WKCORE
+         NIJX = MXRPS*MXRPS
+         %%VNAME INDEXL% ; TYPE = %I4 ; LENGTH = NIJX   ; %WKCORE
+         IF NPFLG(4) > 0 THEN %WK_LIST
+         /* changed by mas 11/30/92 for csf selection  
+         IF NREFXX = 0 then NREFXX = NREF ;
+         / NFPTS --> NREFXX 
+         CALL PTREES(NFWFP,NREFXX,NAME,    --
+                     VARL4(LABEL),ITSTV,  --
+                     VAR(ISSH), LMAX,   --
+                     VAR(NWSQ), L100,   --
+                     VAR(NWTC), NWF ,   --
+                     VAR(NWTN), NWT ,   --
+                     VARI2(2*NWFSG-1),INT , --
+                     NREF,              -- RETURN VAL
+                     LWFL,NPFLG(3),     -- RETURN VAL
+                     VAR(INDEXL),  NIJX,--
+                     ERRCD )
+         IF ERRCD > 0 THEN EXIT
+         ACTION = %FREE
+         %%VNAME INDEXL% ; TYPE = %I4 ; LENGTH = NIJX   ; %WKCORE
+         END
+
+      PROCEDURE CFPSET
+         CALL SETCFP (NFTF)
+         END
+
+      PROCEDURE BK_SORT
+         ACTION = %ALLOC ;
+         %%VNAME NADDR % ; TYPE = %I4 ; LENGTH = ITSTV ; %WKCORE
+         %%VNAME LOW   % ; TYPE = %R8 ; LENGTH = ITSTV*NSOLVE ; %WKCORE
+         %%VNAME CSET  % ; TYPE = %R8 ; LENGTH = ITSTV        ; %WKCORE
+         %%VNAME E0    % ; TYPE = %R8 ; LENGTH = NSOL         ; %WKCORE
+         %%VNAME COEF  % ; TYPE = %R8 ; LENGTH = ITSTV*NSOL   ; %WKCORE
+         %%VNAME HMATD % ; TYPE = %R8 ; LENGTH = ITSTV        ; %WKCORE
+         IF NPFLG(3) > 0 THEN %WK_LIST
+         NSTAT  = NSOL   ; NCSF   = ITSTV ;
+         NLAST  = BOXSIZ ;
+         IF HOW = 0 THEN NNSELC = NSTATE ; ELSE NNSELC = 1
+         CALL PTSCSF    --
+                  (VARL4(LABEL),     --*O* T -> LARGE CONTRIBUTION
+                   VARR8((CSET+1)/2),  --*W* TO BE SELECTED CONTRIBUTION
+                   VARR8((LOW+1)/2),   --*W* ENERGY LOWERING FOR EACH STATE
+                   VARR8((COEF+1)/2),  --*W* READ BUFFER FOR HMAT & WF
+                   VARR8((HMATD+1)/2), --*W* READ BUFFER FOR HMAT & WF
+                   VARR8((E0+1)/2),NSOL, --*W* ENERGY SOLVED BY BKEE
+                   NSCSF,            --*W* NUMBER OF SELECTED CSF
+                   DELETE,           --*W* THROWAWAY
+                   VAR(NADDR),       --*W* NEXT CSF CSF ID
+                   NLAST,            --*I* BOX SIZE
+                   VARR8((TBOX+1)/2),  --*W* TOTAL CONTRIBUTION IN BOX & SUM
+                   VARR8((TOTAL+1)/2), --*W* TOTAL CONTRIBUTION IN BOX & SUM
+                   VAR(NBOX),        --*W* NUMBER IN BOX & SUM
+                   VAR(DBOX),        --*W* NUMBER IN BOX & SUM
+                   VAR(LBOX),        --*W* STARTING CSF ID IN BOX
+                   VARR8((BOX+1)/2), --*W* THRESHOLD FOR BOX
+                   HOW,              --*I* SELECTION METHOD
+                   NREF,NCSF,        --*I* NUMBER OF REF, CSF, & STATE
+                   NSTATE,NSOLVE,    --*I* STATE NUMBER FOR TO BE SELECTED
+                   ETHR,CTHR,        --*I* THRESHOLD FOR TOTAL CONTRIBUTION
+                   NFPTD,NFPTV,        --*I* UNIT NUMBER FOR HMAT & COEF
+                   NPFLG(3),NFPTS,       --*I* DEBUG FLAG
+                   ERRCD )
+
+         IF ERRCD > 0 THEN EXIT EXEC ERROR_INF
+         ACTION = %FREE  ;
+         %%VNAME HMATD % ; TYPE = %R8 ; LENGTH = ITSTV      ; %WKCORE
+         %%VNAME COEF  % ; TYPE = %R8 ; LENGTH = ITSTV*NSOL   ; %WKCORE
+         ACTION = %ALLOC ;
+         %%VNAME LWORK % ; TYPE = %L4 ; LENGTH = ITSTV ; %WKCORE
+         IF ADD >= 0 THEN --
+         CALL PTLCPY --
+                  (VARL4(LABEL),     --*O* T -> LARGE CONTRIBUTION
+                   VARL4(LWORK),     --*W* TO BE SELECTED CONTRIBUTION
+                   ADD,              --*I* FLAG FOR LOADING LABELS
+                   NFPTL,             --*I* UNIT NUMBER FOR SAVING  LABELS
+                   NRLBL,            --*I* # OF RECORD TO BE LOADED FROM NFTS
+                   IDREC,            --*I* RECORD ID ( LOADING )
+                   NSCSF,            --*IO* # OF SELECTED CSF
+                   ISPIN,            --*I*  SPIN MULTI
+                   IORB,             --*I*  ORBITAL MULTI
+                   IPAR,             --*I*  PARITY
+                   INT ,             --*I*  NUMBER OF READ BUFFER FOR CSF
+                   NCSF,             --*I*  # OF CSF ( UNSELECTED )
+                   ERRCD )
+         IF ERRCD > 0 THEN EXIT EXEC ERROR_INF
+         ACTION = %FREE  ;
+         %%VNAME LWORK % ; TYPE = %L4 ; LENGTH = ITSTV ; %WKCORE
+         ACTION = %ALLOC ;
+         %%VNAME NEWCSF% ; TYPE = %I4 ; LENGTH = ITSTV  ; %WKCORE
+         ACTION = %REGION
+         %%VNAME LRPSMX % ; %WKCORE ; LRPSMX = LRPSMX * 2
+         %%VNAME ISLC  % ; TYPE = %I2 ; LENGTH = LRPSMX ; %WKCORE
+
+         IF NPFLG(3) > 0 THEN %WK_LIST
+         CALL PTWCSF    --
+                  (VARL4(LABEL),     --*O* T -> LARGE CONTRIBUTION
+                   VARR8((CSET+1)/2),  --*W* TO BE SELECTED CONTRIBUTION
+                   VARR8((E0+1)/2),  --*W* ENERGY SOLVED BY
+                   NSCSF,            --*W* NUMBER OF SELECTED CSF
+                   DELETE,           --*W* THROWAWAY
+                   VAR(NEWCSF),      --*W* NEW TO OLD CORRESP
+                   HOW,              --*I* SELECTION METHOD
+                   NREF,NCSF,NSTAT,  --*I* NUMBER OF REF, CSF, & STATE
+                   NNSELC,           --*I* STATE NUMBER FOR TO BE SELECTED
+                   ETHR,             --*I* THRESHOLD FOR TOTAL CONTRIBUTION
+                   NFPTB,             --*I* UNIT NUMBER FOR WAVE FUNCTION
+                   NFPTS,             --*I* UNIT NUMBER FOR SUMMARY FILES
+                   NFPTO,            --*I* UNIT NUMBER FOR SUMMARY FILES
+                   NAME,             --*I* COMMENT ON NFPTB
+                   INAME,            --*I* CFP TABLE
+                   ISPIN,IORB,       --*I* SPIN, ANG MULTI
+                   IPAR,ITNEL,       --*I* PARITY  OF ELECTRON
+                   VAR(NWSQ), L100,   --
+                   VAR(NWTC), NWF ,   --
+                   VAR(NWTN), NWT ,   --
+                   VARI2(2*NWFSG-1),INT , --
+                   VARI2(2*ISLC-1), LRPSMX, -- WRITE BUFFER FOR NFPTB CSF
+                   NPFLG(3),PTHR,       --*I* DEBUG FLAG
+                   ERRCD )
+         IF ERRCD > 0 THEN EXIT EXEC ERROR_INF
+         END
+      %PTERINF
+      %INCWKEXC
+  %%SUBNAME PTEONE %
+  PROCESS     NO LIST      MAP    HEADER  %SUBNAME
+     SUBROUTINE %SUBNAME --
+        ( HMAT,  KEY,  EONE, NHMT, NSTAT, ERRCD )
+     IMPLICIT INTEGER * 4 (A-Z)
+     REAL      * 8 HMAT(NHMT),EONE(20)
+     INTEGER   * 4 KEY(NSTAT),NHMT,NSTAT,ERRCD
+     DATA IOSTAT/0/
+     BEGIN
+        IF NSTAT > 20 THEN NST = 20 ; ELSE NST = NSTAT
+        IF NST <= 0 THEN EXIT ERRCD = 5025
+        FOR I = 1, NST
+        DO
+          EONE(I) = HMAT(1) ; KEY(I) = 1
+          FOR J = 2,  NHMT ;
+          DO
+             FORTRAN IF ( EONE(I) .GT. HMAT(J) ) THEN
+             KEY(I) = J ; EONE(I) = HMAT(J)
+             ENDIF
+             END
+          HMAT(KEY(I)) = 0.0D+00
+          END
+        END
+
+
+  %%SUBNAME PTLCPY %
+  PROCESS     NO LIST      MAP    HEADER  %SUBNAME
+      SUBROUTINE  %SUBNAME  --
+                  (LABEL,            --*O* T -> LARGE CONTRIBUTION
+                   LWORK,            --*W* TO BE SELECTED CONTRIBUTION
+                   ADD,              --*I* FLAG FOR LOADING LABELS
+                   NFPTL,             --*I* UNIT NUMBER FOR SAVING  LABELS
+                   NRLBL,            --*I* # OF RECORD TO BE LOADED FROM NFTS
+                   IDREC,            --*I* RECORD ID ( LOADING )
+                   NSCSF,            --*O* NUMBER OF SELECTED CSF
+                   ISPIN,            --*I*  SPIN MULTI  ( 2S+1 )
+                   IORB,             --*I*  ORBITAL MULTI ( 2L+1 )
+                   IPAR,             --*I*  PARITY
+                   INT ,             --*I*  READ BUFFER FOR CSF ( IN 2 BYTE )
+                   NCSF,             --*I*  NUMBER OF GENERATED CSF
+                   RTNCD )
+
+      IMPLICIT INTEGER   * 4 (A-Z)
+      %UPDATE
+      /                CODED    BY M. SEKIYA ON 1987-12-12  AT IMS
+      /                REVISED  BY M. SEKIYA ON 1988-02-29  AT IMS
+      /                REVISED  BY TASHI     ON 1989-10-25  AT HUCCS
+      /*   FUNCTION : SELECTING NWFSG BY LABEL
+      /*
+      /*   CALLED   : PTMAIN
+      /*   CALLING  : <NONE>
+      /*
+      /*   OUTPUT   : NFPTL
+      /* DCL
+      LOGICAL   * 4 LABEL(NCSF),     --*O* T -> LARGE CONTRIBUTION
+                    LWORK(NCSF)
+      INTEGER   * 4 --
+                    ADD,             --*I*  IF ADD > 0 THEN ADDING
+                    IDREC(100),        --*I*  SELECTED CSF IN THIS JOB
+                    NRLBL,           --*I*  SELECTED CSF IN THIS JOB
+                    NSCSF,           --*I*  SELECTED CSF IN THIS JOB
+                    NCSF,            --*I*  ORIGINAL CSF
+                    NFPTL,            --*I*  SAVING LABEL ON NFPTL
+                    ISPIN,           --*I*  SPIN MULTI
+                    IORB,            --*I*  ORBITAL MULTI
+                    IPAR,            --*I*  PARITY
+                    INT ,            --*I*  NUMBER OF READ BUFFER FOR CSF
+                    RTNCD
+
+
+      /* DCL FOR LOCAL VAR
+      INTEGER   * 4 --
+                    ERRCD
+
+      LOGICAL    IOERR,      --*L* IO FLAG
+                    IOEND
+      DATA IOSTAT/0/
+      %%IOCHECK IF IOERR ! IOEND THEN EXIT ERRCD = %ERRCD ; %
+      %%IORE  ERRFLAG = IOERR ENDFLAG = IOEND IOSTAT = IOSTAT %
+      %%CHECK IF ERRCD > 0 THEN EXIT EXEC ERROR_INFORMATION ; %
+      BEGIN      ;
+         ERRCD = 0 ; EXEC RESET_IOERR
+      /*  STEP 1 WRITE NFPTL ON LABEL
+         IF ADD = 0      THEN  EXEC FIND_LAST
+         ELSE IF ADD > 0 THEN  EXEC FIND_ADD
+         ELSE EXIT
+         %CHECK
+         REWIND NFPTL
+      /*  STEP 2  READ NFPTL LABEL
+         IF NRLBL > ADD THEN EXEC LOAD_LABEL_ALL
+         ELSE IF NRLBL > 0 THEN  EXEC LOAD_LABEL_ON_CORE ;
+         %CHECK
+         END
+
+      > FIND_LAST
+         BINARY READ  : NFPTL %IORE --
+                NCSF0, NSCSF0, ISPIN0, IORB0, IPAR0, INT0
+         IF IOERR THEN EXIT ERRCD = 5310
+         ELSE IF ^IOEND
+         THEN DO
+            ADD = 0
+            UNTIL IOEND ;
+            ( BINARY READ : NFPTL %IORE NDUMY ; ADD = ADD + 1 )
+            IF IOERR THEN EXIT ERRCD = 5311
+            BACKSPACE NFPTL
+            /* CHECK ISPIN .....
+            IF NCSF ^= NCSF0 ! ISPIN ^= ISPIN0 !             --
+               IORB ^= IORB0 ! IPAR  ^= IPAR0  ! INT ^= INT0  --
+            THEN ERRCD = 5331
+            END
+         ELSE IF IOEND THEN EXEC SAVE_INF_WF
+
+         IF ERRCD > 0 THEN EXIT
+         EXEC SAVE_LABEL_ON_NFPTL
+         END
+
+      > FIND_ADD
+         IF ADD = 1 THEN EXEC SAVE_INF_WF
+         ELSE DO
+            BINARY READ  : NFPTL %IORE --
+                NCSF0, NSCSF0, ISPIN0, IORB0, IPAR0, INT0
+            %%ERRCD 5312 % ; %IOCHECK
+            FOR I = 1, ADD - 1 ; BINARY READ : NFPTL %IORE NDUMY
+            %%ERRCD 5313 % ; %IOCHECK
+            /* CHECK ISPIN .....
+            IF NCSF ^= NCSF0 ! ISPIN ^= ISPIN0 !             --
+               IORB ^= IORB0 ! IPAR  ^= IPAR0  ! INT ^= INT0  --
+            THEN ERRCD = 5342
+            END
+         IF ERRCD > 0 THEN EXIT
+         EXEC SAVE_LABEL_ON_NFPTL
+         END
+
+      > SAVE_INF_WF
+         EXEC RESET_IOERR
+         REWIND NFPTL
+         BINARY WRITE : NFPTL ERRFLAG = IOERR --
+                NCSF, NSCSF, ISPIN, IORB, IPAR, INT
+         IF IOERR THEN ERRCD = 5384
+         END
+
+      >  SAVE_LABEL_ON_NFPTL
+         EXEC RESET_IOERR
+         BINARY WRITE : NFPTL ERRFLAG = IOERR  LABEL
+         REWIND NFPTL
+         IF IOERR THEN EXIT ERRCD = 5321
+         2L ; ' > # OF SELECTED CSF ID    ' ; PUT NSCSF I8 ;
+         1L ; ' > LABEL WAS SAVED ON UNIT ' ; PUT NFPTL  I8 ;
+         1L ; ' > RECORD # WAS            ' ; PUT ADD   I8 ;  1L
+         END
+
+      > LOAD_LABEL_ON_CORE
+         FOR I = 1, NCSF ; LABEL(I) = .FALSE.
+         EXEC SORT_RECORD_ID
+         EXEC LOAD_LABEL
+         END
+
+      > LOAD_LABEL_ALL
+         FOR I = 1, ADD ; IDREC(I) = I ;
+         NRLBL = ADD
+         EXEC LOAD_LABEL
+         END
+
+      > SORT_RECORD_ID
+         FOR I = 1, NRLBL - 1
+         DO
+            KEY = IDREC(I) ; IM = I
+            FOR J = I+1, NRLBL ;
+            DO
+               FORTRAN IF ( KEY .GT. IDREC(J) ) THEN
+                  KEY = IDREC(J) ; IM = J
+                  ENDIF
+               END
+            IDREC(IM) = IDREC(I) ; IDREC(I) = KEY
+            END
+         IF KEY > ADD THEN EXIT ERRCD = 5343
+         END
+
+      > RESET_IOERR
+         IOERR = .FALSE. ; IOEND = .FALSE. ; IOSTAT = 0
+         END
+
+      > LOAD_LABEL
+         REWIND NFPTL
+         NREC = 0
+         DO FOR I = 1, NRLBL
+            WHILE NREC < IDREC(I) ;
+            ( BINARY READ : NFPTL %IORE NDUMY ; NREC = NREC + 1 )
+            %%ERRCD 5314 % ; %IOCHECK
+            BINARY READ : NFPTL %IORE  LWORK ; NREC = NREC + 1
+            %%ERRCD 5315 % ; %IOCHECK
+            FOR J = 1 , NCSF ; IF LWORK(J) THEN LABEL(J) = .TRUE.
+            END
+         IF ERRCD > 0 THEN EXIT
+         NSCSF0 = 0
+         FOR J = 1, NCSF ; IF LABEL(J) THEN NSCSF0 = NSCSF0 + 1
+         2L ;
+         FORMAT WRITE NRLBL,(IDREC(I),I=1,NRLBL)
+         ( 3X,I5, ' > LABEL WAS LOADED FROM RECORD # ', 20I3 )
+         FORMAT WRITE NSCSF0,NSCSF0-NSCSF
+         ( 8X,' SELECTED CSF IS ',I8,'  ( ADDED CSF = ',I8,' ) ')
+         NSCSF = NSCSF0
+         END
+
+      PROCEDURE ERROR_INFORMATION
+         %ermsg
+         END
+  %%SUBNAME PTREES%
+  PROCESS     NO LIST      MAP    HEADER  %SUBNAME
+      SUBROUTINE %SUBNAME --
+                    (NFWFP, NREFXX, NAME, --
+                     LABEL,ITSTV,  --
+                     ISSH, LMAX,   --
+                     NWSQ, L100,   --
+                     NWTC, NWF ,   --
+                     NWTN, NWT ,   --
+                     NWFSG,INT ,   --
+                     NREF,         --
+                     LWFL,NPFLG,   --
+                     INDEXL,NINDEX,--
+                     RTNCD )
+      %UPDATE
+      /           CODED    BY M. SEKIYA ON 1987-12-12 AT IMS
+      /           CHANGED  BY TASHI     ON 1989-10-24 AT HUCC
+      /*   FUNCTION : READ NFWFP ( WAVE FUNCTION ONLY )
+      /*
+      /*   CALLED   : PTMAIN
+      /*   CALLING  : <NONE>
+      /*   OUTPUT   :
+      /*
+      INTEGER   * 2 NWFSG(INT)     --*O* CSF
+
+      LOGICAL   * 4 LABEL(ITSTV)   --*O*
+
+      INTEGER   * 4  --
+                     ISSH(LMAX),   --*O*
+                     NWSQ(L100),   --*O*
+                     NWTC( NWF),   --*O*
+                     NWTN( NWT),   --*O*
+                     INDEXL(NINDEX),--
+                     NREF,         --*O*
+                     LWFL,         --*I*
+                     LMAX,L100,    --*I*
+                     NWF ,NWT ,    --*I*
+                     RTNCD
+      /* DCL LOCAL VAR
+      EXTERNAL ISP,IOR,LCODa
+      character * 1 LCODa
+      REAL      * 8  XDUMY
+      INTEGER   * 4  ERRCD
+   /* INTEGER   * 4  BYT/256/    CHANGED BY TASHI ON 11/17/89 AT KGN
+      INTEGER   * 4  BYT
+      INTEGER   * 4  NAME(30)
+   /*KGN
+   /* INTEGER   * 4  IREP(100),LREP(100),ISHREP(100),LSHREP(100)
+      INTEGER   * 4  IREP(%BASIS), ISHREP(%BASIS)
+      character * 1  LREP(%BASIS), LSHREP(%BASIS)
+      LOGICAL    IOERR,IOEND
+      DATA IOSTAT/0/
+      DATA           BYT/256/
+   %%IOR    ENDFLAG = IOEND ERRFLAG = IOERR IOSTAT = IOSTAT %
+   %%IOCHECK  IF IOERR ! IOEND THEN EXIT ERRCD = %ERRCD ; %
+      BEGIN
+         ERRCD = 0 ;  IOERR = .FALSE. ; IOEND = .FALSE. ; IOSTAT = 0
+         EXEC READ_NFWFP
+         IF ERRCD > 0 THEN EXEC ERROR_INFORMATION
+         REWIND NFWFP
+         IF NPFLG >  3  THEN --
+            EXEC  PRINT_WAVE_FUNCTION
+         END
+      PROCEDURE ERROR_INFORMATION
+         %ermsg
+         END
+
+      PROCEDURE READ_NFWFP
+         REWIND NFWFP
+         BINARY READ : NFWFP %IOR --
+                (NDUMY,I=1,30), --
+                ISPIN,IORB,IPAR,NWT,NWF,ITSTV,ITNEL,LIJB,--
+                IDIAG,LMAX,INT,LWFL,NTYPE,NREF
+         %%ERRCD  5711 % ; %IOCHECK
+         BINARY READ : NFWFP %IOR   --
+                (ISSH(I),I=1,LMAX),(NWTN(I),I=1,NWT), --
+                (NWTC(I),I=1,NWF), (NWSQ(I),I=1,NWT)
+         /*KGN 07/90 (NWTC(I),I=1,NWF), NWSQ
+
+         %%ERRCD  5712 % ; %IOCHECK
+         IMIN = 1 ;
+         DO UNTIL ( IMIN >= INT ! IOERR ! IOEND )
+            IMAX = MIN0 ( IMIN + LWFL - 1, INT )
+            BINARY READ : NFWFP %IOR --
+                   KT, (NWFSG(I),I=IMIN,IMAX)
+            IMIN = IMAX + 1
+            END
+         IF      IOERR THEN EXIT ERRCD = 5721
+         ELSE IF IOEND THEN EXIT ERRCD = 5722
+         EXEC FIND_LWREF
+         IF ERRCD > 0 THEN EXIT
+         FOR I = 1, NREF ;       LABEL(I)=.TRUE. ; /* TRUE IS SELECT
+         FOR I = NREF+1, ITSTV ; LABEL(I)=.FALSE.; /* FALSE IS REJECT
+         UNTIL IOEND ! IOERR
+         DO
+            BINARY READ : NFWFP %IOR --
+               ITWX,JTVX,NOEX,N1OE,N2OE,NIJ,NII,LTRI,  --
+               (XDUMY,I=1,NOEX),     --
+               (NDUMY,I=1,LTRI),  --
+               (INDEXL(I),I=1,NIJ)
+            IF IOEND ! IOERR THEN EXIT
+       /* Assumptions ITWX >= ITVX & NREF >= ITVX   
+       / UPDATE 1988-3-24
+       /*  Change 1991-12-12
+            IF ( ITWX <= NREF ! NII = 0 ) THEN  EXIT
+            IF  N1OE ^= 0 & JTVX <= NREFXX THEN -- 
+            FOR I = 1, NIJ ; LABEL(INDEXL(I)) = .TRUE.
+       /* SUBHAS
+            END
+         IF      IOERR THEN ERRCD = 5731
+         END
+
+
+     > FIND_LWREF
+         LWREF = 0 ; KTSTV = 0 ;
+         DO UNTIL KTSTV  =  NREF
+            JS = LWREF + 1
+            NSJ   =NWFSG(JS)   ; /* NUMBER OF SHELLS
+            NJRPS =NWFSG(JS+1) ; /* NUMBER OF SAME TYPE CONFIGURATION
+            IF NJRPS ^= 1 THEN EXIT ERRCD = 5401
+            LWREF = LWREF + NSJ*4 + 2 ; KTSTV = KTSTV + 1
+            END
+         END
+     PROCEDURE PRINT_WAVE_FUNCTION
+         IWFSG = 0 ; KTSTV = 0 ;
+         UNTIL IWFSG >= INT
+         DO
+            JS    = IWFSG + 1 ;
+            NSJ   =NWFSG(JS)   ; /* NUMBER OF SHELLS
+            NJRPS =NWFSG(JS+1) ; /* NUMBER OF SAME TYPE CONFIGURATION
+            JNEN  =JS+2        ; /* ADDR FOR SHELL ID
+            JNEQ  =JNEN+NSJ    ; /* ADDR FOR OCCUPATION NUMBER
+            JNESL =JNEQ+NSJ    ; /* ADDR FOR SHELL COUPLING
+            FOR I  = 1, NSJ
+            DO ;
+               IREP  (I) = NWFSG(JNESL + I - 1) / BYT
+ /*            LREP  (I) = LCODa ( MOD (NWFSG (JNESL+I-1), BYT) )
+ /*                        CHANGED BY TASHI ON 11/17/89 AT KGN
+               I4TEMP    = NWFSG(JNESL+I-1)
+ /*
+               LREP  (I) = LCODa ( MOD (I4TEMP, BYT) )
+ /*                        END
+               ISH       = NWFSG(JNEN-1+I)
+               ISHREP(I) = ISP(ISH)
+               LSHREP(I) = LCODa(IOR(ISH))
+               END ;
+            FORMAT WRITE --
+            KTSTV+1,KTSTV+NJRPS,--
+            ( NWFSG(JNEN-1+I),ISHREP(I),I=1,NSJ)
+            (/I8,'  TO ',I8,5X, 8(Z5,'-',Z4,'>  ') --
+             /(            25X, 8(Z5,'-',Z4,'>  ')))
+            IF NPFLG > 0 THEN KKK = NJRPS ; ELSE KKK = 1
+            FOR III = 1, KKK
+            DO
+               LLL = NSJ*III
+               FOR I  = 1, NSJ
+               DO ;
+                  ISHREP (I) = --
+                      NWTN(NWFSG(JNESL + LLL + I  - 1))/ BYT
+                  LSHREP (I) = --
+                      LCODa(MOD(NWTN(NWFSG(JNESL+LLL+I-1)), BYT) )
+                  END ;
+               FORMAT WRITE KTSTV+III, --
+               (ISHREP(I),LSHREP(I),NWFSG(JNEQ-1+I),--
+                IREP(I),LREP(I),I=1,NSJ)
+               (I8,'>',16X,8(I4,A1,'*',I2,'(',I2,A1,')') --
+                /(25X,8(I4,A1,'*',I2,'(',I2,A1,')  ')))
+               END
+            KTSTV = KTSTV + NJRPS
+            IWFSG = NSJ * ( NJRPS+3 ) + 2 + IWFSG
+            END
+         END
+  %%SUBNAME PTSCSF %
+  PROCESS     NO LIST      MAP    HEADER  %SUBNAME
+      SUBROUTINE  %SUBNAME  --
+                  (LABEL,            --*O* T -> LARGE CONTRIBUTION
+                   CSET,             --*W* TO BE SELECTED CONTRIBUTION
+                   LOW,              --*W* ENERGY LOWERING FOR EACH STATE
+                   COEF,HMATD,       --*W* READ BUFFER FOR HMAT & WF
+                   E0,NSOL0,         --*W* ENERGY SOLVED BY BKEE
+                   NSCSF,            --*W* NUMBER OF SELECTED CSF
+                   DELETE,           --*W* THROWAWAY
+                   NADDR,            --*W* NEXT CSF CSF ID
+                   NLAST,            --*I* BOX SIZE
+                   TBOX,TOTAL,       --*W* TOTAL CONTRIBUTION IN BOX & SUM
+                   NBOX,DBOX,        --*W* NUMBER IN BOX & SUM
+                   LBOX,             --*W* STARTING CSF ID IN BOX
+                   BOX,              --*W* THRESHOLD FOR BOX
+                   METHOD,           --*I* SELECTION METHOD
+                   NREF,NCSF,        --*I* NUMBER OF REF, CSF, & # OF STATE
+                   NSSELC,NSOLVE,     --*I* STATE NUMBER FOR TO BE SELECTED
+                   ETHR,             --*I* THRESHOLD FOR       CONTRIBUTION
+                   CTHR,             --*I* THRESHOLD FOR       CONTRIBUTION
+                   NFPTH1,NFPTV,        --*I* UNIT NUMBER FOR HMAT & COEF
+                   NPFLG,NFPTS,       --*I* DEBUG FLAG
+                   RTNCD )
+
+
+      IMPLICIT INTEGER   * 4 (A-Z)
+      %UPDATE
+      /*               CODED    BY M. SEKIYA ON 1987-12-12  AT IMS
+      /*               CHANGED  BY TASHI     ON 1989-10-24  AT HUCC
+      /*
+      /*   FUNCTION : CSF SELECTION BY E-LOW
+      /*
+      /*       E-LOW(I) = (E0(NST)-HMATD(I))*C(I,NST)**2/(1.0-C(I,NST)**2)
+      /*
+      /*   CALLED   : PTMAIN
+      /*   CALLING  : <NONE>
+      /*
+      /*
+      /* DCL
+      LOGICAL   * 4 LABEL(NCSF)     --*O* T -> LARGE CONTRIBUTION
+
+
+      REAL      * 8 COEF(NCSF,NSOLVE),--
+                    HMATD(NCSF),     --*W* READ BUFFER FOR HMAT & WF
+                    LOW(NCSF,NSOLVE),--*W* ENERGY LOWERING FOR EACH STATE
+                    CSET(NCSF),      --*W* TO BE SELECTED CONTRIBUTION
+                    E0(NSOLVE),      --*W* ENERGY SOLVED BY BKEE
+                    TBOX  (NLAST+1),   --*W* TOTAL CONTRIBUTION IN BOX & SUM
+                    TOTAL (NLAST+1),   --*W* TOTAL CONTRIBUTION IN BOX & SUM
+                    BOX   (NLAST+2), --*W* BOX
+                    DELETE,          --*I* THRESHOLD FOR TOTAL CONTRIBUTION
+                    ETHR,            --*I* THRESHOLD FOR TOTAL CONTRIBUTION
+                    CTHR             --*I* THRESHOLD FOR TOTAL CONTRIBUTION
+
+      INTEGER   * 4 --
+                    NADDR(NCSF),     --*W* NEXT CSF CSF ID
+                    NLAST,          --*I* BOX SIZE
+                    NBOX  (NLAST+1),  --*W* NUMBER IN BOX & SUM
+                    DBOX  (NLAST+1),  --*W* NUMBER IN BOX & SUM
+                    LBOX  (NLAST+1),  --*W* START CSF ID IN BOX
+                    METHOD,          --*I* SELECTION METHOD
+                    NREF,NCSF,NSOLVE,--*I* NUMBER OF REF, CSF, & STATE
+                    NFPTH1,            --*I* UNIT NUMBER FOR HMAT & COEF
+                    NSCSF,           --*O*
+                    NSOL0,           --*O*
+                    NPFLG,           --*I* DEBUG FLAG
+                    RTNCD
+      REAL      * 8 THRESH,CTHRES,CSQR
+      /* DCL FOR LOCAL VAR
+      INTEGER   * 4 ERRCD
+
+      LOGICAL    IOEND,IOERR      --*L* IO FLAG
+
+      DATA IOSTAT/0/
+
+      %%CHECK  IF ERRCD > 0 THEN EXIT EXEC ERROR_INFORMATION ; %
+
+      %%DEBUG   /  %
+      BEGIN      ;
+         IOERR = .FALSE. ; IOEND = .FALSE.
+         ERRCD = 0 ; THRESH = ETHR ; CTHRES = CTHR ** 2
+         EXEC CLEAR_BOX ; %CHECK
+         EXEC READ_HMAT  ; %CHECK
+         IF NCSF < 100 THEN EXIT EXEC WARNING_RETURN
+
+         EXEC READ_COEFFICIENTS ; %CHECK
+
+         EXEC BK_SELECTION ; %CHECK
+         NSCSF = 0 ;
+         FOR I = 1, NCSF ; IF LABEL(I) THEN NSCSF = NSCSF + 1  ;
+         IF NPFLG >= 2 THEN DO
+            2L ;  ' PRINT FLAG  1  >> LABEL PRINT << SELECTED ' ;
+            PUT NSCSF I8 ; 1L
+            FORMAT WRITE  (I,LABEL(I),I=1,NCSF) ;
+            (/8(I8,1X,L1))
+            END
+         END
+      PROCEDURE WARNING_RETURN
+         ' *WARNING* IN THIS CASE, IT IS EASY TO SOLVE ('
+          PUT NCSF I4 ; ' )' ; 1L ;
+         ' *WARNING* ALL CSF IS SELECTED ' ; 1L
+         FOR I = 1, NCSF ; LABEL(I) = .TRUE. ;  NSCSF = NCSF ;
+         END
+      PROCEDURE ERROR_INFORMATION
+         %ermsg
+         END
+      PROCEDURE SELECTION METHOD
+         %DEBUG ' PROCEDURE SELECTION METHOD ' ; %DEBUG 1L
+      /*  IN THIS PROGRAM AVERAGED SELECTION AND MINIMUM SELECTION
+      /*     WAS EMPLOYED
+         FOR  NST = 1, NSOLVE ;
+         FOR  I = NREF+1, NCSF ;
+         DO ;
+            CSQR = COEF(I,NST) ** 2 ;
+            IF CSQR > CTHRES THEN LABEL(I) = .TRUE.
+            LOW(I,NST) = --
+              DABS( (E0(NST)-HMATD(I))*CSQR/(1.D+00-CSQR) )
+            END
+         IF METHOD = 1 THEN DO
+      /* DO CASE OF AVERAGED
+            FOR  I = NREF+1, NCSF ; CSET(I) = LOW(I,1) / NSOLVE
+            FOR  NST = 2, NSOLVE ;
+            FOR I = NREF + 1, NCSF ; --
+               CSET(I) = CSET(I) + LOW(I,NST) / NSOLVE
+           END
+         IF METHOD = 2 THEN DO
+       /* DO CASE OF MAXIMUM SELECTION
+            FOR  I = NREF+1, NCSF ; CSET(I) = LOW(I,1)
+            FOR  I = NREF+1, NCSF ;
+            FOR NST = 2, NSOLVE
+            IF CSET(I) < LOW(I,NST) THEN CSET(I) = LOW(I,NST)
+            END
+         END
+      PROCEDURE CALC_ESTIMATE_CONTRIBUTION
+         %DEBUG ' PROCEDURE CALC_ESTIMATE_CONTRIBUTION ' ; %DEBUG 1L
+         NST = NSSELC
+         FOR  I = NREF+1, NCSF ;
+         DO ;
+            CSQR = COEF(I,NST) ** 2 ;
+            IF CSQR > CTHRES THEN LABEL(I) = .TRUE.
+            CSET(I) = --
+              DABS( (E0(NST)-HMATD(I))*CSQR/(1.D+00-CSQR) )
+            END
+         END
+
+      PROCEDURE BK_SELECTION
+         %DEBUG ' PROCEDURE BK_SELECTION ' ; %DEBUG 1L
+         IF ( NSOLVE > 1 & METHOD ^= 0 ) THEN EXEC SELECTION_METHOD
+         ELSE   EXEC CALC_ESTIMATE CONTRIBUTION
+         %CHECK
+         ICSF  = NREF ;
+         UNTIL  ICSF = NCSF
+         DO
+            ICSF = ICSF + 1
+            /*  FIND BOX
+            N = NLAST
+            WHILE CSET(ICSF) > BOX(N) ; N = N - 1
+            /*  INTO BOX (N)
+            TBOX(N) = TBOX(N) + CSET(ICSF) ;
+            NBOX(N) = NBOX(N) + 1
+            NADDR(ICSF) = LBOX(N) ; LBOX(N) = ICSF ;
+            END
+         EXEC  PRINT_BOX
+         IF TOTAL(1) <= THRESH THEN EXIT EXEC WARNING_RETURN
+         EXEC  FIRST_BOX_SORT
+         END
+
+      PROCEDURE PRINT BOX
+         %DEBUG ' PROCEDURE PRINT BOX ' ; %DEBUG 1L
+
+         1P ;  2L ;
+         ' * BOX# *  THRESHOLD  *  # IN BOX * '
+         'CONTRIBUTION * TOTAL# TOTAL CONTRIBUTION *'
+         1L
+         TOTAL(NLAST+1) = 0.0D+00  ; DBOX(NLAST+1) = 0
+         FOR I = NLAST, 1, -1
+         DO
+            TOTAL(I) = TOTAL(I+1) + TBOX(I) ;
+            DBOX(I) = DBOX(I+1) + NBOX(I)
+            FORMAT WRITE I,BOX(I),NBOX(I),TBOX(I),DBOX(I),TOTAL(I) ;
+            ( I8,3X,E10.3,I8,1X,F16.6,2X,I8,1X,F18.6 )
+            END
+         IF NPFLG > 4 THEN EXEC PRINT_MEMBER_OF_BOX
+         END
+      PROCEDURE PRINT_MEMBER_OF_BOX
+         2L ' PROCEDURE PRINT_MEMBER_OF_BOX ' ;
+         3L ; ' ** PRINT BOX **** ' ; 2L
+         FOR I = NLAST, 1, -1
+         DO
+            N = LBOX(I) ;
+            IF N = 0 THEN EXIT
+            1L ; ' * BOX # ' ; PUT I I4 ;
+            ' * TOTAL * ' ; PUT NBOX(I) I8 ; 1L
+            UNTIL  N = 0
+            DO
+               II = 0
+               UNTIL ( N = 0 ! II = 10 ) ;
+               ( PUT N I6 ; II=II+1 ; N = NADDR(N) )
+               1L ;
+               END
+            END
+         END
+
+      PROCEDURE FIRST_BOX_SORT
+         N = NLAST ; WHILE TOTAL(N) < THRESH ; N = N - 1 ;
+         NSORT = N
+         N = LBOX(NSORT) ;
+         IF N = 0 THEN EXIT ERRCD = 5988
+         NF = N ; NL = N ; NSAVE = NADDR(N) ; NADDR(N) = -1 ;
+         UNTIL NSAVE = 0
+         DO
+            N = NSAVE ; NSAVE = NADDR(NSAVE)
+            IF CSET(N) < CSET(NF) THEN EXIT --
+            DO ; /*    DO CASE OF MAX CONTRIBUTION IN BOX  EXCHANGE NF AND N
+               NADDR(N) = NF ; NF = N ; NEXT = NF
+               END
+            ELSE IF CSET(N) > CSET(NL) THEN EXIT --
+            DO ; /*    DO CASE OF MIN CONTRIBUTION IN BOX EXCHANGE NL AND N
+               NADDR(NL) = N ; NADDR(N) = -1 ; NL = N ; NEXT = NF
+               END
+            /*    DO CASE OF N IS LESS CONTRIBUTION THAN PREVIOUS ONE
+            /*    NEXT IS NOT CHANGE
+            ELSE IF CSET(NEXT) > CSET(N) THEN NEXT = NF
+            /*    DO CASE OF N IS LARGER CONTRIBUTION THAN PREVIOUS ONE
+
+            WHILE ( CSET(N) > CSET(NADDR(NEXT)) ); NEXT = NADDR(NEXT)
+            NADDR(N) = NADDR(NEXT) ; NADDR(NEXT) = N ;
+
+            END
+         NADDR(NL) = -1 ; LBOX(NSORT) = NF
+         EXEC LABEL_ON
+         IF NPFLG >= 1 THEN EXEC PRINT_SORT_BOX
+         END
+      PROCEDURE LABEL_ON
+         FOR I = 1, NSORT-1 ;
+         DO
+            N = LBOX(I) ; IF N = 0 THEN EXIT
+            UNTIL N <= 0 ;
+            DO
+               LABEL(N) = .TRUE.
+               N = NADDR(N)
+               END
+            END
+         N = LBOX(NSORT) ;
+         DELETE = TOTAL(NSORT+1) ; THRCSF = DBOX(NSORT+1)
+         WHILE DELETE+CSET(N) < THRESH
+         DO
+            DELETE = DELETE + CSET(N) ; THRCSF = THRCSF+1
+            N = NADDR(N) ;
+            END
+         FORMAT WRITE --
+         '  > SELECTED MINIMUM CONTRIBUTION IS ',CSET(N),--
+         '  > CONTRIBUTION  OF  THROWAWAY   IS ',DELETE,--
+         '(',THRESH,' )',--
+         '  > NUMBER OF DELETED CSF         IS ',THRCSF
+         ( //A,E15.3/A,E15.3,A,E15.3,A/A,I15 )
+         UNTIL N <= 0 ; ( LABEL(N) =.TRUE. ; N = NADDR(N) )
+         END
+      PROCEDURE PRINT_SORT_BOX
+         N = LBOX(NSORT)
+         1L ; ' * BOX # ' ; PUT NSORT I4 ;
+         ' * TOTAL * ' ; PUT NBOX(NSORT) I8 ; 1L
+         UNTIL  N <= 0
+         DO
+            FORMAT WRITE --
+            ' * ICSF = ',N,'  * CONTRIBUTION = ',CSET(N),LABEL(N)
+            ( A, I8, 3X,A,F16.8,2X,L1 )
+            N = NADDR(N)
+            END
+         END
+      PROCEDURE CLEAR_BOX
+         %DEBUG ' PROCEDURE CREATE BOX ' ; %DEBUG 1L
+         FOR I = 1, NLAST ;
+         ( NBOX(I) = 0 ; LBOX(I) = 0 ; TBOX(I) = 0.0D+00 )
+         FOR I = 1, NCSF ; NADDR(I) = 0 ;
+         END
+
+
+      PROCEDURE READ_HMAT
+         REWIND NFPTH1 ;
+      /* READ HMATRIX DIAG
+         BINARY READ : NFPTH1 ERRFLAG = IOERR ENDFLAG = IOEND --
+               HDNCSF,HDNCSF, (HMATD(I),I= 1, HDNCSF)
+         IF IOEND THEN ERRCD = 5811
+         ELSE IF IOERR THEN ERRCD = 5812
+         ELSE IF HDNCSF ^= NCSF THEN ERRCD = 5821
+         REWIND NFPTH1 ;
+         END
+      PROCEDURE READ_COEFFICIENTS
+      %DEBUG ' PROCEDURE READ_COEFFICIENTS ' ; %DEBUG  1L
+      /*    TEST CASE
+      /*   FIRST RECORD IS ALREADY READ IN PTMAIN
+      /* ERROR CHECK
+         DO FOR I = 1, NSOL0  ;
+            BINARY READ : NFPTV ERRFLAG = IOERR ENDFLAG = IOEND --
+                    NNN,KST,E0(I),(COEF(K,I),K=1,NNN)
+            IF   IOEND THEN EXIT ERRCD = 5831 ;
+            ELSE IF IOERR THEN EXIT ERRCD = 5832 ;
+            ELSE IF NNN ^= NCSF THEN EXIT ERRCD = 5841
+            ELSE IF KST ^= I    THEN EXIT ERRCD = 5842
+            END
+         REWIND NFPTV
+         END
+   %%SUBNAME PTWCSF %
+   PROCESS     NO LIST      MAP    HEADER  %SUBNAME
+      SUBROUTINE  %SUBNAME  --
+                  (LABEL,            --*O* T -> LARGE CONTRIBUTION
+                   CSET,             --*W* TO BE SELECTED CONTRIBUTION
+                   E0,               --*W* ENERGY SOLVED BY BKEE
+                   NSCSF,            --*W* NUMBER OF SELECTED CSF
+                   DELETE,           --*W* THROWAWAY
+                   NEWCSF,           --*W* OLD -> NEW CORESP TABLE
+                   RULE,             --*I* SELECTION RULE
+                   NREF,NCSF,NSTATE, --*I* NUMBER OF REF, CSF, & STATE
+                   NNSELC,           --*I* STATE NUMBER FOR TO BE SELECTED
+                   THRESH,           --*I* THRESHOLD FOR TOTAL CONTRIBUTION
+                   NFPTB,            --*I* UNIT NUMBER FOR WAVE FUNCTION
+                   NFPTS,            --*I* UNIT NUMBER FOR SUMMARY FILE S
+                   NFPTH2,           --*I* UNIT NUMBER FOR SUMMARY FILE S
+                   NAMEB,            --*I* COMMENT ON NFPTB
+                   INAME,            --*I* CFP TABLE
+                   ISPIN,IORB,       --*I* SPIN, ANG MULTI
+                   IPAR,ITNEL,       --*I* PARITY  OF ELECTRON
+                   NWSQ, L100,   --
+                   NWTC, NWF ,   --
+                   NWTN, NWT ,   --
+                   NWFSG,INT ,   --
+                   ISLC, LRPSMX,       --
+                   NPFLG,PTHR,       --*I* NPFLG FLAG
+                   RTNCD )
+
+      IMPLICIT INTEGER   * 4 (A-Z)
+      %UPDATE
+      /                CODED    BY M. SEKIYA ON 1987-12-12  AT IMS
+      /                CHANGED  BY TASHI     ON 1989-10-24  AT HUCC
+      /*
+      /*   FUNCTION : SELECTING NWFSG BY LABEL
+      /*
+      /*   CALLED   : PTMAIN
+      /*   CALLING  : <NONE>
+      /*
+      /*   OUTPUT   : NFPTB
+      /* DCL
+      LOGICAL   * 4 LABEL(NCSF)     --*O* T -> LARGE CONTRIBUTION
+
+      REAL      * 8 --
+                    CSET(NCSF),      --*W* TO BE SELECTED CONTRIBUTION
+                    E0(NSTATE),      --*W* ENERGY SOLVED BY BKEE
+                    DELETE,          --*I*THRESHOLD FOR TOTAL CONTRIBUTION
+                    PTHR,            --*I* PRINT THRESHOLD
+                    THRESH           --*I*THRESHOLD FOR TOTAL CONTRIBUTION
+
+      INTEGER   * 4 --
+                    NEWCSF(NCSF),   --*W* OLD TO NEW CORRESP TABLE
+                    RULE,            --*I* SELECTION RULE
+                    NREF,NCSF,NSTATE,--*I* NUMBER OF REF, CSF, & STATE
+                    NSCSF,           --*O*
+                    NFPTB,            --*I* UNIT NUMBER FOR HMAT & COEF
+                    NAMEB(30),        --*I* COMMENT ON NFPTB
+                    INAME(18),        --*I* CFP TABLE
+                    ISPIN,IORB,       --*I* SPIN, ANG MULTI
+                    IPAR,ITNEL,       --*I* PARITY  OF ELECTRON
+                    NWSQ( L100),  --
+                    NWTC( NWF ),  --
+                    NWTN( NWT ),  --
+                    INT ,   --
+                    L100,   --
+                    NWF ,   --
+                    NWT ,   --
+                    LRPSMX,       --
+                    NPFLG,           --*I* NPFLG FLAG
+                    RTNCD
+
+      INTEGER   * 2 NWFSG(INT),ISLC(LRPSMX) -- WAVE FUNCTION
+
+ /*   INTEGER   * 4 N0/0/,        --CHANGED BY TASHI ON 11/17/89 AT KGN
+ /*                 BYT/256/,     --*L*
+      INTEGER   * 4 N0,           --*L*
+                    BYT,          --*L*
+                    IREP(100),    --*L*
+                    ISHREP(100); /  *L*
+      character * 1 LREP(100),    --*L*
+                    LSHREP(100)   --*L*
+
+      EXTERNAL   ISP,IOR,LCODa
+      character * 1 LCODa
+
+      %%IOCHECK  IF IOERR ! IOEND THEN EXIT ERRCD = %ERRCD ; %
+      %%IO     ENDFLAG = IOEND ERRFLAG = IOERR IOSTAT = IOSTAT %
+   /* DCL FOR LOCAL VAR
+      INTEGER   * 4 --
+                    ERRCD
+
+      LOGICAL    IOERR,IOEND  --*L* IO FLAG
+
+      %COMDIAG
+      DATA       N0/0/, BYT/256/
+      DATA IOSTAT/0/
+
+      %%CHECK IF ERRCD > 0 THEN EXIT EXEC ERROR_INFORMATION ; %
+
+      BEGIN      ;
+         IOERR = .FALSE. ; IOEND = .FALSE.
+         FOR I = 1, NREF ; CSET(I) = 0.0D+00 ;
+         IF NFPTB > 0 THEN (  EXEC WRITE_NFPTB_HEAD ; %CHECK )
+         KWFSG = INT
+         IF NPFLG >= 3  THEN DO
+           FOR I = 1, NCSF ; NEWCSF(I) = I ;
+           EXEC PRINT_CSF
+           END
+         EXEC SELECT_NWFSG    ; %CHECK
+         EXEC PRINT_SUMMARY
+         END
+      PROCEDURE  PRINT_SUMMARY
+         2L ;
+         IF RULE = 1 THEN --
+          ' >  SELECTION RULE : STATE AVERAGED SELECTION '
+         ELSE IF RULE = 2 THEN --
+          ' >  SELECTION RULE : MAXIMUM SELECTION '
+         ELSE --
+          ' >  SELECTION RULE : STATE (' ; PUT NNSELC I4 ;
+          ' ) SELECTION ' ;
+         1L ;
+
+         FORMAT WRITE --
+         '  >  THRESHOLD           : ',THRESH,' A.U.         ', --
+         '  >  DELETED             : ',DELETE,' A.U.         ', --
+         '  >  # OF SELECTED CSF   : ',NSCSF ,'    FROM ',ITSTV, --
+         '  >  # OF SELECTED TYPES : ',NTYPE ,'    FROM ',ITYPE
+         ( / 2(A,E10.4,A/)/ 2(A,I10,A,I10/)//)
+         IF NFPTB > 0 THEN FORMAT WRITE NFPTB
+         ( '  > SELECTED WAVE FUNCTION WAS SAVED ON UNIT ',I4//)
+         IF NPFLG >= 1  THEN --
+           EXEC PRINT_CSF
+         END
+      PROCEDURE   SELECT_NWFSG
+         IWFSG = 0 ; ITSTV = 0 ; NTYPE = 0 ; NEWSTV = 0 ; KWFSG = 0
+         ITYPE = 0 ; MXRPS = 0
+         UNTIL IWFSG >= INT
+         DO
+            JS    = IWFSG + 1 ;
+            NSJ   =NWFSG(JS)   ; /* NUMBER OF SHELLS
+            NJRPS =NWFSG(JS+1) ; /* NUMBER OF SAME TYPE CONFIGURATION
+            JNEN  =JS+2        ; /* ADDR FOR SHELL ID
+            JNEQ  =JNEN+NSJ    ; /* ADDR FOR OCCUPATION NUMBER
+            JNESL =JNEQ+NSJ    ; /* ADDR FOR SHELL COUPLING
+            III   = NSJ*3 + 2 ; IJRPS = 0
+            FOR I = 1, NJRPS ;
+            DO
+               ICSF = ITSTV + I
+               IF LABEL(ICSF) THEN DO
+                 /* COPY
+                  FOR J = 1, NSJ ;
+                  ISLC(III+NSJ*IJRPS+J) = NWFSG(JNESL+I*NSJ+J-1)
+                  IJRPS = IJRPS + 1 ;
+                  NEWCSF(NEWSTV+IJRPS) = ICSF
+                  END
+               END
+            IF IJRPS > 0 THEN DO
+               ISLC(1) = NSJ  ; ISLC(2) = IJRPS
+               FOR I = 3, 3*NSJ+2 ;  ISLC(I) = NWFSG(JS+I-1)
+               ITOT = NSJ*(IJRPS+3) + 2
+               IF NFPTB > 0 THEN --
+               BINARY WRITE : NFPTB -- ERRFLAG = IOERR
+                              ITOT,(ISLC(I),I=1,ITOT)
+            /* NEW WAVE FUNCTION WAS WRITTEN ON NWFSG
+               FOR I = 1, ITOT ; NWFSG(I+KWFSG)=ISLC(I)
+               NEWSTV = NEWSTV + IJRPS ;
+               NTYPE = NTYPE + 1
+               KWFSG = KWFSG + ITOT
+               IF IJRPS > MXRPS THEN MXRPS = IJRPS ;
+               END
+            ITSTV = ITSTV + NJRPS ; ITYPE = ITYPE + 1 ;
+            IWFSG = NSJ * ( NJRPS+3 ) + 2 + IWFSG
+            END
+         IF NSCSF  < NEWSTV THEN DO
+            2L ; ' NSCSF = '; PUT NSCSF  I8 ; ' ^=' ;  PUT NEWSTV I8 ;
+            ERRCD = 5999
+            ' ** ERROR ERROR ERRRROR **'  ; 2L ;
+            END
+         NSCSF = NEWSTV
+         IF NFPTB > 0 THEN DO
+            BINARY WRITE:NFPTB N0,N0,N0 ; BINARY WRITE:NFPTB MXRPS ;
+            BINARY WRITE:NFPTB NCSF,(LABEL(I),I=1,NCSF)
+            BINARY WRITE:NFPTB NSCSF,(NEWCSF(I),I=1,NSCSF)
+            FORTRAN END FILE NFPTB
+            END
+         REWIND NFPTB
+         END
+
+      PROCEDURE WRITE_NFPTB_HEAD
+         REWIND NFPTB
+         /*KGN JULY 20 1990    CHANGE NWSQ
+         BINARY WRITE : NFPTB ERRFLAG = IOERR --
+          NAMEB,NWT,NWF,ISPIN,IORB,IPAR,ITNEL,--
+                        (NWTN(I),I=1,NWT),(NWTC(I),I=1,NWF), --
+                         NREF,(NWSQ(I),I=1,NWT), N0, LRPSMX, NCSF
+         IF IOERR THEN EXIT ERRCD = 5911
+         BINARY WRITE : NFPTB ERRFLAG = IOERR INAME
+         IF IOERR THEN ERRCD = 5912
+         END
+      PROCEDURE  PRINT_CSF
+         FORMAT WRITE PTHR
+         ( '  >>>> SELECTED WAVE FUNCTION LIST < PRINT THRESHOLD IS ',--
+           F8.5,' > '//)
+         IWFSG = 0 ; ITSTV = 0 ;
+         UNTIL IWFSG >= KWFSG
+         DO
+            JS    = IWFSG + 1 ;
+            NSJ   =NWFSG(JS)   ; /* NUMBER OF SHELLS
+            NJRPS =NWFSG(JS+1) ; /* NUMBER OF SAME TYPE CONFIGURATION
+            JNEN  =JS+2        ; /* ADDR FOR SHELL ID
+            JNEQ  =JNEN+NSJ    ; /* ADDR FOR OCCUPATION NUMBER
+            JNESL =JNEQ+NSJ    ; /* ADDR FOR SHELL COUPLING
+            FOR I  = 1, NSJ
+            DO ;
+               IREP  (I) = NWFSG(JNESL + I - 1) / BYT
+  /*           LREP  (I) = LCODa ( MOD (NWFSG (JNESL+I-1), BYT) )
+  /*                       CHANGED BY TASHI ON 11/17/89 AT KGN
+               ITEMP4    = NWFSG (JNESL+I-1)
+               LREP  (I) = LCODa ( MOD (ITEMP4, BYT) )
+  /*
+               ISH       = NWFSG(JNEN-1+I)
+               ISHREP(I) = ISP(ISH)
+               LSHREP(I) = LCODa(IOR(ISH))
+               END ;
+            FORMAT WRITE --
+            ITSTV+1,ITSTV+NJRPS,--
+            ( NWFSG(JNEN-1+I),ISHREP(I),LSHREP(I),I=1,NSJ)
+            (/I8,'  TO ',I8, 4X,8(Z7,'-',I2,A1,'> '), --
+             (/25X,             8(Z7,'-',I2,A1,'> ')))
+            FOR III = 1, NJRPS
+            DO
+               LLL = NSJ*III
+               FOR I  = 1, NSJ
+               DO ;
+                  ISHREP (I) = --
+                      NWTN(NWFSG(JNESL + LLL + I  - 1))/ BYT
+                  LSHREP (I) = --
+                      LCODa(MOD(NWTN(NWFSG(JNESL+LLL+I-1)), BYT) )
+                  END ;
+               IF  ITSTV < NREF  THEN EXIT --
+                  FORMAT WRITE ITSTV+III, --
+                  (ISHREP(I),LSHREP(I),NWFSG(JNEQ-1+I),--
+                  IREP(I),LREP(I),I=1,NSJ)
+                  (I8,'>',14X,  3X,8(I3,A1,'*',I2,'(',I2,A1,') '),  --
+                  (/26X,8(I3,A1,'*',I2,'(',I2,A1,') ')))
+               IF CSET(NEWCSF(ITSTV+III)) > PTHR   THEN --
+                  FORMAT WRITE ITSTV+III, CSET(NEWCSF(ITSTV+III)),--
+                  (ISHREP(I),LSHREP(I),NWFSG(JNEQ-1+I),--
+                  IREP(I),LREP(I),I=1,NSJ)
+                  (I8,'>',F14.8,3X,8(I3,A1,'*',I2,'(',I2,A1,') '),  --
+                  (/26X,8(I3,A1,'*',I2,'(',I2,A1,') ')))
+               END
+            ITSTV = ITSTV + NJRPS
+            IWFSG = NSJ * ( NJRPS+3 ) + 2 + IWFSG
+            END
+         END
+      PROCEDURE ERROR_INFORMATION
+         %ERMSG
+         END
+   %%SUBNAME BKBOX %
+   PROCESS     NO LIST      MAP    HEADER  %SUBNAME
+   SUBROUTINE %SUBNAME --
+                 (BOX,NBOX,THRBOX,ERRCD)
+      %UPDATE
+      /
+      /               CODED    BY M. SEKIYA  ON 1987-12-12  AT HUCC
+      /*
+      /*   FUNCTION : CREATE BOX
+      /*   CALLED   : PTMAIN
+      /*   CALLING  : <NONE>
+      /*
+      REAL      * 8   BOX(NBOX),     --*O*
+                      THRBOX           --*I*
+
+      INTEGER   * 4   NBOX,          --*I*
+                      ERRCD            --*O*
+
+      REAL      * 8   C                --*L* CONSTANT
+
+      INTEGER   * 4   NLAST            --*L* LAST BOX
+
+      DATA IOSTAT/0/
+
+   BEGIN
+         ERRCD = 0 ;
+         IF NBOX < 10 THEN EXIT EXEC ERROR_INFORMATION
+         NLAST = NBOX
+         BOX(NLAST) = THRBOX ;
+         C =  LOG10(1./THRBOX)
+         C = 10 ** ( C / NLAST )
+         FOR I = NLAST-1,2,-1 ; BOX(I) = BOX(I+1) * C
+         BOX(1) = 1.0D+50 ;
+         END
+
+      PROCEDURE ERROR_INFORMATION
+         ERRCD = 5601 ;
+         %ERMSG
+         END

@@ -1,0 +1,925 @@
+ OPEN >> UNIT=10 FILE=./CFPTBL STATUS=OLD             UNFORMATTED     
+ OPEN >> UNIT=27 FILE=c.NO STATUS=UNKNOWN         UNFORMATTED     
+ OPEN >> UNIT= 2 FILE=c.csf STATUS=OLD             FORMATTED       
+ OPEN >> UNIT= 3 FILE=c.bas STATUS=OLD             FORMATTED       
+ OPEN >> UNIT= 7 FILE=c.time STATUS=UNKNOWN         FORMATTED       
+1*********************************************   BASIS INTEGRAL( AIMAIN  )
+
+ TITLE:   C TRIPLET P, MRSDCI                                                    
+
+ NAME :   C TRIPLET P, MRSDCI                                                    
+
+  NFAII:  AO INTEGRAL          ( 18) =    18
+  LOEI :  LENGTH OF WRITE BUF  (448) =   448
+  BASIS TYPE IS GTF 
+  SUMMARY FILES UNIT =   7      DEBUG FLAG =   0
+
+
+
+ INPUT BASORB       NAME
+0 C TRIPLET P, MRSDCI                                                                                    Nov 3 2615:49:00            
+0NWT   =   10      NFTD  =   18      LOEI  =  448      LMAXX =    3      Z   =     6.0000000000
+ 
+          I L   SCALE FACTOR          I L   SCALE FACTOR          I L   SCALE FACTOR          I L   SCALE FACTOR
+          1 S       1.000000          2 S       1.000000          3 S       1.000000          4 S       1.000000
+         ORB EXP     COEF            ORB EXP     COEF            ORB EXP     COEF            ORB EXP     COEF    
+     8236.000000    0.000531     8236.000000   -0.000113        0.905900    1.000000        0.128500    1.000000
+     1235.000000    0.004108     1235.000000   -0.000878
+      280.800000    0.021087      280.800000   -0.004540
+       79.270000    0.081853       79.270000   -0.018133
+       25.590000    0.234817       25.590000   -0.055760
+        8.997000    0.434401        8.997000   -0.126895
+        3.319000    0.346129        3.319000   -0.170352
+        0.364300   -0.008983        0.364300    0.598684
+ 
+          I L   SCALE FACTOR          I L   SCALE FACTOR          I L   SCALE FACTOR          I L   SCALE FACTOR
+          5 P       1.000000          6 P       1.000000          7 P       1.000000          8 D       1.000000
+         ORB EXP     COEF            ORB EXP     COEF            ORB EXP     COEF            ORB EXP     COEF    
+       18.710000    0.014031        0.382700    1.000000        0.120900    1.000000        1.097000    1.000000
+        4.133000    0.086866
+        1.200000    0.290216
+ 
+          I L   SCALE FACTOR          I L   SCALE FACTOR
+
+          9 D       1.000000         10 F       1.000000
+         ORB EXP     COEF            ORB EXP     COEF    
+
+        0.318000    1.000000        0.761000    1.000000
+0MPOB  =     1     2     3     4     1     2     3     1     2     1
+0MOB   =     0     0     0     0     1     1     1     2     2     3
+0GENERATED INTEGRAL =       781
+0PROGRAM  INTEGRAL LIST      USED TIME =   0.00 SEC
+
+ ****************************************    END OF  AIMAIN   == RETURN CODE IS    0
+
+
+
+
+
+ ===============    END OF  AIMAIN    == RETURN CODE IS    0 ====     USED TIME IS          0 M SEC 
+
+
+
+
+1*********************************************   SCF         ( MCMAIN )
+
+ TITLE:   C TRIPLET P, MRSDCI                                                    
+
+ NAME :                                                                          
+
+  NFTF  : CFP TABLE            ( 10) =    10
+  NFWFB1: CSF TAPE FOR MCSCF   ( 11) =    11
+  NFWFX : EE  TAPE FOR MCSCF   ( 14) =     8
+  NFWFW : WORK FILE 1          (  9) =     9
+  NFTBL : STORE CFP ETC        ( 88) =    88
+
+     PARAMETER LIST                        
+
+      RULE           =     0      LWFL  (  2000) =  2000
+      LRPS  ( 10000) = 10000
+
+  SUMMARY FILES UNIT =   7     PRINT  FLAG =   0
+
+
+ coupling sequence of shells
+   1s  2s  3s  4s  2p  3p  4p  1d  2d  1f
+
+ default closed shells
+   1s
+
+ orbital sequence is default, i. e. the same as the coupling sequence
+
+ cfp table is taken from 
+  coefficient of fractional parentage. s-f: complete, up to l=9          
+
+
+ csf summary:
+  number of configurations:                    2
+  number of configuration types:               2
+  core storage for csf (i*2):                 20
+
+ --------------------------------- stgen  used time =      0.00 sec
+  
+  
+
+  > SPIN       MULTIPLICITY :   3
+  > ORBITAL    MULTIPLICITY :   3
+  > PARITY                  :   0
+  > NUMBER OF ELECTRONS     :   6
+
+
+ >>>> MCFLAG    8
+  
+  
+  > EXPRESSION USED CPU TIMES    0 SEC    0 M SEC
+  
+
+
+
+
+      GENERATED CSF                        :        2
+      NUMBER OF CSF TYPE                   :        2
+      USING READ BUFFER FOR WAVE FUNCTIONS :        0 K BYTE
+
+
+    ENERGY EXPRESSION         SUMMARY:
+
+   COEFFICIENTS ( TOTAL )             21,      CALC      21
+   COEFFICIENTS ( ONE ELECTRON )       5,      CALC       5
+
+   NON-ZERO MATRIX ELEMENTS               3
+
+  LIJB (RESERVED):      2048,      ACTUALLY USED:     13
+  LTRI (RESERVED):     32768,      ACTUALLY USED:     13
+
+
+
+
+ SCF flag =    1
+  
+  
+  VECTOR HISTORY
+      0     0     1     4
+      0     1     1     3
+      0     2     1     2
+      0     3     1     1
+                   NBF     NORB
+ Symmetry    1       4       4
+ Symmetry    2       3       3
+ Symmetry    3       2       2
+ Symmetry    4       1       1
+  
+  
+ Read from   27 set    0       1S to   4S
+ Read from   27 set    0       1P to   3P
+ Read from   27 set    0       1D to   2D
+ Read from   27 set    0       1F to   1F
+  
+  
+  
+  
+   1 iterations    Total Energy        -37.7038804966 a.u.   Elow  -->       0.274E+01 a.u.       0.759E-02
+  
+  
+   2 iterations    Total Energy        -37.7040227102 a.u.   Elow  -->       0.142E-03 a.u.       0.314E-03
+  
+  
+   3 iterations    Total Energy        -37.7040226984 a.u.   Elow  -->       0.118E-07 a.u.       0.376E-05
+  
+  
+   4 iterations    Total Energy        -37.7040226984 a.u.   Elow  -->       0.276E-11 a.u.       0.309E-07
+  
+  
+   5 iterations    Total Energy        -37.7040226984 a.u.   Elow  -->       0.225E-10 a.u.       0.421E-09
+  
+  
+  
+   >>>>>>  CI  Vector
+
+         1
+                         
+      0.98886054
+      0.14884500
+  
+  
+  Symmetry    1
+  
+   OCC Numbers
+
+         1            2
+                         
+      2.00000000     1.95569033
+  
+   Eigen Values
+
+         1            2
+                         
+    -11.31571434    -0.72092538
+  
+   Eigen Vectors
+
+         1            2
+                         
+     -0.97877370     0.01325579
+      0.00705268     0.57902430
+     -0.03778237     0.14108182
+      0.00238109     0.39138153
+  
+  
+  Symmetry    2
+  
+   OCC Numbers
+
+         1
+                         
+      2.04430967
+  
+   Eigen Values
+
+         1
+                         
+     -0.44427730
+  
+   Eigen Vectors
+
+         1
+                         
+      0.35644586
+      0.50732491
+      0.33493175
+
+
+ Output vectors stored in file 27  at record    1
+  
+  
+  >>> SCF converged after    5    iterations !
+  
+   Total Energy =       -37.70402270 a.u.  
+
+                      Used CPU time          0 M sec      Total CPU time          0 Sec
+  
+
+ ****************************************    END OF  MCMAIN  == RETURN CODE IS    0
+
+
+
+
+
+ ===============    END OF  MCMAIN    == RETURN CODE IS    0 ====     USED TIME IS          0 M SEC 
+
+
+
+
+1*********************************************   WAVE FUNCTION( WFMAIN )
+
+ TITLE:   C TRIPLET P, MRSDCI                                                    
+
+ NAME :   C TRIPLET P, MRSDCI                                                    
+
+  NFTF  : CFP TABLE            ( 10) =    10
+  NFWFB0: CSF TAPE FOR GENERAL ( 11) =    11
+  NFWFB1: CSF TAPE FOR SD-CI   ( 12) =    12
+  NFWFE : EE  TAPE FOR SD-CI   ( 15) =    15
+  NFWFP : EE  TAPE FOR PT-EE   ( 14) =    14
+  NFWFW : WORK FILE 1          (  9) =     9
+  NFTBL : STORE CFP ETC        ( 88) =    88
+
+     PARAMETER LIST                        
+
+      RULE           =     1      LWFL  (  2000) =  2000
+      LRPS  ( 10000) = 10000
+
+  SUMMARY FILES UNIT =   7     PRINT  FLAG =   0
+
+
+ coupling sequence of shells
+  12s 11s 12p 11p 12d 11d 11f  2s  2p  1s
+
+ default closed shells
+   1s
+
+ orbital sequence is default, i. e. the same as the coupling sequence
+
+ cfp table is taken from 
+  coefficient of fractional parentage. s-f: complete, up to l=9          
+
+               101   2  1s     501   2  3p
+       1        2s  2p
+   
+               501   4  3p
+       2        2p
+   
+
+ csf summary:
+  number of configurations:                  147
+  number of configuration types:              78
+  core storage for csf (i*2):               1263
+
+ --------------------------------- stgen  used time =      0.00 sec
+  
+  
+  > RESERVED LTRI  IS        0
+  > RESERVED LRPSX IS860000000
+  
+ >>>> MCFLAG    0
+
+  TO        1      101- 1s >    501- 3p > 
+            1>    2s* 2( 1s)   2p* 2( 3p)
+
+  TO        2      501- 3p > 
+            2>    2p* 4( 3p)
+  
+  
+  > EXPRESSION USED    0 SEC    0 M SEC OF CPU TIME
+  
+ >>>> MCFLAG    0
+  
+  
+  > EXPRESSION USED    0 SEC    0 M SEC OF CPU TIME
+  
+
+
+
+
+      GENERATED CSF                        :       92
+      NUMBER OF CSF TYPE                   :       52
+      USING READ BUFFER FOR WAVE FUNCTIONS :        2 K BYTE
+
+
+    ENERGY EXPRESSION      SUMMARY:
+   COEFFICIENTS ( TOTAL )           6781,      CALC    3606
+   COEFFICIENTS ( ONE ELECTRON )     524,      CALC     297
+
+   NON-ZERO MATRIX ELEMENTS            1875
+
+  LIJB (RESERVED):      2048,      ACTUALLY USED:     34
+  LTRI (RESERVED):     32768,      ACTUALLY USED:    128
+
+
+
+
+
+ ****************************************    END OF  WFMAIN  == RETURN CODE IS    0
+
+
+
+
+
+ ===============    END OF  WFMAIN    == RETURN CODE IS    0 ====     USED TIME IS          0 M SEC 
+
+
+
+
+1*********************************************   TRANSFORMATION( TRMAIN)
+
+ TITLE :   C TRIPLET P, MRSDCI                                                    
+
+ NAME  :   C TRIPLET P, MRSDCI                                                    
+
+  NFAII :  AO BASIS INTEGRAL       ( 18) =    18
+  NFTRI :  TRANSFORMED INTEGRAL    ( 16) =    16
+  NFTRN : PERMANENT TR COEFFICIENTS( 27) =    27
+  NFTRC : TEMPORARY TR COEFFICIENTS( 21) =    21
+  NFTRD :  WORK FILE ( DIRECT )    ( 20) =    20
+
+
+  ITRNS :  TRANSFORMATION RUN FLAG       =     2
+  LDSK  :  NUMBER OF BLOCKS IN DA FILE   =  2000
+  SUMMARY FILES UNIT =   7      PRINT FLAG =   0
+
+0VECTOR HISTORY
+   1   0   1   4
+   1   1   1   3
+   1   2   1   2
+   1   3   1   1
+1 C TRIPLET P, MRSDCI                                                                                    Nov 3 2615:49:00            
+0NMVL =        4        NFTRN =       27        LTRA1B =     7200
+ MAXM =        0        NFTA2 =       21        LTRB1  =      448
+ NBFT =       10        NFAII =       18        NCORGD =430000000
+ NNUC =        1        NFTRI =       16
+ NSYM =        4        NFTRD =       20        LPRDI  =     1798
+ NOBT =       10        MXNBX =      200
+0NBF =    4    3    2    1
+0MOB =    4    3    2    1
+1 INPUT VECTORS
+
+
+ SYM=  1
+
+
+                        1              2              3              4
+
+         1    -0.97877370     0.01325579    -0.76273204     2.16382819
+         2     0.00705268     0.57902430    -1.79776150     2.75872245
+         3    -0.03778237     0.14108182     0.06042407    -2.46152029
+         4     0.00238109     0.39138153     1.82314020    -1.00676830
+
+
+ SYM=  2
+
+
+                        1              2              3
+
+         1     0.35644586     0.21875179    -1.26998620
+         2     0.50732491     0.82394054     1.47716920
+         3     0.33493175    -1.25077352    -0.61358330
+
+
+ SYM=  3
+
+
+                        1              2
+
+         1    -0.45618234     1.08893098
+         2    -0.67983891    -0.96524197
+
+
+ SYM=  4
+
+
+                        1
+
+         1     1.00000000
+
+ ORTHONORMALIZED VECTORS
+
+
+ SYM=  1
+
+
+                        1              2              3              4
+
+         1     2.16382819    -0.76273204     0.01325579    -0.97877370
+         2     2.75872245    -1.79776150     0.57902430     0.00705268
+         3    -2.46152029     0.06042407     0.14108182    -0.03778237
+         4    -1.00676830     1.82314020     0.39138153     0.00238109
+
+
+ SYM=  2
+
+
+                        1              2              3
+
+         1    -1.26998620     0.21875179     0.35644586
+         2     1.47716920     0.82394054     0.50732491
+         3    -0.61358330    -1.25077352     0.33493175
+
+
+ SYM=  3
+
+
+                        1              2
+
+         1     1.08893098    -0.45618234
+         2    -0.96524197    -0.67983891
+
+
+ SYM=  4
+
+
+                        1
+
+         1     1.00000000
+
+
+ SYM=  1
+
+
+                                  1                        2                        3                        4
+
+         1    0.216382818992045E+01   -0.762732044447253E+00    0.132557861228002E-01   -0.978773704868878E+00
+         2    0.275872245176887E+01   -0.179776149806450E+01    0.579024304494364E+00    0.705267941847383E-02
+         3   -0.246152029116430E+01    0.604240663699594E-01    0.141081815726617E+00   -0.377823663865633E-01
+         4   -0.100676830014903E+01    0.182314019967394E+01    0.391381529339173E+00    0.238108941520907E-02
+
+
+ SYM=  2
+
+
+                                  1                        2                        3
+
+         1   -0.126998619655217E+01    0.218751786470240E+00    0.356445856343434E+00
+         2    0.147716919616300E+01    0.823940537554568E+00    0.507324911267850E+00
+         3   -0.613583296569620E+00   -0.125077351912454E+01    0.334931748878243E+00
+
+
+ SYM=  3
+
+
+                                  1                        2
+
+         1    0.108893097883005E+01   -0.456182338158822E+00
+         2   -0.965241968553716E+00   -0.679838910659259E+00
+
+
+ SYM=  4
+
+
+                                  1
+
+         1    0.100000000000000E+01
+
+ ****************************************    END OF  TRMAIN == RETURN CODE IS    0
+
+
+
+
+
+ ===============    END OF  TRMAIN    == RETURN CODE IS    0 ====     USED TIME IS          0 M SEC 
+
+
+
+
+1*********************************************   STEP CI      ( CIMAIN  )
+
+ TITLE:   C TRIPLET P, MRSDCI                                                    
+
+ NAME :   C TRIPLET P, MRSDCI                                                    
+
+  SUMMARY FILES UNIT =   7
+
+  DATA SET FILE NUMBERS AND LENGTH SPECIFICATION
+
+      NFCIS=71      NFTD= 24      NCOR = 429999538
+      NFTE= 15      NFTV= 27      LNIX =   449     LCIV =     2000
+      NFTA= 16      NFTW= 28      LMTA =  2000     LTRI =   500000
+      NFTT= 21      NFCV= 37      NFHO =    39     NFIV =        0
+      NFTH= 22      NFHD= 38      NFDW1=    34     NFOW1=       35
+      RUN DIRECTORY           NRNFG     INFLG     IOFLG     NPFLG     DEBUG
+
+      1 ENERGY MATRIX             1         0         0         0         0
+      2 DIAGONALIZATION           1         0        -1         0         0
+      3 DENSITY MATRIX            1         0        -1         0         0
+      4 ENERGY LOWERING           0         0         0         0         0
+      5 NATURAL ORBITAL           1         0         0         0         0
+
+
+           -- NEW VERSION OF ATOMCI -- 
+
+ NSTATE=    1     IDTYP =    0  0  NPCVC =    1     NPOVC =    1
+ IPS   =    7     MAXIT =  100     IOBVC =    1
+0MOTYP =    1     NIND  =    0
+1SECTION 1  ENERGY MATRIX          ************************************************************************************************
+0(RUN)      C TRIPLET P, MRSDCI                                                                                    Nov 3 2615:49:00
+0(EXP)      C TRIPLET P, MRSDCI                                                                                                    
+0(INT)      C TRIPLET P, MRSDCI                                                                                    Nov 3 2615:49:00
+0NOCSF=             92   IDIAG=         1
+0NSYM =  4   NOB  =    4    3    2    1
+
+
+ -- FILES -- 
+  > AO INTEGRAL         FILE IS      16    > ENERGY EXPRESSION   FILE IS      15
+  > H-DIAG MATRIX       FILE IS      38    > H-OFF  MATRIX       FILE IS      39
+  > DENSITY MATRIX      FILE IS      24
+  
+
+ - CORE INFORMATION - 
+  > RESERVED CORE                          IS 429999538 WORD <<
+  >  READ  BUFFER   FOR FACTOR             IS      4096 WORD <<
+  >  READ  BUFFER   FOR INDEXES            IS        32 WORD <<
+  >  READ  BUFFER   FOR INTEGRAL           IS      1602 WORD <<
+  >  WRITE BUFFER   FOR ENERGY MATRIX      IS       184 WORD <<
+  >  WRITE BUFFER   FOR DENSITY EXPRESSION IS      2245 WORD <<
+  >  READ  BUFFER   FOR INTEGRAL ADDRESS   IS 429991377 WORD <<
+  
+  
+  > NKEEP                               92
+  > # OF NON ZERO ELEMENTS  >         1988
+  > # OF DENSITY MATRIX IS  >          524
+  
+  
+     ENERGY DIAG MATRIX (  1,  1 ) =    -0.3768658872E+02
+     ENERGY DIAG MATRIX (  2,  2 ) =    -0.3693454128E+02
+
+
+
+     ENERGY MATRIX (  1,  1 ) =    -0.3768658872E+02
+  
+1SECTION 2  DIAGONALIZATION        ************************************************************************************************
+0(RUN)      C TRIPLET P, MRSDCI                                                                                    Nov 3 2615:49:00
+              NONZERO ELEMENT      46.4703140     %
+  
+                          GUESS CONSTRUCTION TIME=   0.00000 SEC
+
+
+
+1RUN      1         NOCSF=    92        IDTYP=    0    0
+ STATE    1         NKEEP=    92(   80) JDFLG=    7  100     THRES=  0.00D+00
+0       E (TOTAL)           E (REFERENCE)       E (H MATRIX)        E (TOTAL-REF)       E (TOTAL-H MAT)
+0       -37.77940945          0.00000000        -37.68658872        -37.77940945         -0.09282073
+
+        1     -0.97261      28     -0.00488
+        2     -0.13547      48      0.00450
+       12     -0.10395      42      0.00449
+       10      0.08949      60      0.00421
+       32      0.04776      67      0.00403
+        6      0.03811      59     -0.00389
+       87      0.03638      49     -0.00388
+       36      0.03588      50     -0.00364
+       90      0.03414      13     -0.00326
+       71      0.03256      15     -0.00326
+       18      0.02977      43     -0.00318
+       20     -0.02723      58     -0.00310
+       23      0.02618      17      0.00271
+       16     -0.02398       3     -0.00263
+       78      0.02334      37     -0.00256
+       57     -0.02310      39     -0.00240
+       88      0.02046       4     -0.00236
+       31     -0.02021      19     -0.00217
+       46     -0.01806      77     -0.00204
+       35     -0.01671      79     -0.00192
+        8      0.01590       7      0.00182
+       30      0.01443      51      0.00162
+       29     -0.01402      27      0.00160
+       24     -0.01364      84     -0.00145
+       34      0.01356      81      0.00141
+       61     -0.01276      82      0.00136
+       33     -0.01212      53      0.00113
+       86      0.01173      68      0.00109
+       80      0.01145      62     -0.00105
+       63     -0.01023      76      0.00100
+       56      0.00986
+       85     -0.00899
+       22      0.00807
+       65     -0.00800
+       14     -0.00773
+       21      0.00716
+       11     -0.00691
+       54     -0.00690
+       55     -0.00689
+       92     -0.00676
+        9      0.00651
+       44     -0.00632
+       70      0.00617
+       69      0.00615
+       89      0.00578
+        5      0.00568
+       45     -0.00550
+       38     -0.00526
+       47     -0.00523
+       40     -0.00489
+1SECTION 3 DENSITY MATRIX         ************************************************************************************************
+0(RUN)      C TRIPLET P, MRSDCI                                                                                    Nov 3 2615:49:00
+0 1ST ORDER DENSITY MATRIX 
+0 STATE       1
+0    SYMMETRY    1
+
+     1  0.00109176
+     2  0.00254863  0.00729783
+     3 -0.00369409 -0.00368041  1.92558312
+     4  0.00000000  0.00000000  0.00000000  2.00000000
+0    SYMMETRY    2
+
+     1  0.00206239
+     2 -0.00327902  0.01105630
+     3 -0.00315062 -0.00029627  2.02605311
+0    SYMMETRY    3
+
+     1  0.00042956
+     2  0.00101214  0.02542430
+0    SYMMETRY    4
+
+     1  0.00100164
+1SECTION 5  ORBITAL TRANSFORMATION ************************************************************************************************
+0(RUN)      C TRIPLET P, MRSDCI                                                                                    Nov 3 2615:49:00
+  
+  STATE NO.    1
+  
+ 0 OUTPUT VECTORS IN TERMS OF BF
+
+
+ SYM=  1
+
+
+                        1              2              3              4
+
+               2.00000000     1.92559729     0.00819874     0.00017668
+
+         1    -0.97877370     0.01056208     0.00973549     2.29431515
+         2     0.00705268     0.57717351    -0.76342951     3.20340619
+         3    -0.03778237     0.14569635    -0.77087606    -2.33819588
+         4     0.00238109     0.38981265     1.37911822    -1.56098722
+
+
+ SYM=  2
+
+
+                        1              2              3
+
+               2.02605805     0.01212458     0.00098915
+
+         1     0.35839041     0.60123760    -1.13922807
+         2     0.50490617     0.32570531     1.66050330
+         3     0.33606706    -0.99932524    -0.97031239
+
+
+ SYM=  3
+
+
+                        1              2
+
+               0.02546522     0.00038864
+
+         1     0.41182266     1.10646966
+         2     0.71827494    -0.93699205
+
+
+ SYM=  4
+
+
+                        1
+
+               0.00100164
+
+         1     1.00000000
+1         
+ VECTOR SET   1                                                                                   
+
+                  NBF   4   3   2   1
+                  NOB   4   3   2   1
+
+
+
+0                  
+ VECTOR SET   2    C TRIPLET P, MRSDCI                                                            
+
+                  NBF   4   3   2   1
+                  NOB   4   3   2   1
+
+
+
+0                  
+
+1
+
+      RUN DIRECTORY           NRNFG        USED CPU TIME 
+
+      1 ENERGY MATRIX             1           0 SEC   0 M SEC 
+      2 DIAGONALIZATION           1           0 SEC   0 M SEC 
+      3 DENSITY MATRIX            1           0 SEC   0 M SEC 
+      4 ENERGY LOWERING           0           0 SEC   0 M SEC 
+      5 NATURAL ORBITAL           1           0 SEC   0 M SEC 
+
+        TOTAL USED CPU                        0 SEC   0 M SEC 
+  
+  
+  > HMAT & COEF & CSF WERE WRITTEN IN   71 <
+  
+
+ ****************************************    END OF  CIMAIN   == RETURN CODE IS    0
+
+
+
+
+
+ ===============    END OF  CIMAIN    == RETURN CODE IS    0 ====     USED TIME IS          0 M SEC 
+
+
+
+
+1*********************************************   RESULTS & SUMMARY( RSMAIN )
+
+ TITLE:   C TRIPLET P, MRSDCI                                                    
+
+ NAME :   C TRIPLET P, MRSDCI                                                    
+
+  NFCIS :  CI RESULTS           ( 71) =    71
+  RULE  :  FORMULA FOR CONTRIBUTION   =     2
+  PTHR :  PRINT THRESHOLD            =-0.100E-02
+  SUMMARY FILES UNIT =   7      PRINT FLAG =   0
+
+
+  >  C TRIPLET P, MRSDCI                                                                                    Nov 3 2615:49:00
+
+  > STATES INFORMATION : 
+     ISPIN:  SPIN MULTIPLICITY         =       3
+     IORB :  ORBITAL MULTIPLICITY      =       3
+     IPAR :  PARITY (EVEN: 0, ODD: 1)  =       0
+     ITNEL:  TOTAL NUMBER OF ELECTRONS =       6
+
+     # REF:  NUMBER OF REFERENCES      =       2
+     DIM  :  CI VECTOR SIZE            =      92
+1
+
+      1 STATE INFORMATION 
+           REFERENCE ENERGY (WEIGHT)  =       -37.70392737  (  0.96431651 )
+           SD-CI ENERGY (CORRELATION) =       -37.77940945  ( -0.07548208 )
+           ESTIMATE SD ENERGY (THROWN)=       -37.77940945  (  0.00000000 )
+           MAX CONTRIBUTION FROM CSF  =           0.000E+00
+           E(Dav1) [E * (1-C)]        =       -37.78210291  ( -0.00269346 )
+           E(Dav2) [E * (1-C)/C]      =       -37.78220258  ( -0.00279313 )
+           E(Dav3) [E * (1-C)/(2*C-1)]=       -37.78230991  ( -0.00290046 )
+
+
+  
+  
+  
+  >> BROWN'S FORMULA  WAS USED FOR ESTIMATION OF CSF CONTRIBUTION
+  
+  
+
+                          101- 1s>     501- 3p> 
+     1     -0.97261      2s* 2( 1s)   2p* 2( 3p)
+
+                          501- 3p> 
+     2     -0.13547      2p* 4( 3p)
+  
+  
+  
+  
+  
+1
+
+      1 STATE INFORMATION 
+           REFERENCE ENERGY   =         -37.703927  (  0.964317 )
+           SD-CI ENERGY       =         -37.779409
+           ESTIMATE ENERGY    =         -37.779409
+
+
+  
+  
+  
+    ORBITAL CONTRIBUTION ( TOTLAL # OF ORB  10 )
+  
+     ORB ID        ORBITAL          E (CONTRIBUTION)   E (TWO PARTICLE)
+  
+       1             12s             -0.00590068        -0.00057257
+       2             11s             -0.01228500        -0.00144074
+       3             12p             -0.00739684        -0.00088686
+       4             11p             -0.01685237        -0.00251787
+       5             12d             -0.00156286        -0.00045474
+       6             11d             -0.04444444        -0.00719321
+       7             11f             -0.00416099        -0.00084499
+       8              2s             -1.68434521        -1.63196667
+       9              2p             -1.70600040        -1.68803835
+      10              1s              0.00000000         0.00000000
+  
+  
+  
+    ORBITAL CONTRIBUTION -- CORRELATED --
+  
+    ORB ID       1           2           3           4           5           6           7           8           9          10
+  
+    1 -0.00057257 -0.00098223 -0.00226913 -0.00189659 -0.00000549 -0.00000162  0.00000000 -0.00433877 -0.00590068  0.00000000
+    2 -0.00098223 -0.00144074 -0.00216672 -0.00597628 -0.00001064 -0.00006258  0.00000000 -0.00978880 -0.01228500  0.00000000
+    3 -0.00226913 -0.00216672 -0.00088686 -0.00144309 -0.00030280 -0.00023486 -0.00000112 -0.00678349 -0.00561140  0.00000000
+    4 -0.00189659 -0.00597628 -0.00144309 -0.00251787 -0.00042461 -0.00150536 -0.00000520 -0.01268581 -0.01401022  0.00000000
+    5 -0.00000549 -0.00001064 -0.00030280 -0.00042461 -0.00045474 -0.00001402 -0.00004759 -0.00127072 -0.00137012  0.00000000
+    6 -0.00000162 -0.00006258 -0.00023486 -0.00150536 -0.00001402 -0.00719321 -0.00307276 -0.04019449 -0.04142295  0.00000000
+    7  0.00000000  0.00000000 -0.00000112 -0.00000520 -0.00004759 -0.00307276 -0.00084499 -0.00339073 -0.00389061  0.00000000
+    8 -0.00433877 -0.00978880 -0.00678349 -0.01268581 -0.00127072 -0.04019449 -0.00339073 -1.63196667 -1.67740721  0.00000000
+    9 -0.00590068 -0.01228500 -0.00561140 -0.01401022 -0.00137012 -0.04142295 -0.00389061 -1.67740721 -1.68803835  0.00000000
+   10  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+  
+  
+  
+
+       5   TO       6     -0.0017821     (   -0.001819 ) 
+                                          201- 2s>     201- 2s>     501- 3p> 
+       6>  0.03811170     -0.0016397    11s* 1( 2s)   2s* 1( 3s)   2p* 2( 3p)
+
+       9   TO      10     -0.0137004     (   -0.015957 ) 
+                                          A01- 2d>     201- 2s>     501- 3p> 
+      10>  0.08948672     -0.0135632    11d* 1( 2d)   2s* 1( 3d)   2p* 2( 3p)
+
+      11   TO      12     -0.0185252     (   -0.034482 ) 
+                                          A01- 2d>     201- 2s>     601- 1d> 
+      12> -0.10394783     -0.0183700    11d* 1( 2d)   2s* 1( 3d)   2p* 2( 3p)
+
+      17   TO      18     -0.0012565     (   -0.036593 ) 
+                                          401- 2p>     801- 2d> 
+      18>  0.02977377     -0.0012344    11p* 1( 2p)   2p* 3( 3p)
+
+      19   TO      20     -0.0010641     (   -0.037657 ) 
+                                          401- 2p>     401- 2p> 
+      20> -0.02722544     -0.0010499    11p* 1( 2p)   2p* 3( 3p)
+
+      22   TO      23     -0.0020133     (   -0.039860 ) 
+                                          101- 1s>     501- 3p> 
+      23>  0.02618318     -0.0014407    11s* 2( 1s)   2p* 2( 3p)
+
+      29   TO      32     -0.0073413     (   -0.048264 ) 
+                                          201- 2s>     401- 2p>     201- 2s>     401- 2p> 
+      29> -0.01401706     -0.0013007    12s* 1( 2s)  12p* 1( 1p)   2s* 1( 2p)   2p* 1( 3p)
+      31> -0.02021249     -0.0012623    11s* 1( 2s)  12p* 1( 1p)   2s* 1( 2p)   2p* 1( 3p)
+      32>  0.04776206     -0.0037860    11s* 1( 2s)  11p* 1( 1p)   2s* 1( 2p)   2p* 1( 3p)
+
+      33   TO      36     -0.0049674     (   -0.053231 ) 
+                                          201- 2s>     401- 2p>     201- 2s>     401- 2p> 
+      36>  0.03587950     -0.0021903    11s* 1( 2s)  11p* 1( 3p)   2s* 1( 2p)   2p* 1( 3p)
+
+      54   TO      57     -0.0019259     (   -0.056556 ) 
+                                          401- 2p>     A01- 2d>     201- 2s>     401- 2p> 
+      57> -0.02310497     -0.0011392    11p* 1( 2p)  11d* 1( 1p)   2s* 1( 2p)   2p* 1( 3p)
+
+      70   TO      71     -0.0037009     (   -0.061536 ) 
+                                          901- 1s>     501- 3p> 
+      71>  0.03255964     -0.0034587    11d* 2( 1s)   2p* 2( 3p)
+
+      77   TO      78     -0.0025008     (   -0.064048 ) 
+                                          A01- 2d>    1601- 2f>     201- 2s>     401- 2p> 
+      78>  0.02333984     -0.0024757    11d* 1( 2d)  11f* 1( 1p)   2s* 1( 2p)   2p* 1( 3p)
+
+      86   TO      87     -0.0022839     (   -0.067526 ) 
+                                          501- 3p>     101- 1s> 
+      87>  0.03638297     -0.0016703    11p* 2( 3p)   2s* 2( 3p)
+
+      88   TO      88     -0.0011718     (   -0.068698 ) 
+                                          401- 2p>     401- 2p>     101- 1s> 
+      88>  0.02045644     -0.0011718    12p* 1( 2p)  11p* 1( 3p)   2s* 2( 3p)
+
+      89   TO      90     -0.0032095     (   -0.071908 ) 
+                                          B02- 3p>     101- 1s> 
+      90>  0.03413750     -0.0030191    11d* 2( 3p)   2s* 2( 3p)
+
+ ****************************************    END OF  RSMAIN  == RETURN CODE IS    0
+
+
+
+
+
+ ===============    END OF  RSMAIN    == RETURN CODE IS    0 ====     USED TIME IS          0 M SEC 
+
+
+
+

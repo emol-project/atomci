@@ -1,0 +1,10 @@
+   INTEGER         CHRSQN(0:255), PCSYM, BLNK, LPAR, MINUS, QTSYM,--
+                   SEMC,  STAR,  RPAR,   LETA,  LETZ,  LET0, LET9,--
+                   UNDLN, EQSYM, ANDSYM, SLASH, COLON, GTSYM, --
+                   LTSYM, ORSYM, NOTSYM, EXCSYM ;
+   CHARACTER       CHRREP*1, PRTCHR (-128:127)*1 ;
+   COMMON /CHRCMI/ CHRSQN,        PCSYM, BLNK, LPAR, MINUS, QTSYM,--
+                   SEMC,  STAR,  RPAR,   LETA,  LETZ,  LET0, LET9,--
+                   UNDLN, EQSYM, ANDSYM, SLASH, COLON, GTSYM, --
+                   LTSYM, ORSYM, NOTSYM, EXCSYM ;
+   COMMON /CHRCMA/ CHRREP, PRTCHR ;

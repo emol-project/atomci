@@ -1,0 +1,13 @@
+OPEN UNIT=7 FILE=ti.csf
+END
+" INPUT DATA OF ATGEN.  # OF CORRELATING ORBITALS.
+  3S 4P 3D 2F 1G )))
+" SHELL ( OCCUPIED ORBITALS )
+   4S    3D  )))
+" REF.
+   4S*2)  3D*2))
+   )))
+" ORDER OF COUPLING
+  4S 3D  )))
+   1S 2S 2P 3S 3P
+   -1

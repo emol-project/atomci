@@ -1,0 +1,2088 @@
+  %%SUBNAME  CIMAIN  %
+  PROCESS    NO LIST      MAP    HEADER  %SUBNAME
+  PROCESS       FILE  'cici.f'
+  SUBROUTINE %SUBNAME (TITLE, FILES, METHOD, USCPU,  RTNCD)
+  %CPYRIGHT
+  %UPDATE
+  /*
+  /*     FUNCTION :  HMAT DIAG DENSITY MATRIX NATURAL ORBITAL
+  /*
+  /*     CALLED   : ATOMCI
+  /*     CALLING  : CIDRIV
+  /*                CIGRST
+  /*     INPUT    : NAMELIST  CI
+  /*     RETURNS  : FILE NFCIS( UNIT = 71 AS NORMALY )
+  /*
+  /* SELECTION OF VECTOR OR NOT
+  IMPLICIT INTEGER   * 4 (A-Z)
+  %INCMAIN
+  %INCMACRO
+  %INCWORK
+  %param
+
+      INTEGER   * 4 VAR(%WORKCORE)
+      common/work/var
+   /* Bucket-1 typed views of the same /work/ heap as VAR (INTEGER*4).
+   /* VARR8(m) overlays VAR(2m-1:2m) and VARI2(2j-1:2j) overlays VAR(j).
+   /* WKCORE aligns R8 regions to ODD word addresses, so an R8 datum
+   /* passed as VAR(k) with k odd is VARR8((k+1)/2), and an I2 datum at
+   /* VAR(k) is VARI2(2k-1).  Passing the typed view removes the
+   /* deliberate INTEGER*4 -> REAL*8 / -> INTEGER*2 argument mismatch.
+      REAL      * 8 VARR8(%WORKCORE/2)
+      INTEGER   * 2 VARI2(%WORKCORE*2)
+      EQUIVALENCE (VAR(1),VARR8(1)),(VAR(1),VARI2(1))
+
+
+   /*
+   /* DCL FOR LOCAL VAR
+   /*
+   /* USED FILE  DESCRIPTIONS
+   INTEGER * 4  --
+                --
+                --  NFTS CHANGED TO NFCIS  71 = SUMMARY FILES
+         NFCIS, --  NFCIS  71 = SUMMARY FILES
+                --   USING SECTION 6
+                --
+         NFTB , -- NFPTB   11 = WAVEFUNCTION
+                --   USING SECTION 6
+                --
+         NFTE , -- 15 = UNSORTED EXPRESSION
+                --   CONNECTING WITH ENERGY EXPRESSION
+                --
+         NFTA , -- 16 = TRANSFORMED INTEGRAL
+                --   CONNECTING WITH TRANSFORMATION
+                --
+         NFTT , -- 21 = COEFFICIENTS  FOR BASIS FUNCTION
+                --   CONNECTIONS WITH TRANSFORMATION
+                --
+         NFTH , -- 22 = DENSITY MATRIX
+                --   TEMP FILE COPY NFTH TO NFTW
+                --
+         NFTD , -- 24 = DENSITY MATRIX EXPRESSION
+                --   CONNECTING SECTION 1 WITH SECTION 3
+                --
+         NFTV , -- 27 = NATURAL ORBITALS
+                --   RECORD SET ROUTINE IS FIND
+                --
+         NFTW , -- 28 = DENSITY & CI VECTOR FILE
+                --   RECORD SET ROUTINE IS MOVEW
+                --
+                -- FILE FOR EMOR1
+         NFCV,  -- 37 = CI VECTOR FILE ( OUTPUT )
+                --
+         NFHD,  -- 38 = HAMILTONIAN ( DIAG ELEMENT )
+                --
+         NFHO,  -- 39 = HAMILTONIAN ( OFF DIAG ELEMENT )
+                --
+         NFIV,  --  0 = CI VECTOR FILE  ( INPUT INITIAL VECTOR )
+                --
+         NFDW1, -- 34 = HAMILTONIAN ( DIAG ELEMENT )
+                --
+         NFOW1, -- 35 = HAMILTONIAN ( OFF DIAG ELEMENT )
+         NRUN,  --
+         NKCSF, --
+         LNIX ,          -- RECORD LENGTH FOR DENSITY MATRIX
+         LMTA ,          -- RECORD LENGTH
+         LTRI ,          -- RECORD LENGTH
+         LCIV ,          -- RECORD LENGTH FOR CI VECTOR
+         NAME(30),      -- NAME ( COMMENT )
+         NRNFG(6),      -- RUN FLG ( 0 MEANS SKIP )
+         INFLG(6),      -- INPUT  IO FLAG  ( SECT. 2 3 & 4 )
+                        -- ( 0 : READING FROM TEMP FILE )
+                        -- ( * : READING FROM NFTW OR NFTV )
+         IOFLG(6),      -- OUTPUT IO FLAG  ( SECT. 2 3 & 4 )
+         NPFLG(6),      -- PRINT FLAG
+         DEBUG(6),      -- PRINT FLAG
+         IDTYP(2),      -- CSF SELECTION FLAG
+         MSELCT,        -- CSF SELECTION USING COEF OF MSELCT STATE
+         MATE(%BASIS),     -- ** changed by Mas 92-11-12
+         ICG(%BASIS),      --
+         ICU(%BASIS),      -- ** changed by Mas 
+         NIND,          --
+         IND(4,100),    -- SELECTION FLAG OF ORBITAL
+         NREL(20),      -- NUMBER OF REFERENCE FOR STATE #
+         INREF(400),    -- REFERENCE CSF ID #
+         NSTATE,        -- # OF STATES
+         NSOLVE,        -- # OF STATES
+         NREF,          --
+         NPOVC,         --
+         NPCVC,         --
+         NAMEFG,        --
+         IOBVC          --
+
+   REAL   * 8           --
+         EDT(61),       -- EQUIVALENCE TO ET, XREF, AND EONE
+         ET(20),        -- EIGENVALUE
+         XREF(20),      -- REFERENCE ENERGY
+         EONE(20),      -- CHARGE DUMMY
+         THRREF,        -- THRESHOLD FOR SELECTION OF COEFFICIENT
+         THRCSF,        -- THRESHOLD FOR SELECTION OF CSF
+         PEREL,         -- PERCENTAGE OF ENERGY CONTRIBUTION
+         THRVC  ;       /*
+
+   /* DIAG PARAMETER LIST
+   INTEGER * 4          --
+         WKADR,         -- INITIAL VECTOR
+         NSDIM,         -- INITIAL VECTOR
+                        -- = 0 : UNIT VECTOR
+                        -- > 0 : SOLUTION OF SMALL MATRIX ( # OF DIM )
+         IPS  ,         -- THRESHOLD IN DIAG 10 ** ( - IPS )
+         MAXIT,         -- # OF ITERATION
+         NCORC         ;/* CORE REGION
+
+   %%MAX_IKEPT  2000%
+   INTEGER * 4 IKEPT(%MAX_IKEPT)
+   LOGICAL  IOEND,IOERR
+      EQUIVALENCE --
+       (EDT(2),ET(1)),(EDT(22),XREF(1)),(EDT(42),EONE(1))
+
+      DATA        IKEPT/%MAX_IKEPT * 0 /
+      DATA --
+           NFTE0/15/ --
+           NFDW1,NFOW1,MSELCT,THRCSF/ --
+              34,   35,    1,0.001D0/ --
+           NRNFG/ 1, 1, 1, 0, 1, 1/--
+           INFLG/ 0, 0, 0, 0, 0, 0/--
+           IOFLG/ 0,-1,-1, 0, 0, 0/--
+           NPFLG/ 0, 0, 0, 0, 0, 0/--
+           DEBUG/ 0, 0, 0, 0, 0, 0/--
+           IOBVC,NPOVC,NPCVC,NAMEFG,NRUN,IDTYP,NSTATE,MAXIT,IPS/--
+               1,    1,    1,     0,   1, 0, 0,     1, 1000,  6/--
+           NSDIM,LNIX,LMTA,LCIV,NIND,MOTYP/--
+             400, 449,2000,2000,0,    1/--
+           THRREF,PEREL,THRVC/0.50D0,0.005D0,0.0001D0/--
+           NREL/20*0/--
+           XREF/20*0.0D0/--
+
+      DATA iostat/0/
+
+  /    DATA IBLNK/'    '/
+      %INCDATA
+      %DATALTRI
+      %%NAMELIST CI %
+      NAMELIST/%NAMELIST/ --
+       NFTE,NFIV, -- FILE UNIT
+       LNIX,LMTA,LTRI,                               --  LRECL
+       NRUN,NAME,NAMEFG,                             --  COMMENT
+       NRNFG,INFLG,IOFLG,NPFLG,DEBUG,IOBVC,NPOVC,NPCVC,--
+       IDTYP,NKEPT,IKEPT,NSTATE,MAXIT,NSDIM,IPS,     -- CONTROL FOR DIAG
+       XREF,THRVC,                                   --
+       NIND,IND,MOTYP,MATE,ICG,ICU,                  -- CONTROL FOR NO
+       NREL,INREF,THRREF,PEREL,                      --
+       MSELCT,THRCSF,NFDW1,NFOW1                     --
+
+
+   BEGIN
+      RTNCD =0 ; ERRCD = 0 ;
+      %START
+      EXEC SETUP
+      FORTRAN READ(5,%NAMELIST,END=900)
+  /*
+  /*                           CHANGED BY TASHI ON 11/30/89 AT KGN
+      REWIND NFCV
+  /*
+      EXEC WORK_REGION
+      IF ERRCD > 0 THEN EXIT %FINISH
+      EXEC SET_JOB_NAME
+      EXEC PRINT_HEADER
+
+
+    CALL       CIDRIV --
+     (VARR8((WKADR+1)/2), VAR(WKADR),  NCORC,        -- FREE REGION
+     NFTE,   NFTA,   NFTT,   NFTB,                   -- INPUT FILE
+     NFTD,   NFTV,   NFTW,   NFTH,                   -- OUTPUT FILE
+     NRUN,   LNIX,   LMTA,   LTRI,   LCIV,           -- RECORD LENGTH
+     NRNFG,  INFLG,  IOFLG,  NPFLG,  IDTYP,          -- RUN FLAG
+     NPOVC,  NPCVC,  NAMEFG, IOBVC,                  -- PRINT FLAG
+     NAME,   NKEPT,  NSTAT,  IKEPT,                  --
+     MAXIT,  IPS,    NSDIM,  THRVC,                  --
+     NFCV,   NFHD,   NFHO,   NFIV,                   -- FILE ( EMOR1 )
+     NFDW1,  NFOW1,  THRCSF, MSELCT,                 --
+     NIND,   IND,    MOTYP,  MATE,   ICG,    ICU,    -- SECTION 5
+     EDT,    ET,     XREF,   EONE,                   -- ENERGY
+     NREL,   INREF,  THRREF, PEREL,  NREF,           -- SECTION 4
+     NKCSF,  VAR(IKEEP),                             --
+     VAR(CHAIN),    VAR(INDEX),    VARR8((CF+1)/2),  --  WORK REGION
+     DEBUG,  ERRCD)
+     IF ERRCD > 0 THEN EXIT %FINISH
+     IF NFCIS = 0 THEN EXIT %FINISH
+  /*                   CHANGED BY TASHI AT KGN ON 12/1/89
+     IF NRNFG(6) = 0 THEN EXIT
+     EXEC WORK_REGION_2 ; IF ERRCD > 0 THEN EXIT %FINISH
+     CALL CIGRST  --
+    (VAR(ISSH),  VAR(NWTN),   VAR(NWTC), VARI2(2*NWFSG-1), -- READ BUF NFTE
+     NAME,                                             --
+     VARR8((HDIG+1)/2), VARR8((HOFF+1)/2),             --
+     VARR8((COEF+1)/2), VARR8((ENERGY+1)/2),           -- READ BUFFER
+     NFCIS,  NFTE,   NFHD,   NFHO,   NFCV,             -- FILES
+     NSTATE, NKCSF,  NREF,   INTMAX, LMAX,             --
+     NWT,    NWF,                                      --
+     ERRCD)
+     EXIT %FINISH
+
+    FORTRAN 900 CONTINUE
+      FORMAT WRITE --
+       '    NAMELIST - &CI -  IS NOT FOUND IN INPUT DATA  '
+      (/' ',A,20('*')////)
+      ERRCD = 7000
+      %FINISH
+    END
+    %INCWKEXC
+    > SET_JOB_NAME
+    /    NAME(13) = METHOD(1) ;/NAME(14) = METHOD(2)
+    /    NAME(16) = METHOD(3) ;/NAME(17) = METHOD(4)
+    /    NAME(19) = METHOD(9) ;/NAME(20) = METHOD(10)
+    /    NAME(22) = METHOD(11);/NAME(23) = METHOD(12)
+    /    NAME(25) = METHOD(5) ;/NAME(26) = METHOD(6)
+    /    NAME(28) = METHOD(7) ;/NAME(29) = METHOD(8)
+         NAME(27) = METHOD(9) ; NAME(28) = METHOD(10)
+         NAME(29) = METHOD(11); NAME(30) = METHOD(12)
+         END
+
+      PROCEDURE WORK_REGION_2
+         EXEC WK_FREE
+         NKCSF = ITSTV
+         ACTION = %ALLOC
+         %%VNAME NWTN  % ; TYPE = %I4 ; LENGTH = NWT   ;  %WKCORE
+         %%VNAME NWTC  % ; TYPE = %I4 ; LENGTH = NWF   ;  %WKCORE
+         %%VNAME ISSH  % ; TYPE = %I4 ; LENGTH = LMAX  ;  %WKCORE
+         %%VNAME NWFSG % ; TYPE = %I2 ; LENGTH = INTMAX;  %WKCORE
+         %%VNAME HDIG  % ; TYPE = %R8 ; LENGTH = NKCSF ;  %WKCORE
+         %%VNAME HOFF  % ; TYPE = %R8 ; LENGTH = NKCSF*NREF   ; %WKCORE
+         %%VNAME COEF  % ; TYPE = %R8 ; LENGTH = NKCSF*NSTATE ; %WKCORE
+         %%VNAME ENERGY% ; TYPE = %R8 ; LENGTH = NSTATE       ; %WKCORE
+         IF NPFLG(6) > 0
+         THEN ( %%VNAME NDUMY % ; ACTION = %LIST ; %WKCORE )
+         END
+
+
+      PROCEDURE WORK_REGION
+   /*     CONVERTED   BY MASAHIRO  30/10/86
+   /*  STORE WORK REGION FOR SORT ( NKCSF : USING NFTE )
+   /*  ( STORAGE IS NKCSF * ( I2*4 + R8*1 ) )
+       REWIND NFTE
+       BINARY READ : NFTE ERRFLAG = IOERR ENDFLAG = IOEND --
+          (NDUMY,I=1,33),NWT,NWF,ITSTV,(NDUMY,I=1,3),--
+          LMAX,INTMAX,NDUMY,NDUMY, NREF, NDUMY
+       REWIND NFTE
+       IF IOERR ! IOEND THEN EXIT ERRCD = 7011
+       NKCSF = ITSTV
+      /  IKEEP(NKCSF),   -- CSF ID #
+      /  ICHAIN(0:NKCSF),-- POINTER OF ORDERING CSF ID
+      /  INDEX(NKCSF)   ,-- COEFFICIENT BUFFER
+
+         ACTION = %ALLOC
+         %%VNAME CF    % ; TYPE = %R8 ; LENGTH = NKCSF ;  %WKCORE
+         %%VNAME IKEEP % ; TYPE = %I4 ; LENGTH = NKCSF ;  %WKCORE
+         %%VNAME INDEX % ; TYPE = %I4 ; LENGTH = NKCSF ;  %WKCORE
+         %%VNAME CHAIN % ; TYPE = %I4 ; LENGTH = NKCSF + 2 ; %WKCORE
+         ACTION = %REGION
+         %%VNAME NCORC % ; TYPE = %I4 ; %WKCORE
+         ACTION = %ALLOC
+         %%VNAME WKADR % ; TYPE = %R8 ; LENGTH = NCORC/2 ;  %WKCORE
+         END
+      %FILETBL
+      PROCEDURE SETUP
+      FOR I = 1,150   ; MATE(I) = 0
+      FOR  I= 1,18 ; NAME(I) = TITLE(I)
+      FOR  I=19,30 ; call ctoi4 ( '    ', NAME(I) )
+         IOERR = .FALSE. ; IOEND = .FALSE. ;
+         NFTE  = NFTE0
+         NFCIS = METHOD(%NFCIS) ; NFCV  =METHOD(%NFCIV)
+         NFHD  = METHOD(%NFCIH1); NFTD  =METHOD(%NFCID)
+         NFIV  = METHOD(%NFCII) ; NFTH  =METHOD(%NFCIH)
+         NFHO  = METHOD(%NFCIH2); NFTT  =METHOD(%NFTRC2)
+         NFTA  = METHOD(%NFTRI) ; NFTV  =METHOD(%NFCIC)
+         NFTW  = METHOD(%NFCIW) ;
+         NFTB  = METHOD(%NFWFB0)  ; /* NOT USED IN THIS VERSION
+         NSOLVE= NSTATE ;
+         END
+  > PRINT_HEADER
+     FORMAT WRITE (TITLE(I),I=1,18),(NAME(I), I=1,18),  --
+                   FILES
+     ('1',45('*'),3X,'STEP CI      (%SUBNAME)'/      --
+        /' TITLE:  ',18A4 /                                   --
+        /' NAME :  ',18A4 /                                   --
+        /'  SUMMARY FILES UNIT = ',I3)
+         FORMAT WRITE NFCIS,NFTD,NCORC,NFTE,NFTV,LNIX,LCIV,--
+         NFTA,NFTW,LMTA,LTRI,NFTT,NFCV,NFHO,NFIV,NFTH,NFHD,NFDW1,NFOW1
+         (/'  DATA SET FILE NUMBERS AND LENGTH SPECIFICATION'//     --
+       ' ',5X,'NFCIS=',I2,6X,'NFTD=',I3,6X,'NCOR =',I10/--              -
+       ' ',5X,'NFTE=',I3,6X,'NFTV=',I3,6X,'LNIX =',I6,5X,'LCIV =',I9/--
+       ' ',5X,'NFTA=',I3,6X,'NFTW=',I3,6X,'LMTA =',I6,5X,'LTRI =',I9/--
+       ' ',5X,'NFTT=',I3,6X,'NFCV=',I3,6X,'NFHO =',I6,5X,'NFIV =',I9/--
+       ' ',5X,'NFTH=',I3,6X,'NFHD=',I3,6X,'NFDW1=',I6,5X,'NFOW1=',I9)
+      FORMAT WRITE (NRNFG(I),INFLG(I),IOFLG(I),NPFLG(I),DEBUG(I),I=1,5)
+      (5X,' RUN DIRECTORY',11X,'NRNFG',5X,'INFLG',5X,'IOFLG',5X,--
+       'NPFLG',5X,'DEBUG', --
+      //5X,' 1 ENERGY MATRIX  ', 7X,I5,4(5X,I5) --
+       /5X,' 2 DIAGONALIZATION', 7X,I5,4(5X,I5) --
+       /5X,' 3 DENSITY MATRIX ', 7X,I5,4(5X,I5) --
+       /5X,' 4 ENERGY LOWERING', 7X,I5,4(5X,I5) --
+       /5X,' 5 NATURAL ORBITAL', 7X,I5,4(5X,I5) --
+      /// 10X, ' -- NEW VERSION OF ATOMCI -- ')
+
+      NSTAT = NSTATE
+      FORMAT  WRITE  NSTAT,(IDTYP(I),I=1,2),NPCVC, --
+                     NPOVC,IPS,MAXIT,IOBVC
+      ( /' NSTATE=',I5,5X,    'IDTYP =',I5,I3,2X,'NPCVC =',I5,5X, --
+     'NPOVC =',I5/' IPS   =',I5,5X,    'MAXIT =',I5,5X,   'IOBVC =',I5)
+      IF IDTYP(1) = 1
+      THEN DO
+         N = 1
+         WHILE IKEPT(N) ^= 0 & N < NKCSF ; N = N + 1
+         FORMAT WRITE NKEPT,(IKEPT(I),I=1,N)
+             (' NKEPT =',I5/' IKEPT =',20I5/(8X,20I5))
+         END
+      IF NRNFG(5) > 0 & IOFLG(5) >= 0
+      THEN DO
+         / INFORMATION OF OUTPUT ( NO )
+         FORMAT WRITE  MOTYP,NIND
+         ('0MOTYP =',I5,5X,'NIND  =',I5)
+         IF NIND > 0 THEN --
+            FORMAT WRITE ((IND(I,J ),I=1,4),J=1,NIND)
+             (' IND   =',4I5/(8X,4I5))
+         IF  MOTYP ^= 1
+         THEN DO
+            N = 1 ; WHILE MATE(N) ^= 0 & N < 150 ; N = N + 1
+            FORMAT WRITE  (I,MATE(I),ICG(I),ICU(I),I=1,N)
+            ('0',12X,'I',6X,'MATE',7X,'ICG',7X,'ICU'/(3X,4I10))
+            END
+         END
+      END
+   %%SUBNAME CIDRIV %
+   PROCESS   NO LIST      MAP    HEADER  %SUBNAME
+   SUBROUTINE %SUBNAME --
+   (CR,     NR,     NCOR,                           -- FREE REGION
+    NFTE,   NFTA,   NFTT,   NFTB,           -- INPUT FILE
+    NFTD,   NFTV,   NFTW,   NFTH,                   -- OUTPUT FILE
+    NRUN,   LNIX,   LMTA,   LTRI,   LCIV,           -- RECORD LENGTH
+    NRNFG,  INFLG,  IOFLG,  NPFLG,  IDTYP,          -- RUN FLAG
+    NPOVC,  NPCVC,  NAMEFG, IOBVC,                  -- PRINT FLAG
+    NAME,   NKEPT,  NSTATE, IKEPT,                  --
+    MAXIT,  IPS,    NSDIM,  THRVC,                  --
+    NFCV,   NFHD,   NFHO,   NFIV,                   -- FILE ( EMOR1 )
+    NFDW1,  NFOW1,  THRCSF, JSTATE,                 --
+    NIND,   IND,    MOTYP,  MATE,   ICG,    ICU,    -- SECTION 5
+    EDT,    ET,     XREF,   EONE,                   -- ENERGY
+    NREL,   INREF,  THRREF, PEREL,  NREF,           -- SECTION 4
+    NKCSF,  IKEEP,  ICHAIN, INDEX,  CFBUF,          -- WORK REGION
+    DEBUG,  RTNCD)
+    %UPDATE
+    /       CONVERTED       MASAHIRO 23/11/85   ******
+    /               CHANGED  BY M. SEKIYA  ON 1987-12-12
+    /               CHANGED  BY TASHI      ON 1989-10-23
+    /*
+    /*   FUNCTION : CI DRIVER
+    /*
+    /*   CALLED   : CIMAIN
+    /*   CALLING  : SEE EXTERNAL
+    /*
+    /*   INPUT    : NFTE : EE TAPE                     IN SECTION 1
+    /*              NFTA : TRANSFORMED INTEGRAL        IN SECTION 1
+    /*              NFIV : INITIAL VECTOR FOR DIAG     IN SECTION 2
+    /*              NFTT : TRANSFORATION COEFFICENTS   IN SECTION 3 & 5
+    /*              NEWF : WAVE FUNCTION               IN SECTION 4
+    /*                 SECTION 4 IS MOVED TO SUMMARY
+    /*   OUTPUT   : NFHD : HMAT DIAG                  ( SECTION 1 )
+    /*              NFHO : HMAT OFF DAIG              ( SECTION 1 )
+    /*              NFTD : DENSITY MATRIX EXPRESSION  ( SECTION 1 )
+    /*              NFCV : COEFFICIENTS VECTOR        ( SECTION 2 )
+    /*              NFTH : DENSITY MATRIX             ( SECTION 3 )
+    /*              NFTV : NATURAL ORBITAL            ( SECTION 5 )
+    /*              NFTW : SUMMARY OF DENSITY MATRIX & COEF
+    /*                                                ( SECTION 2 & 3 )
+   /* DCL STATEMENT
+   IMPLICIT REAL*8 (A-H,O-Z)
+    %param
+   /* DCL FOR INPUT PARAMETER
+   /* USED FILE  DESCRIPTIONS
+   INTEGER * 4  --
+                --
+         NFTB , -- 11 = WAVEFUNCTION
+                --   USING SECTION 4
+                --
+         NFTE , -- 15 = UNSORTED EXPRESSION
+                --   CONNECTING WITH ENERGY EXPRESSION
+                --
+         NFTA , -- 16 = TRANSFORMED INTEGRAL
+                --   CONNECTING WITH TRANSFORMATION
+                --
+         NFTT , -- 21 = COEFFICIENTS  FOR BASIS FUNCTION
+                --   CONNECTIONS WITH TRANSFORMATION
+                --
+         NFTH , -- 22 = DENSITY MATRIX
+                --   TEMP FILE COPY NFTH TO NFTW
+                --
+         NFTD , -- 24 = DENSITY MATRIX EXPRESSION
+                --   CONNECTING SECTION 1 WITH SECTION 3
+                --
+         NFTV , -- 27 = NATURAL ORBITALS
+                --   RECORD SET ROUTINE IS FIND
+                --
+         NFTW , -- 28 = DENSITY & CI VECTOR FILE
+                --   RECORD SET ROUTINE IS MOVEW
+                --
+         NFCV,  -- 37 = CI VECTOR FILE ( OUTPUT )
+                --
+                --   CONNECTING SECTION 1 WITH SECTION 2
+         NFHD,  -- 38 = HAMILTONIAN ( DIAG ELEMENT )
+                --
+         NFHO,  -- 39 = HAMILTONIAN ( OFF DIAG ELEMENT )
+                --
+         NFIV,  --    = CI VECTOR FILE  ( INPUT INITIAL VECTOR )
+                --
+         NFDW1, -- 34 = HAMILTONIAN ( DIAG ELEMENT - SELECTED )
+                --
+         NFOW1, -- 35 = HAMILTONIAN ( OFF DIAG ELEMENT - SELECTED )
+                --
+                --
+         LNIX ,          -- RECORD LENGTH FOR DENSITY MATRIX
+         LMTA ,          -- RECORD LENGTH RESERVE
+         LTRI ,          -- RECORD LENGTH OF INTEGRAL ADDR
+                         -- CHANGED BY MAS LMTB --> LTRI
+         LCIV ,          -- RECORD LENGTH FOR CI VECTOR
+         NCOR,           -- # OF SELECTED CSF
+         IKEEP(NKCSF),   -- CSF ID #
+         IKEPT(*    ),   -- SELECTION CSF ID OR PAIR
+         ICHAIN(0:NKCSF),-- POINTER OF ORDERING CSF ID
+         INDEX(NKCSF)   ,-- COEFFICIENT BUFFER
+         NAME(30),      -- NAME ( COMMENT )
+         NRNFG(5),      -- RUN FLG ( 0 MEANS SKIP )
+         INFLG(5),      -- INPUT  IO FLAG  ( SECT. 2 3 & 4 )
+                        -- ( 0 : READING FROM TEMP FILE )
+                        -- ( * : READING FROM NFTW OR NFTV )
+         IOFLG(5),      -- OUTPUT IO FLAG  ( SECT. 2 3 & 4 )
+         NPFLG(5),      -- PRINT FLAG
+         DEBUG(5),      -- DEBUG FLAG
+         IDTYP(2),      -- CSF SELECTION FLAG
+         JSTATE,        -- CSF SELECTION USING COEF OF JSTATE
+         MATE(%BASIS),     -- ** changed by Mas 92-11-12
+         ICG(%BASIS),      --
+         ICU(%BASIS),      -- ** changed by Mas 
+         IND(4,100),    -- SELECTION FLAG OF ORBITAL
+         NREL(20),      -- NUMBER OF REFERENCE FOR STATE #
+         INREF(400),    -- REFERENCE CSF UID #
+         NSTATE,        -- # OF STATE
+         NPOVC,         --
+         NPCVC,         --
+         NAMEFG,        --
+         IOBVC,         --
+         NR(*)    ;     -- CORE
+
+   REAL   * 8           --
+         CFBUF(NKCSF)  ,-- COEFFICIENT BUFFER
+         CR(*),         -- CORE
+         XREF(20),      -- REFERENCE ENERGY
+         EDT(61),       -- ??
+         ET(20),        -- EIGEN VALUE
+         EONE(20),      -- CHARGE DUMMY
+         -- SQNORM,        -- THRESHOLD FOR SELECTION OF COEFFICIENT
+         THRREF,        -- THRESHOLD FOR SELECTION OF COEFFICIENT
+         THRCSF,        -- THRESHOLD FOR SELECTION OF COEF FOR IKEEP
+         PEREL,         -- PERCENTAGE OF ENERGY CONTRIBUTION
+         THRVC  ;       /*
+
+   /* DIAG PARAMETER LIST
+   INTEGER * 4          --
+         NSDIM,         -- INITIAL VECTOR
+                        -- = 0 : UNIT VECTOR
+                        -- > 0 : SOLUTION OF SMALL MATRIX ( # OF DIM
+                        -- < 0 : READING FILE ( UNIT = IFILE + 9 )
+         -- IOCIV,         -- PRINT FLAG ( IN EMOR1 )
+         IPS  ,         -- THRESHOLD IN DIAG 10 ** ( - IPS )
+         -- NCVEC,         -- # OF CORRECTION VECTORS
+                        -- = 0 : NOT EXECUTE LDIAG ( LARGE DIAG )
+         MAXIT          -- # OF ITERATION
+
+        /ICONV(100)     -- CONVERGENCE INFORMATION
+
+
+
+   EXTERNAL --
+         CIVIO,             -- CI VECTOR IO ROUTINE          *
+         MOVEW,             -- SEARCH HEADER OF NFTW        *
+         DENIO,             -- DENSITY MATRIX IO ROUTINE     *
+         DIAGDR,            -- DIAGONARIZATION   CREATED BY N.KOSUGI
+         MJCDG,             -- JACOBI DIAG
+         --         JCDGAR,            -- JACOBI DIAG
+         --         JCDGST,            -- JACOBI DIAG
+         PRCIVC,            -- PRINT CI VECTOR               *
+         PRTHD,             -- PRINT HEADER                 *
+         RDCP,              -- READ COEFFICIENTS OF BASIS FUNCTION
+         WRTCP,             -- WRITE COEFFICIENTS OF BASIS FUNCTION
+         PRTHMS,            -- PRINT ENERGY MATRIX
+         CFSORT,            -- SORTING ROUTINE ( IN ABSOLUTE VALUE )
+         STOVC,             -- STORE NATURAL ORBITAL TO NFCV
+         DENMX,             -- CALCULATION OF DENSITY MATRIX *
+         CALHMD,            -- CALCULATION OF ENERGY MATRIX  *
+         PTCPS,PTCPSB     ; /* PRINT NATURAL ORBITAL
+
+   INTEGER * 4 --
+         MTAB(21),NOBS(21),NTABA(21),NTABB(21), --
+         -- TABS FOR SECTION 5
+         NKEEP,          -- # OF SELECTED CSF
+         JDFLG(2),      -- ??
+         NHD(10),       -- FILE IO BUFFER ( EQUIV TO ...  )
+         NHE(50),       -- FILE IO BUFFER ( EQUIV TO NAMP )
+         NAMP(30),      -- FILE IO BUFFER FOR NAME
+         NBF(20),       -- # OF BASIS FUNCTION
+         NOB(20),       -- # OF ORBITAL
+         KDFLG(2),      -- FILE IO BUFFER FOR IDFLG
+         IDEX,          -- ?
+         NTERM,         -- DIAGONALIZATION CONVERGENCE FLAG
+         ICVC,          -- VECTOR STORE FLAG  ( 1 : EXIST )
+         IDEN,          -- DENSITY MATRIX STORE FLAG
+         NSTAT,         -- # OF STATE
+         LDEN,          -- RECORD LENGTH READ BUFFER
+         NRCIV,         -- # OF RECORDS CI VECTOR
+         NSYM,          -- # OF SYMMETRY
+         NNUC  ;        -- # OF NUCLEUS
+
+    INTEGER * 4 TIME(0:6)
+    LOGICAL IOERR
+    INTEGER   * 4 RTNCD,ERRCD, STEP
+
+   /* IO BUFFER */
+   EQUIVALENCE --
+    (NHD(1),ICVC),(NHD(2),NOCSF),   (NHD(3),NSTAT),      --
+    (NHD(4),NSYM),(NHD(5),KDFLG(1)),(NHD(7),IDEN), (NHD(8),NKEEP),--
+    (NHD(9),NNUC),(NHD(10),LDEN)
+
+
+   EQUIVALENCE (NHE( 1), NAMP(1)),(NHE(31),NOB(1))
+
+
+   EQUIVALENCE (KDFLG(2),NRCIV)
+
+   /  SAS MOVED 89-10-30
+
+   %COMDIAG
+
+               DATA NNUC/0/
+               /   DATA STAR/'********'/,NNUC/0/
+               DATA DD/0.0D0/
+               DATA NTERM,IDEX/0,0/
+
+   BEGIN
+
+      call ctor8 ('********', star)
+      CALL CLOCKM(TIME(0))
+      /* SET COMMON DATA
+      KDFLG(1) = LCIV
+      NKEEP = NKCSF
+      IDEX = 0
+      /*   CLEAR FLAG FOR DENSITY MATRIX
+      IF IPS < 6 THEN IPS = 6
+      JDFLG(1) = IPS      ; JDFLG(2) = NSDIM
+
+      STEP = 1
+      IF  NRNFG(1) > 0 THEN EXEC SECTION_1
+      CALL CLOCKM(TIME(1))
+      IF RTNCD > 0 THEN EXIT EXEC PRINT_ENDING
+
+      STEP = 2
+      IF  NRNFG(2) > 0 THEN EXEC SECTION_2
+      CALL CLOCKM(TIME(2))
+      IF RTNCD > 0 THEN EXIT EXEC PRINT_ENDING
+
+      STEP = 3
+      IF  NRNFG(3) > 0 THEN EXEC SECTION_3
+      IF RTNCD > 0 THEN EXIT EXEC PRINT_ENDING
+      /* REVISED BY MAS AUG. 30 1990.
+      IF (NRNFG(2) >  0 ! NRNFG(3) >  0 )  --
+         & ( IOFLG(2) >= 0 ! IOFLG(3) >= 0 )  --
+         THEN EXEC STORE_CIVECTOR_AND_DENSITY_TO_NFTW
+         IF  IDTYP(2) > 0 THEN EXEC STORE_CIVECTOR_TO_NFTD
+      CALL CLOCKM(TIME(3))
+      IF RTNCD > 0 THEN EXIT EXEC PRINT_ENDING
+
+      STEP = 4
+      IF  NRNFG(4) > 0 THEN EXEC SECTION_4
+      CALL CLOCKM(TIME(4))
+      IF RTNCD > 0 THEN EXIT EXEC PRINT_ENDING
+
+      STEP = 5
+      IF  NRNFG(5) > 0 THEN EXEC SECTION_5
+      CALL CLOCKM(TIME(5))
+      IF RTNCD > 0 THEN EXIT EXEC PRINT_ENDING
+      STEP = 6
+      EXEC PRINT_ENDING
+      NRUN = NRUN + 1
+      EXIT
+
+   END
+
+
+   /* =========================== */
+   /*  SECTION 1 ENERGY MATRIX
+   /* =========================== */
+   PROCEDURE SECTION_1
+
+      IRTNCD = DEBUG(1)
+      IF  NSTATE >  0 THEN  NSTAT=NSTATE  ; NSTATE = 0
+
+
+      EXEC   READ_HEADER_NFTE_AND_NFTA
+      EXEC   PRINT_SECTION_1_HEADER
+      IF NRNFG(1) < 3 THEN DO
+         EXEC   WRITE_HEADER_NFHO
+         CALL   CALHMD --
+             (NFTA,NFTE,NFHD,NFHO,NFTD,NOCSF,LNIX,LTRI,NCOR,NR,CR,NALM)
+         END
+      / NALM => ERROR FLAG
+      IF NALM ^= 0 THEN ( ERRCD = NALM ; EXEC ERROR PRINT )
+      IF NREF = 0  THEN NREF0  = 1  ; ELSE NREF0 = NREF
+      CALL PRTHMS (CR(1),NKEEP,NREF0,NFHO,NPFLG(1))
+      / ENERGY MATRIX READ BUFFER  = LEMBF / ADDR KEM
+      / EONE(1) = CR(1)  ;
+      CALL PTEONE(CR(1), NR(NKEEP*2+1), EONE, NKEEP, NSTAT, NALM)
+      IF NALM > 0 THEN EXIT RTNCD = 7120
+      FORMAT WRITE (I,I,EONE(I),I=1,NSTAT) ;
+       (//(/ 3X,'  ENERGY MATRIX (',I3,',',I3,' ) = ',E20.10 )) ; 1L ;
+      END
+
+   PROCEDURE PRINT_SECTION_1_HEADER
+      FORMAT WRITE   (STAR,I=1,12), --
+                     NAME,NAMP,(NR(I),I=1,30),NOCSF,IDIAG
+             ('1SECTION 1  ENERGY MATRIX',10X,12A8/'0(RUN)',5X,30A4/ --
+              '0(EXP)',5X,30A4/'0(INT)',5X,30A4/'0NOCSF=',I15,3X, --
+              'IDIAG=',I10)
+      /* change format  Aug 1997*/
+      FORMAT WRITE NSYM,(NOB(I),I=1,NSYM)
+             ('0NSYM =',I3,3X,'NOB  =',20I5)
+      END
+
+
+   PROCEDURE WRITE_HEADER_NFHO
+      / WRITE ENERGY MATRIX TAPE HEADER
+       REWIND NFHD ; REWIND NFHO
+      FOR I = 1, 30 ; NAMP(I) = NAME(I)
+      / EQUIVALENCE NAMP & NHE
+       WRITE (NFHO) NOCSF,LEMBF,NHD,NHE,EDT,ND,(DD,I=1,808)
+      / CALC ENERGY MATRIX
+      END
+
+   PROCEDURE READ_HEADER_NFTE_AND_NFTA
+
+      / READ EXP TAPE HEADER
+      REWIND NFTE
+      BINARY READ :NFTE  NAMP,ND,ND,ND,ND,ND,NOCSF,ND,ND,--
+                         IDIAG,MSYM,ND,ND,ND,NREF
+      IF NAMEFG = 1 THEN FOR I = 1, 30 ; NAME(I) = NAMP(I)
+
+      / READ INTG TAPE HEADER
+      REWIND NFTA
+      BINARY READ :NFTA  (NR(I),I=1,30),(ND,I=1,3),NSYM,NT,MNUC,ND,ND,--
+       (NOB(I),I=1,NSYM),(ND,I=1,NT),(ND,I=1,NT),(CR(I+30),I=1,MNUC),--
+       (CR(I+60),I=1,MNUC)
+      IF NAMEFG = 2 THEN FOR I = 1, 30 ; NAME(I) = NR  (I)
+      FOR I = 1, 20 ; ET(I) = 0.0D0
+      END
+
+   /* =========================== */
+   /*  SECTION 2 DIAGONALIZATION  */
+   /* =========================== */
+
+   PROCEDURE SECTION_2
+      IRTNCD = DEBUG(2)
+      IF NSTATE ^= 0 THEN ( NSTAT = NSTATE ; NSTATE = 0 )
+      /* PRINT_SECTION_2_HEADER
+      FOR I = 1, NKCSF ; IKEEP(I) = I ; NKEEP = NKCSF
+      FORMAT WRITE (STAR,I=1,12),NAME
+          ('1SECTION 2  DIAGONALIZATION',8X,12A8/'0(RUN)',5X,30A4)
+      NFHDAG = NFHD ; NFHOFD = NFHO
+      IF NRNFG(1) = 0 THEN EXEC READ_INFORMATION_OF_ENERGY_MATRIX
+   /  IF IPS < 5 THEN IPS = 5    JULY/02/90  MOVE TO TOP OF SUB
+      /* SELECTION OF CSF
+      IF IDTYP(1) > 0 THEN EXEC SELECTION_OF_CSF_ID
+      IF RTNCD > 0 THEN EXIT
+      IF INFLG(2) > 0 THEN EXEC READ_INITIAL_VECTOR
+      IF RTNCD > 0 THEN EXIT
+      /*
+      /*  DIAGONALIZE H-MATRIX BY DAVIDSON'S SCHEME
+      /*                 USING EMOR1 ( KOSUGI )
+      /*                          REVISED BY MAS 23/11/86
+      /*
+
+      CALL   DIAGDR --
+       ( CR,     NR,     NCOR,   NFCV,   NFHDAG, NFHOFD, NFIV,  --
+         NSTAT,  IPS,    NSDIM,  NKEEP,  MAXIT, --
+         EDT(2),         ERRCD )
+
+      IF ERRCD > 1000 THEN EXIT EXEC ERROR PRINT
+      ELSE IF ERRCD > 0 THEN NTERM = ERRCD
+      ERRCD = 0
+      EXEC PRINT_CIVECTOR
+
+      END
+
+   PROCEDURE READ_INITIAL_VECTOR
+      IF NFIV > 0 THEN EXIT
+      NREC=INFLG(2)
+      EXEC READ_CIVECTOR_FROM_NFTW
+      IF RTNCD > 0 THEN EXIT
+      NFIV = NFCV
+      IF  NKEEP ^= NKCSF THEN EXIT ( ERRCD = 7201 ; EXEC ERROR PRINT )
+      NSOL = NSTAT
+      EXEC STORE_CI_VECTOR_TO_NFCV
+      1L; ' AND COPY TO '
+      END
+
+   PROCEDURE STORE_CI_VECTOR_TO_NFCV
+
+    / CI VECTOR FILE  / HEADER
+      REWIND NFCV
+      WRITE(NFCV) NSOL,NKEEP
+    /  WRITE(NFCV) NAME,NOCSF,NKEEP,IKEEP,IDTYP,JDFLG,THRES,NSTAT, --
+    /              ICONV,NLARGE,NSMALL,NSOL,M2,M1,M12,NIT,KPS,--
+    /              IOFLG,NFDI,NFOF,NFCV,ICV
+    / CI VECTOR FILE
+      KMIN = 1
+      DO FOR  I=1,NSOL
+         KMAX=KMIN+NKEEP-1
+         WRITE(NFCV) NKEEP,I,ET(I),(CR(J),J=KMIN,KMAX)
+         KMIN=KMIN+NKEEP
+         END
+      FORTRAN END FILE NFCV
+      REWIND NFCV
+      / CI VECTOR FILE  / END MARK
+      END
+
+   PROCEDURE READ_INFORMATION_OF_ENERGY_MATRIX
+      REWIND NFHO
+      BINARY READ :NFHO    NOCSF,LEMBF,NHD,NHE,EDT
+      IF NAMEFG > 0 THEN FOR I = 1, 30 ; NAME(I) = NAMP(I)
+      FORMAT WRITE  NAMP ;
+          ('0(EMX)',5X,30A4)
+      IF NOCSF ^= NKEEP THEN EXIT RTNCD = 7201
+      REWIND NFHO
+      IF NSTATE > 0 THEN ( NSTAT = NSTATE ; NSTATE = 0 )
+      END
+
+   PROCEDURE PRINT_CIVECTOR
+      KCVC = 1 ; I = 0 ; IDINR = 0
+      DO UNTIL I = NSTAT
+        / SORT FOR COEF
+         I = I + 1
+         CALL    CFSORT  --
+        (NKEEP,CR(KCVC),IKEEP,ICHAIN,THRCSF,CFBUF,INDEX,NSELCT,NPFLG(2))
+         CALL PRCIVC (NRUN,NOCSF,NKEEP,INDEX,I,IDTYP,THRVC,   --
+           JDFLG,ET(I),XREF(I),EONE(I),CFBUF,--
+           NSELCT)
+         KCVC=KCVC+NKEEP
+         END
+      END
+
+
+   PROCEDURE SELECTION_OF_CSF_ID
+      2L ; '  > CSF SELECTION HAS BEEN DONE ' ; 2L
+      IF NKEPT < 0 ; / SELECTION BY PAIR
+      THEN DO
+         I = 1
+         WHILE IKEPT(I) > 0 & I <  NOCSF ;
+         ( IKEEP(I) = IKEPT(I) ; I = I + 1 )
+         NKEEP = I
+         END
+      ELSE IF NKEPT >= 1
+      THEN DO
+         I = 1 ; NKEEP = 0
+         WHILE IKEPT(I) > 0 & IKEPT(I) <= NOCSF
+         DO
+            IA = IKEPT(I)   ; IB = IKEPT(I+1)
+            WHILE IA <= IB ;
+            ( NKEEP = NKEEP + 1 ; IKEEP(NKEEP) = IA ; IA = IA + 1 )
+            I = I + 2
+            END
+         END
+      KHDR = 1 ; KHDW = KHDR + NOCSF*2  ; KHOR = KHDW + LEMBF*2 ;
+      KICR = KHOR + LEMBF ; KIRR = KICR + LEMBF
+      CALL EMDEL --
+                   ( NFHD,  NFHO, NFDW1, NFOW1, NKEEP,IKEEP, --
+                     IND ,  NR(KHDR), NR(KHDW), --
+                     NR(KHOR), NR(KICR), NR(KIRR), NOCSF, IRTNCD)
+      NFHDAG = NFDW1 ; NFHOFD = NFOW1
+      IF IDTYP(1) > 1
+      THEN DO
+      /* SELECTION BY COEFFICIENTS
+         FORMAT WRITE '  > PRE-DIAGONALIZATION OF LARGE MATRIX ',--
+                      '  > SIZE OF LARGE MATRIX    IS ',NKEEP,   --
+                      '  > CSF SELECTION THRESHOLD IS ',THRCSF ;
+                      ( A,A,I15,A, F15.10 )
+         CALL   DIAGDR --
+          ( CR,     NR,     NCOR,   NFCV,   NFHDAG,   NFHOFD,   NFIV,  --
+            NSTAT,  IPS,    NSDIM,  NKEEP,  MAXIT, --
+            ET,     IRTNCD )
+         IF JSTATE > NSTAT THEN ( ERRCD = 7250 ; EXEC ERROR PRINT )
+         KCVC = NKEEP * ( JSTATE - 1 ) + 1
+         CALL    CFSORT  --
+        (NKEEP,CR(KCVC),IKEEP,ICHAIN,THRCSF,CFBUF,INDEX,NSELCT,NPFLG(2))
+         IF IDTYP(2) > 0 THEN DO
+            I = JSTATE
+            CALL PRCIVC (NRUN,NOCSF,NKEEP,INDEX,I,IDTYP,THRVC,   --
+                 JDFLG,ET(I),XREF(I),EONE(I),CFBUF,--
+                 NSELCT)
+            END
+         FOR I = 1, NSELCT ; IKEEP(I) = INDEX(I) ;
+         NKEEP = NSELCT
+         KHDR = 1 ; KHDW = KHDR + NOCSF*2  ; KHOR = KHDW + LEMBF*2 ;
+         KICR = KHOR + LEMBF ; KIRR = KICR + LEMBF
+         CALL EMDEL --
+                      ( NFHD,  NFHO, NFDW1, NFOW1, NKEEP,IKEEP, --
+                        IND ,  NR(KHDR), NR(KHDW), --
+                        NR(KHOR), NR(KICR), NR(KIRR), NOCSF, IRTNCD)
+         NFHDAG = NFDW1 ; NFHOFD = NFOW1
+         END OF IDTYP(1)
+      IF NSTATE ^= 0 THEN ( NSTAT = NSTATE ; NSTATE = 0 )
+      END
+
+   /* ============================ */
+   /*  SECTION 3  DENSITY MATRIX   */
+   /* ============================ */
+
+   PROCEDURE SECTION_3
+
+      IRTNCD = DEBUG(3)
+      FORMAT WRITE (STAR,I=1,12),NAME
+      ('1SECTION 3 DENSITY MATRIX',9X,12A8/'0(RUN)',5X,30A4)
+      IF INFLG(3) > 0
+      THEN DO
+           NREC=INFLG(3);
+           EXEC READ_CIVECTOR_FROM_NFTW
+           EXEC PRINT_CIVECTOR
+           END
+      EXEC CORE_SET_SECTION_3
+      IF NSTATE ^= 0 THEN ( NSTAT = NSTATE ; NSTATE = 0 )
+
+      EXEC CREATE_DENSITY_MATRIX
+      END
+
+   PROCEDURE CREATE_DENSITY_MATRIX
+      REWIND NFTD   ; / DENSITY MATRIX EXPRESSION
+      FOR I=1,NOCSF ; NR (KIDL+I-1) = 0
+      FOR I=1,NKEEP ; ( M = IKEEP(I) ; NR (KIDL+M-1) = I )
+      /* CREATE DENSITY MATRIX  */
+      /*   REVISED BY MAS NFTD RECORD STRUCTURE IS CHANGED
+      CALL DENMX --
+        (NFTD,NFTH,NKEEP,NR (KIDL),NPFLG(3),NSTAT,NALM,NR(KCVC), --
+        NSYM,NOB,LDEN,NR(KDEN),NR(KDNS),LNIX,NR(KI),NR(KJ), --
+        NR(KNIX),NR(KCF))
+      IF NALM ^=0 THEN ( ERRCD = NALM ; EXEC ERROR PRINT )
+      END
+
+   PROCEDURE CORE_SET_SECTION_3
+      MTAB(1)=0
+      FOR I=1,NSYM
+         MTAB(I+1)=MTAB(I)+(NOB(I)*(NOB(I)+1))/2
+      LDEN=MTAB(NSYM+1)
+      KCVC=1
+      KDEN=KCVC+NSTAT*NKEEP*2
+      KDNS=KDEN+LDEN*2
+      KCF=KDNS+LDEN*2
+      KNIX=KCF+LNIX*2
+      KI=KNIX+LNIX
+      KJ=KI  +LNIX
+      KIDL=KJ + LNIX
+      LAST=KIDL+NOCSF
+      NEED = LAST
+      IF LAST > NCOR THEN ( ERRCD = 7310 ; EXEC ERROR PRINT )
+      IDEX=1
+      END
+
+   PROCEDURE READ_CIVECTOR_FROM_NFTW
+      /* READ CIVECTOR FROM NFTW
+      IOERR = .FALSE.
+      CALL MOVEW (NFTW,NREC,NALM,0)
+      IF NALM ^=0 THEN ( ERRCD = 7341 ; EXEC ERROR PRINT )
+      BINARY READ:NFTW ERRFLAG=IOERR  NSET,NHD,NHE,EDT
+      IF IOERR THEN ( ERRCD = 7342 ; EXEC ERROR PRINT )
+      ('0INPUT VECTOR IS TAKEN FROM NFTW ' ; PUT NFTW I5 )
+      IF NAMEFG ^= 1 THEN FOR I = 1, 30 ; NAME(I) = NAMP(I)
+      / NAMP IS EQUIVALENCE  NHE
+      / WRITE:6 HEADER
+      CALL PRTHD (NSET,NHD,NHE,EDT)
+      IF ICVC =0 THEN ( ERRCD = 7344 ; EXEC ERROR PRINT )
+      CALL CIVIO  (NFTW,1,NKEEP,NSTAT,IKEEP,ET,XREF,EONE,  --
+      CR,NALM)
+      IF NALM ^=0 THEN ( ERRCD = 7343 ; EXEC ERROR PRINT )
+      REWIND NFTW
+      END
+
+   PROCEDURE STORE_CIVECTOR_AND_DENSITY_TO_NFTW
+   /* SAVE DENSITY MATRIX AND CI VECTOR IN FILE NFTW
+      NTH1 = IOFLG(2) ; NTH2 = IOFLG(3)
+      NTH = MAX0(NTH1,NTH2)
+      IF NTH1 < 0  THEN DO
+         IF NTH2 = 0 THEN ( ICVC = 0 ; IDEN =1 )
+         ELSE ( ICVC = 0 ; IDEN =1 )
+         END
+      ELSE IF NTH1 = 0 THEN DO
+         IF NTH2 < 0 THEN ( ICVC = 1 ; IDEN =0 )
+         ELSE IF NTH2 = 0 THEN ( ICVC = 1 ; IDEN =1 )
+         ELSE IF NTH2 > 0 THEN  ERRCD = 7360
+         END
+      ELSE DO
+         IF NTH2 < 0 THEN ( ICVC = 1 ; IDEN =0 )
+         ELSE IF NTH2 = 0 THEN ERRCD  = 7360
+         ELSE IF NTH2 > 0 THEN ( ICVC = 1 ; IDEN = 1 ;
+                    IF NTH1 ^= NTH2 THEN ERRCD = 7360 )
+         END
+      IF ERRCD > 0 THEN EXIT EXEC ERROR PRINT
+      3L ; 'VECTOR OR/AND DENSITY MATRIX ARE STORED IN A SET LISTED ' ;
+       'LAST' ; 2L
+
+      /* FIND RECORD ID (NTH ) */
+      CALL MOVEW (NFTW,NTH,NALM,NPCVC)
+      IF NALM ^=0 THEN ( ERRCD = 7351 ; EXEC ERROR PRINT )
+      FOR I = 1,30 ; NAMP(I) = NAME(I)
+      WRITE ( NFTW   ) NTH,NHD,NHE,EDT
+      CALL PRTHD (NTH,NHD,NHE,EDT)
+
+      / SAVE CI VECTOR
+      IF ICVC > 0
+      THEN DO
+         CALL CIVIO  (NFTW,0,NKEEP,NSTAT,IKEEP,ET,XREF,EONE, --
+         CR(KCVC),NALM)
+         IF NALM ^=0 THEN ( ERRCD = 7352 ; EXEC ERROR PRINT )
+         END
+      IF IDEN > 0
+      THEN DO
+         ND=NSTAT ; IF ND > 1 THEN ND = ND + 1
+         REWIND NFTH ; I = 0
+         DO UNTIL I >= ND
+            I = I + 1
+            / NFTH : TEMPFILE  NFTW SAVE FILE
+            /                1 MEANS READ : 0 MEANS WRITE
+            CALL DENIO (NFTH,1,IB,LDEN,CR(KDEN),NALM)
+            IF NALM ^=0 THEN ( ERRCD = 7361 ; EXEC ERROR PRINT )
+            CALL DENIO (NFTW,0,IB,LDEN,CR(KDEN),NALM)
+            IF NALM ^=0 THEN ( ERRCD = 7353 ; EXEC ERROR PRINT )
+            END
+         REWIND NFTH
+         END
+      FORTRAN END FILE NFTW
+      REWIND NFTW
+      /* VECTOR AND DENSITY MATRIX SAVED TO NFTW
+      END
+
+   /* VECTOR WAS SAVED IN NFTD / DENSITY EXPRESSION FILE
+
+   PROCEDURE STORE_CIVECTOR_TO_NFTD
+      ' == SKIP THIS STEP IN THIS VERSION == '   ; 2L
+      END
+
+   /* ========================== */
+   /* SECTION 4 ENERGY LOWERING       INSERTED BY MASAHIRO 11/05/85
+   /* ========================== */
+
+   PROCEDURE SECTION_4
+      2L ;  '  == SKIP THIS STEP  == 1988-07-05 ' ; 2L ;
+      END
+
+   /* ======================================*/
+   /* SECTION 5    ORBITAL TRANSFORMATION   */
+   /* ======================================*/
+
+   PROCEDURE SECTION_5
+
+      IRTNCD = DEBUG(5)
+      / PRINT HEADER OF SECTION 5
+      FORMAT WRITE   (STAR,I=1,12),NAME
+      ('1SECTION 5  ORBITAL TRANSFORMATION ',12A8/'0(RUN)',5X,130A4)
+      NFT=NFTH  ; / DENSITY MATRIX FILE
+      IF INFLG(5) > 0 THEN EXEC READ_DENSITY_MATRIX_FROM_NFTW
+      REWIND NFTT
+      IF IOBVC >= 2 THEN EXEC READ_COEFFICIENTS_FROM_NFTT_RECID_IOBVC
+
+      CALL RDCP (N,NSYM,NBF,NOB,NTABA,CR,NFTT,LTRB,NALM)
+      IF NALM ^= 0 THEN ( ERRCD = 7511 ; EXEC ERROR PRINT )
+
+      EXEC CORE_SET_SECTION_5
+
+      /      CALL JCDGAR (CR(KBIG),CR(KIBG),CR(KOMT))
+      /      CALL JCDGST (0.0,0)
+      /      moved to main calling parameters
+      /         F. Sasaki     94-01-29
+
+      ND=NSTAT ; IF NSTAT > 1 THEN ND = ND + 1
+      NT=1 ; N = 1
+      DO UNTIL N > ND
+         NFT=NFTH
+         IF (INFLG(5).NE.0) THEN NFT=NFTW
+         CALL DENIO (NFT,1,NTH,LDEN,CR(KDEN),NALM)
+         IF NALM ^= 0 THEN ( ERRCD = 7521 ; EXEC ERROR PRINT )
+
+         IB=KBIG-1
+         FOR I=KDEN,IB ; CR(I) = -CR(I)
+
+         FOR I = 1, NSYM
+         IF  NOB(I) > 0 THEN --
+          CALL MJCDG           --
+           (CR(KVCB+NTABB(I)-1),CR(KEIG+NOBS(I)  ),CR(KDEN+MTAB(I)),--
+            NOB(I),0,0,0,--
+            CR(KBIG),CR(KIBG),CR(KOMT),   0.0D0,0,  ERRCD)
+          IF ERRCD > 0 THEN ( ERRCD = 7531 ; EXEC ERROR PRINT )
+
+         FOR I=1,LORB ; CR(KEIG+I-1) = - CR( KEIG + I - 1 )
+
+         CALL TRNSCF (NSYM,NBF,NOB,NOB,NTABA,CR(KVCA),NTABB,CR(KVCB),--
+                      NTABA,CR(KVCC))
+
+         /* SAVE FILE NFTT 21
+         NT=NT+1
+         CALL WRTCP (NT,NSYM,NOB,NOB,NTABB,CR(KVCB),NFTT,LTRB,NALM)
+         IF NALM ^= 0 THEN ( ERRCD = 7512 ; EXEC ERROR PRINT )
+
+         /* SAVE FILE NFTT 21
+         NT=NT+1
+         CALL WRTCP (NT,NSYM,NBF,NOB,NTABA,CR(KVCC),NFTT,LTRB,NALM)
+         IF NALM ^= 0 THEN ( ERRCD = 7513 ; EXEC ERROR PRINT )
+
+         EXEC PRINT_NATURAL_ORBITAL_TO_LP_SHEET
+         N = N + 1
+         END
+
+      IF IOFLG(5) >= 0 THEN EXEC STORE_NATURAL_ORBITAL_TO_NFTV
+      END
+
+   PROCEDURE PRINT_NATURAL_ORBITAL_TO_LP_SHEET
+      IF NPFLG(5) >=  0  THEN
+         (1L; ' STATE NO.' ; PUT N I5 ; 1L )
+      IF NPFLG(5) > 1
+      THEN DO
+         (1L ;'  INPUT VECTORS IN TERMS OF BF' ; 1L )
+         CALL PTCPSB (NSYM,NBF,NOB,NTABA,CR(KEIG),CR(KVCA))
+         END
+
+      IF NPFLG(5) > 0
+      THEN DO
+         ( 1L ; '0 OUTPUT VECTORS IN TERMS OF M0' ; 1L )
+         CALL PTCPS  (NSYM,NOB,NOB,NTABB,CR(KEIG),CR(KVCB))
+         END
+
+      IF NPFLG(5) >=  0
+      THEN DO
+         ( 1L ; '0 OUTPUT VECTORS IN TERMS OF BF' ; 1L )
+         CALL PTCPS (NSYM,NBF,NOB,NTABA,CR(KEIG),CR(KVCC))
+         END
+      END
+
+   PROCEDURE STORE_NATURAL_ORBITAL_TO_NFTV
+      CALL STOVC --
+       (LTRB,NFTT,NAME,NIND,IND,NFTV,IOFLG(5),NPOVC,MOTYP, --
+        MATE,ICG,ICU,CR,NCOR)
+      REWIND NFTT
+      / IF INFLG(5) ^= 0 THEN  REWIND NFTW
+      END
+
+   PROCEDURE CORE_SET_SECTION_5
+      MTAB(1)=0  ; NOBS(1) = 0 ; NTABB(1) = 1 ;
+
+      DO FOR  I=1,NSYM
+         MTAB(I+1) =MTAB(I) +(NOB(I)*(NOB(I)+1))/2
+         NOBS(I+1) =NOBS(I) +NOB(I)
+         NTABB(I+1)=NTABB(I)+NOB(I)**2
+         END
+
+      LORB=NOBS(NSYM+1)
+      LVCA=NTABA(NSYM+1)-1
+      LVCB=NTABB(NSYM+1)-1
+      KVCA=1
+      KVCB=KVCA+LVCA
+      KVCC=KVCB+LVCB
+      KEIG=KVCC+LVCA
+      KDEN=KEIG+LORB
+      KBIG=KDEN+LDEN
+      KIBG=KBIG+LORB
+      KOMT=KIBG+LORB
+      LAST=KOMT+LORB
+      IF LAST > NCOR THEN ( ERRCD = 7540 ; EXEC ERROR PRINT )
+      END
+
+   PROCEDURE READ_COEFFICIENTS_FROM_NFTT_RECID_IOBVC
+      DO UNTIL N = IOBVC
+         CALL RDCP (N,NSYM,NBF,NOB,NTABA,CR,NFTT,LTRB,NALM)
+         IF NALM ^= 0 THEN ( ERRCD = 7501 ; EXEC ERROR PRINT )
+         END
+      REWIND NFTT
+      CALL WRTCP (1,NSYM,NBF,NOB,NTABA,CR,NFTT,LTRB,NALM)
+      IF NALM ^= 0 THEN ( ERRCD = 7502 ; EXEC ERROR PRINT )
+      REWIND NFTT
+      END
+
+   PROCEDURE READ_DENSITY_MATRIX_FROM_NFTW
+      IOERR = .FALSE.
+      CALL MOVEW (NFTW,INFLG(5),NALM,0)
+      IF NALM ^=0 THEN ( ERRCD = 7551 ; EXEC ERROR PRINT )
+
+      BINARY READ:NFTW ERRFLAG=IOERR  NSET,NHD,NHE,EDT
+      IF IOERR THEN ( ERRCD = 7552 ; EXEC ERROR PRINT )
+      ('0DENSITY MATRIX IS TAKEN FROM NFTW = ' ; PUT NFTW I6 ; 1L )
+
+      / PRINT HEADER
+      CALL PRTHD (NSET,NHD,NHE,EDT)
+
+      IF NAMEFG = 1 THEN FOR I = 1, 30 ; NAME(I) = NAMP(I)
+
+      / SKIP CI VECTOR  HED IS ADJUSTED RECORD OF DENSITY MATRIX
+      IF ICVC ^= 0
+      THEN ( ND = NSTAT + 1 ; FOR I = 1, ND ; READ ( NFTW ) )
+
+      IF IDEN = 0 THEN ( ERRCD = 7360 ; EXEC ERROR PRINT )
+      NFT=NFTW
+      IF  NSTATE ^= 0 THEN ( NSTAT = NSTATE ; NSTATE = 0 )
+      END
+
+      %CIERINF
+   PROCEDURE  PRINT_ENDING
+      FOR I = STEP, 5 ;  CALL CLOCKM(TIME(I))
+      TIME(6) = TIME(5) - TIME(0) ;
+      FOR I =5,1,-1 ; TIME(I) = TIME(I) - TIME(I-1)
+
+      FORMAT WRITE   --
+           (NRNFG(I), TIME(I)/1000, MOD(TIME(I),1000), I=1,5 ), --
+                      TIME(6)/1000, MOD(TIME(6),1000)
+      (/'1'                                                    --
+      //5X,' RUN DIRECTORY',11X,'NRNFG',5X,'   USED CPU TIME ',--
+      //5X,' 1 ENERGY MATRIX  ', 7X,I5,5X,I7,' SEC ',I3,' M SEC '--
+       /5X,' 2 DIAGONALIZATION', 7X,I5,5X,I7,' SEC ',I3,' M SEC '--
+       /5X,' 3 DENSITY MATRIX ', 7X,I5,5X,I7,' SEC ',I3,' M SEC '--
+       /5X,' 4 ENERGY LOWERING', 7X,I5,5X,I7,' SEC ',I3,' M SEC '--
+       /5X,' 5 NATURAL ORBITAL', 7X,I5,5X,I7,' SEC ',I3,' M SEC '--
+      /5X,/5X,'   TOTAL USED CPU ', 7X,5X,5X,I7,' SEC ',I3,' M SEC ')
+      END
+   %%SUBNAME CIGRST%
+   PROCESS    NO LIST      MAP    HEADER  %SUBNAME
+   SUBROUTINE %SUBNAME                    --
+                (ISSH,  NWTN,  NWTC,         --  READ BUFFER FOR ORB
+                 NWFSG, NAME,                --  READ BUFFER FOR CSF
+                 HDIG,  HOFFTS,  COEF,       --  READ BUFFER FOR HMAT & COEF
+                 ENERGY,                     --  READ BUFFER FOR ENERGY
+                 NFCIS,NFTE,NFHD,NFHO,NFCV,  --  FILE UNIT
+                 NSTATE, NKCSF, KREF,        --
+                 INTMAX, LMAX,  NWT, NWF,    --
+                 RTNCD )
+ %UPDATE
+ /            CODED    BY M. SEKIYA  ON 1988-01-25  AT IMS
+ /            CHANGED  BY TASHI      ON 1989-10-24  AT IMS
+ /*
+ /*     FUNCTION :  SELECTED ONLY NON ZERO MATRIX ELEMENTS WITH
+ /*                 REFERENCE CSF
+ /*     CALLED   :  CIMAIN
+ /*     CALLING  :  NONE
+ /*
+      IMPLICIT REAL*8(A-H,O-Z)
+      INTEGER   * 2  NWFSG(INTMAX)           --*W* CSF
+
+      INTEGER   * 4 --
+                     NAME(30),               --*I* NAME
+                     ISSH(LMAX),             --*W* # OF ORB IN SYM I
+                     NWTN(NWT),              --*W* ORBITAL SEQ ID #
+                     NWTC(NWF),              --*W* DEFAULT CLOSED SHELL
+                     NFCIS,                  --*I* SUMMARY FILES UNIT
+                     NFTE,                   --*I* EXPRESSION    FILE
+                     NFHD,                   --*I* HMAT DIAG     FILE
+                     NFHO,                   --*I* HMAT OFF DIAG FILE
+                     NFCV,                   --*I* COEFFICIENTS  FILE
+                     NSTATE,                 --*I* # OF TO BE SOLVED
+                     NKCSF,                  --*I* # OF DIM
+                     NREF,                   --*I* # OF REFERENCE
+                     INTMAX,                 --*I* LENGTH OF READ BUF CSF
+                     LMAX,                   --*I* MAX SYMMETRY FOR ORB
+                     NWT,                    --*I* # OF ORBITALS
+                     NWF,                    --*I* # OF ORB FOR DEFAULT CLOSE
+                     RTNCD
+
+      REAL      * 8  --                            READ BUFFER
+                     ENERGY(NSTATE),         --*W* ENERGY
+                     HDIG(NKCSF),            --*W* HMAT
+                     HOFFTS(NKCSF,KREF),       --*W* HMAT
+                     COEF(NKCSF,NSTATE)      --*W* COEFFICIENTS
+
+      /*KGN CHANGE NWSQ
+      INTEGER   * 4  NWSQ(%BASIS)
+      /* DCL FOR LOCAL
+      LOGICAL   IOEND,IOERR
+      INTEGER   * 4  ERRCD,STEP
+
+      %COMDIAG
+
+      %%CHECK IF ERRCD > 0 THEN EXIT EXEC ERROR_PRINT %
+      %%IORE  ERRFLAG = IOERR ENDFLAG = IOEND IOSTAT = IOSTAT %
+      %%IOWR  ERRFLAG = IOERR IOSTAT = IOSTAT %
+      BEGIN
+         ERRCD = 0 ;  IOERR = .FALSE. ; IOEND = .FALSE.
+         IOSTAT = 0   ; STEP = 6
+         EXEC READ_CSF   ; %CHECK
+         EXEC READ_HDIG  ; %CHECK
+         IF NREF > 0 THEN  EXEC READ_HOFF  ; %CHECK
+         EXEC READ_COEF  ; %CHECK
+         2L ; ' > HMAT & COEF & CSF WERE WRITTEN IN ' ; PUT NFCIS I4 ;
+              ' < ' ; 2L
+         END
+      > READ_CSF
+         REWIND NFTE ; REWIND NFCIS
+         BINARY READ : NFTE %IORE --
+                (NDUMY,I=1,30),ISPIN,IORB,IPAR,NWT,NWF,ITSTV,--
+                ITNEL,LIJB,IDIAG,LMAX,INTMAX,LWFL,NTYPE,NREF,NIJX
+         /      ITNEL,LIJB,IDIAG,LMAX,INTMAX,LWFL,NTYPE     88-03-18
+         IF      IOERR THEN EXIT ERRCD = 7611
+         ELSE IF NREF ^= KREF THEN EXIT ERRCD = 7681
+
+         BINARY READ : NFTE %IORE --
+                (ISSH(I),I=1,LMAX),(NWTN(I),I=1,NWT), --
+                (NWTC(I),I=1,NWF), (NWSQ(I),I=1,NWT)
+         /* KGN 07/90
+         /      NREF, NWSQ, METHOD , LRPSMX                  88-03-18
+
+         IF      IOERR THEN EXIT ERRCD = 7612
+         ELSE IF IOEND THEN EXIT ERRCD = 7613
+         BINARY WRITE : NFCIS %IOWR --
+                 NAME,ISPIN,IORB,IPAR,NWT,NWF,ITSTV,--
+           ITNEL,LIJB,IDIAG,LMAX,INTMAX,LWFL,NTYPE,NSTATE,NREF,NIJX
+         IF      IOERR THEN EXIT ERRCD = 7614
+
+         BINARY WRITE : NFCIS %IOWR --
+                (ISSH(I),I=1,LMAX),(NWTN(I),I=1,NWT), --
+                (NWTC(I),I=1,NWF), (NWSQ(I),I=1,NWT)
+         /* KGN 07/90
+         /      (NWTC(I),I=1,NWF),NWSQ
+         /       NREF, NWSQ, METHOD , LRPSMX
+         IF      IOERR THEN EXIT ERRCD = 7615
+
+         IMIN = 1 ;
+         DO UNTIL ( IMIN >= INTMAX ! IOERR ! IOEND )
+            IMAX = MIN0 ( IMIN + LWFL - 1, INTMAX )
+            BINARY READ : NFTE %IORE --
+                   KT, (NWFSG(I),I=IMIN,IMAX)
+            BINARY WRITE : NFCIS %IOWR --
+                   KT, (NWFSG(I),I=IMIN,IMAX)
+            IMIN = IMAX + 1
+            END
+         IF      IOERR THEN ERRCD = 7617
+         ELSE IF IOEND THEN ERRCD = 7618
+         REWIND NFTE
+         END
+      > READ_HDIG
+         REWIND NFHD
+         BINARY READ : NFHD %IORE --
+            KTSTV,KTSTV,HDIG
+         IF      IOERR THEN EXIT ERRCD = 7621
+         ELSE IF IOEND THEN EXIT ERRCD = 7622
+         ELSE IF KTSTV ^= ITSTV THEN EXIT ERRCD = 7682
+         REWIND NFHD
+         BINARY WRITE : NFCIS %IOWR --
+            KTSTV,KTSTV,HDIG
+         REWIND NFHD
+         IF IOERR THEN ERRCD = 7623
+         END
+
+      > READ_HOFF
+         FOR I = 1, NREF ; FOR J = 1, KTSTV ; HOFFTS(J,I) = 0.0D+00
+         REWIND NFHO
+         BINARY READ : NFHO %IORE KTSTV
+         IF      IOERR THEN ERRCD = 7631
+         ELSE IF IOEND THEN ERRCD = 7632
+         DO UNTIL IROW(LEMBF) = 0 ;
+            BINARY READ : NFHO %IORE --
+                   HOFF,IROW,ICOL
+            IF IOEND ! IOERR THEN EXIT ERRCD = 7633
+            IEND = ICOL(LEMBF)
+            FOR I = 1, IEND
+            FORTRAN IF ( ICOL(I) .LE. NREF ) --
+                   HOFFTS(IROW(I),ICOL(I)) = HOFF(I)
+            END
+         REWIND NFHO
+         IF ERRCD > 0 THEN EXIT
+         FOR I = 1, NREF
+         DO
+            HOFFTS(I,I) = HDIG(I)
+            FOR J = 1, I - 1 ; HOFFTS(J,I) = HOFFTS(I,J)
+            END
+         FOR J = 1, NREF ;
+         BINARY WRITE : NFCIS %IOWR --
+               ITSTV,J, (HOFFTS(I,J),I= 1, ITSTV)
+         IF IOERR THEN ERRCD = 7634
+         END
+      > READ_COEF
+         REWIND NFCV ;
+         BINARY READ : NFCV %IORE NNN
+         IF   IOEND THEN EXIT ERRCD = 7641 ;
+         ELSE IF IOERR THEN EXIT ERRCD = 7642 ;
+         DO FOR I = 1, NSTATE  ;
+            BINARY READ : NFCV %IORE --
+                    NNN,KST,ENERGY(I),(COEF(K,I),K=1,NNN)
+            IF   IOEND THEN EXIT ERRCD = 7643 ;
+            ELSE IF IOERR THEN EXIT ERRCD = 7644 ;
+            ELSE IF NNN ^= ITSTV THEN EXIT ERRCD = 7683
+            ELSE IF KST ^= I    THEN EXIT ERRCD = 7684
+            BINARY WRITE: NFCIS %IOWR --
+                    NNN,KST,ENERGY(I),(COEF(K,I),K=1,NNN)
+            IF IOERR THEN EXIT ERRCD = 7645 ;
+            END
+         ENDFILE NFCIS
+         REWIND NFCIS
+         END
+      %CIERINF
+   %%SUBNAME CALEMS%
+   PROCESS    NO LIST      MAP    HEADER  %SUBNAME
+   SUBROUTINE %SUBNAME  --
+                    (NFTC,NFED,NFEO,NFTD,  --
+                     NKEEP,LBUFC,LNIX,LXBF, --
+                     INDEXL,INDEXS,LINDEX,  --
+                     NIP ,LTRIX,-- CFP READ BUFFER NIP: INT-ADR
+                     CFP ,      -- CFP READ BUFFER CFP COEFFICIENT
+                     LONE,      -- 1_EL EXPRESSION (FOR DENSITY MATRIX)
+                     NDROW,     --
+                     NDCOL,     --
+                     NDIX,      -- WRITE BUFFER     NDIJ : I,J MATRIX
+                     DENE,      -- NDIX : ISNTG-ADR  DENE : CFP COEFF
+                     HDIAG,     --
+                     XINT,      -- INTEGRAL READ BUFFER
+                     RTNCD)
+     IMPLICIT REAL*8 (A-H,O-Z)
+     %UPDATE
+     /*
+     /*    FUNCTION  : GENERATE  ENERGY MATRIX
+     /*     CALLED   : CIDRIV
+     /*     CALLING  : CALEMS
+     /   ENERGY MATRIX FILE STRUCTURE IS CHANGED BY MAS 23/11/86
+     /         CHANGED  BY M. SEKIYA  AT IMS    1988-02-21
+     /           FOR VECTOR & FILE SAVE & REDUCE IO
+     / NFED : NKEEP, NKEEP, HDIAG(I) I = 1 TO NKEEP X
+     / NFEO : HOFF(2382),IROW(2382),ICOL(2382)
+     /            ( IROW > ICOL )
+     / DENSITY MATRIX FILE STRUCTURE IS CHANGED BY MAS 23/11/86
+     / NFTD  : NT,NDROW(NT),NDCOL(NT),NDIX(NT),DENE(NT)
+     / USING COMMON
+
+     INTEGER * 4 NIP(LTRIX),LTRIX,   -- EE TAPE : INDEX FOR INTEGRAL
+                 INDEXL(LINDEX),   --
+                 INDEXS(LINDEX),   --
+                 NDROW(LNIX),      --
+                 NDCOL(LNIX),      -- CSF ID #
+                 NDIX(LNIX),LNIX,  -- EE DENSITY : INDEX FOR INTEGRAL
+                 NFTC,             --
+                 NFED,NFEO,        --
+                 NFTD,             --
+                 LXBF,             --
+                 RTNCD,            -- INTEGRAL ERROR/READ FLAG X
+                 NKEEP,            --
+                 LONE              -- LAST ADDR FOR 1-EL INTEGRAL X
+
+     REAL    * 8 HDIAG(NKEEP),     -- DIAGONAL ENERGY MATRIX
+                 CFP(LBUFC),       -- EXPRESSION READ BUFFER
+                 DENE(LNIX),       -- 1-EL EXPRESSION WRITE BUFFER
+                 XINT(LXBF)        -- INTEGRAL READ BUFFER
+
+     / LOCAL VAR
+     INTEGER * 4 COL,              --
+                 NIJ,              --  COUNTER OF NON-ZERO MATRIX BUFFER
+                 NDN,              --  COUNTER OF D-EE BUFFER
+                 NOZERO ,          --   # OF NONZERO ELEMENTS
+                 SUMNDN ,          --   # OF 1-EL EXPRESSION
+                 NKT,              --  # OF INTEG TOTAL
+                 NH,               --  # OF INTEG (1-EL)
+                 N2OE,             --  # OF INTEG (2-EL)
+                 ERRCD ;
+  %COMDIAG
+
+  %%CHECK  IF ERRCD > 0 THEN RTNCD = ERRCD %
+  BEGIN
+     RTNCD = 0
+     IROW(LEMBF) = 1    ; ICOL(LEMBF) = LEMBF - 1
+     EXEC READ_EE_TAPE_AND_CALC_ENERGY_MATRIX
+     REWIND NFTC ;
+     %CHECK
+     END
+
+  PROCEDURE READ_EE_TAPE_AND_CALC_ENERGY_MATRIX
+    /*EXEC  READ_EE_TAPE_HEADER     ALREADY READ IN CALHMD
+      1L ; ' > NKEEP                       ' ;  PUT NKEEP I10 ; 1L
+      NOZERO = 0 ; SUMNDN = 0
+      NIJ = 1  ; ERRCD = 0 ;
+      NDN = 0  ;
+      UNTIL ERRCD > 0
+      DO ;
+        FORTRAN READ --
+           (NFTC,IOSTAT=ERRCD,END=600) --
+            JSTART,KSTART,NKT,NH,N2OE,NIROW,NIL,LTRI,  --
+            (CFP(I),I=1,NKT),(NIP(I),I=1,LTRI), --
+            (INDEXL(I),I=1,NIROW),(INDEXS(I),I=1,NIL)
+        IF LTRI > LTRIX THEN EXIT ERRCD = 7132
+        IF NKT = 0 THEN EXIT
+        IF NIL = 0 THEN EXEC CALC_DIAG_H
+        ELSE EXEC CALC_OFF_DIAG_H
+        END
+      %CHECK ;
+      EXIT
+      FORTRAN 600 CONTINUE
+
+      EXEC STORE_AND_CLOSE_FILES
+      %CHECK ;
+      END
+
+   PROCEDURE STORE_HOFF
+
+      FORTRAN WRITE ( NFEO,IOSTAT=ERRCD ) HOFF,IROW,ICOL
+      NOZERO = ICOL(LEMBF) + NOZERO
+      %CHECK ; NIJ = 1 ;
+      END
+
+   PROCEDURE STORE_AND_CLOSE_FILES
+      IROW(LEMBF) = 0    ; 
+      ICOL(LEMBF) = NIJ-1 ; /*  changed by mas Jul 1993
+      FORTRAN WRITE ( NFEO,IOSTAT=ERRCD ) HOFF,IROW,ICOL
+      NOZERO = ICOL(LEMBF) + NOZERO + NKEEP
+      FORTRAN ENDFILE  NFEO
+      REWIND  NFEO
+
+      /* STORE DIAG H-MAT
+      REWIND  NFED
+      BINARY WRITE:NFED NKEEP,NKEEP,(HDIAG(I),I=1,NKEEP)
+      FORTRAN ENDFILE NFED
+      REWIND  NFED
+
+      FORMAT WRITE '  > # OF NON ZERO ELEMENTS  > ', NOZERO ; ( A, I12 )
+
+      /* STORE DENSITY MATRIX
+      IF NFTD = 0 THEN EXIT
+      FORTRAN WRITE(NFTD) NDN,NDCOL,NDROW,NDIX,DENE
+      SUMNDN = NDN + SUMNDN
+      NDN = 0
+      FORTRAN WRITE(NFTD) NDN,NDCOL,NDROW,NDIX,DENE
+      FORTRAN ENDFILE NFTD
+      REWIND NFTD
+
+      FORMAT WRITE '  > # OF DENSITY MATRIX IS  > ', SUMNDN ; ( A, I12 )
+      END
+
+   PROCEDURE CALC_OFF_DIAG_H
+       NLENG = NIROW ; KKK = 0
+       DO WHILE NIJ + NLENG >= LEMBF
+          NCOL = LEMBF - NIJ ;
+          FOR J = 0, NCOL -1 ;
+          DO
+            COL = NIJ + J ;  KSHIFT = KKK + J
+            HOFF(COL) =  CFP(1) * XINT( NIP(NKT*KSHIFT+1) )
+            IROW(COL) =  INDEXL(KSHIFT+1) ; ICOL(COL) = INDEXS(KSHIFT+1)
+            END
+          FOR I = 2, NKT
+          FOR J = 0, NCOL - 1 ;
+          DO
+            COL = NIJ + J ; KSHIFT = KKK + J
+            HOFF(COL) = HOFF(COL) + CFP(I) * XINT(NIP(NKT*KSHIFT+I))
+            END
+          EXEC STORE HOFF ; / SET NIJ = 1 IN STORE HOFF
+          KKK = KKK + NCOL ; NLENG = NLENG - NCOL
+          END
+       IF NLENG = 0 THEN EXIT EXEC EXPRESSION_1EL
+       NCOL = NLENG
+       FOR J = 0, NCOL - 1
+       DO
+          COL = NIJ + J  ; KSHIFT = KKK + J
+          HOFF(COL) =  CFP(1) * XINT( NIP(NKT*KSHIFT+1) )
+          IROW(COL) =  INDEXL(KSHIFT+1) ; ICOL(COL) = INDEXS(KSHIFT+1)
+          END
+       FOR I = 2, NKT
+       FOR J = 0, NCOL - 1
+       DO
+         COL = NIJ + J  ; KSHIFT = KKK + J
+         HOFF(COL) = HOFF(COL) + CFP(I) * XINT( NIP(NKT*KSHIFT+I) )
+         END
+       NIJ = NIJ + NCOL
+       IF NIJ >= LEMBF THEN CALL ERSTOP('%SUBNAME')
+       EXEC EXPRESSION_1EL
+       END
+    PROCEDURE EXPRESSION_1EL
+       IF NH = 0 ! NFTD <= 0 THEN EXIT
+       DO FOR I = 1, NH
+          IF NIP(I) <= LONE -- SELECT 1-EL EXPRESSION
+          THEN DO
+             NLENG = NIROW ; KKK = 0 ;
+             DO WHILE NDN + NLENG >= LNIX
+                NCOL = LNIX - NDN ;
+                FOR J = 1, NCOL ;
+                DO
+                   NDN = NDN + 1   ; DENE(NDN) = CFP(I)
+                   NDIX(NDN) = NIP((KKK+J-1)*NKT+I)
+                   NDCOL(NDN) = INDEXL(KKK+J) ;
+                   NDROW(NDN) = INDEXS(KKK+J) ;
+                   END
+                FORTRAN WRITE(NFTD) NDN,NDCOL,NDROW,NDIX,DENE
+                SUMNDN = NDN + SUMNDN
+                NDN = 0
+                NLENG = NLENG - NCOL ; KKK = KKK + NCOL ;
+                END
+             IF NLENG = 0 THEN EXIT
+             NCOL = NLENG ;
+             FOR J = 1, NCOL ;
+             DO
+                NDN = NDN + 1   ; DENE(NDN) = CFP(I)
+                NDIX(NDN) = NIP((KKK+J-1)*NKT+I)
+                NDCOL(NDN) = INDEXL(KKK+J) ;
+                NDROW(NDN) = INDEXS(KKK+J) ;
+                END
+             END
+          END
+       END
+     PROCEDURE CALC_DIAG_H
+          / FORMAT WRITE (INDEXL(I),I=1,NIROW)
+          / ( '   HII>',8I12 )
+       FOR J = 1, NIROW ;
+       DO
+          INDEXS(J) = INDEXL(J) ; KSHIFT = NKT*(J-1)
+          KIJ = INDEXL(J)  ;
+          HDIAG(KIJ) = CFP(1) * XINT( NIP(KSHIFT + 1 ) )
+
+          FOR I = 2, NKT  ;
+          HDIAG(KIJ) = HDIAG(KIJ) + CFP(I) * XINT( NIP(KSHIFT+I) )
+          END
+          / FORMAT WRITE (HDIAG(INDEXL(I)),I=1,NIROW)
+          / ( '   WT >',8E12.5 )
+       EXEC EXPRESSION_1EL
+       END
+   %%SUBNAME  CALHMD %
+   PROCESS    NO LIST      MAP    HEADER  %SUBNAME
+   SUBROUTINE %SUBNAME  --
+     (NFTA,NFTC,NFED,NFEO,NFTD,NKEEP,LNIX,LTRI,NCOR,NR,CR,RTNCD)
+     IMPLICIT REAL*8 (A-H,O-Z)
+  /* CR is a REAL*8 view of the SAME work region as INTEGER*4 NR (both
+  /* passed at the same base by every caller).  R8 sub-buffers CFP/DENE/
+  /* HDIAG/XINT sit at ODD word offsets in NR, so NR(k) is CR((k+1)/2);
+  /* pass those to CALEMS to remove the INTEGER*4->REAL*8 mismatch.
+  /* CALHMD is SHARED: callers CIDRIV (cici) and PTMAIN (cipt) both
+  /* updated to thread the CR view.
+     REAL    * 8 CR(*)
+     INTEGER * 4 NR(*),NCOR, --
+                 NKEEP,LXBF,LBUFA,LBUFC,NDY, --
+                 NIP,CFP,NDROW,NDCOL,NDIX,DENE,HDIAG,XINT,-- ADDR FOR NR
+                 NFTA      ,-- AO INTEGERAL FILE X
+                 NFTC      ,-- EXPRESSION FILE
+                 NFED      ,-- ENERGY MATRIX DIAG
+                 NFEO      ,-- ENERGY MATRIX OFFDIAG
+                 NFTD      ,-- 1 EL EXPRESSION ( FOR DENSITY MATRIX )
+                 ERRCD      ,-- IO FLAG & RETURN CODES
+                 LNIX ,    -- BUFFER SIZE OF NFTD
+                 NOB(20),NOBC(20),NSYM,NSYMC, --
+                 RTNCD
+  %UPDATE
+  /               CHANGED  BY M. SEKIYA  AT IMS    ON 1988- 2-21
+  /               CHANGED  BY T. NORO    AT HUCC   ON 1989-10-23
+  /*
+  /*     CALLED   : CIDRIV
+  /*     CALLING  : CALEMS
+  %%CHECK IF ERRCD   > 0 THEN EXIT RTNCD = ERRCD  %
+  BEGIN
+     EXEC PRINT_FILE_INF
+     / READ INTEGRAL HEADER
+     FORTRAN REWIND NFTA
+     FORTRAN --
+     READ (NFTA)  (NDY,I=1,33),NSYM,NDY,NDY,NDY,LBUFA,(NOB(I),I=1,NSYM)
+
+     EXEC  CHECK_CONSISTENCY  ; %CHECK
+
+     EXEC CORE_SET  ; %CHECK
+     /* debug by mas 
+
+     IF NFTD > 0 THEN EXEC WRITE_NFTD_HEADER ; %CHECK
+
+     CALL    CALEMS (NFTC,NFED,NFEO,NFTD,  --
+                     NKEEP,LBUFC,LNIX,LXBF, --
+                     NR(INDEXL), NR(INDEXS), NIJX, --
+                     NR(NIP),  LTRIX,  -- CFP READ BUFFER NIP: INT-ADR
+                     CR((CFP+1)/2), -- CFP READ BUF (R8 view of NR(CFP))
+                     LONE,      -- 1_EL EXPRESSION (FOR DENSITY MATRIX)
+                     NR(NDROW), --
+                     NR(NDCOL), --
+                     NR(NDIX),  -- WRITE BUFFER     NDIJ : I,J MATRIX
+                     CR((DENE+1)/2),  -- DENE : R8 view of NR(DENE)
+                     CR((HDIAG+1)/2), -- R8 view of NR(HDIAG)
+                     CR((XINT+1)/2),  -- INTEGRAL READ BUF (R8 view)
+                     ERRCD)      -- RTNCD
+
+     %CHECK
+     END
+
+  >  CORE_SET
+  /* WORK CORE  UNIT IS WORD
+     NIJX = MXRPS * MXRPS
+     /* WRITE BUFFER FOR DIAGNOAL ENERGY MATRIX ( LRECL = NKEEP )
+     HDIAG = 1                    ; / ADDR FOR DIAG H   BUF
+
+     /* READ BUFFER FOR EXPRESSION ( LRECL = LBUFC )
+     /* RECORDS : NI,I4*LBUFC,I4*LBUFC,R8*LBUFC
+     INDEXL  = HDIAG + NKEEP*2; / ADDR FOR NIP
+     INDEXS  = INDEXL + NIJX
+     /* WRITE BUFFER FOR DENSITY EXPRESSION ( LRECL =  LNIX )
+     /* RECORDS : NI,I4*LNIJ,I4*LNIX,R8*LNIX
+     NDROW  = INDEXS + NIJX   ; / ADDR FOR CSF NUMBER ROW
+     NDCOL  = NDROW + LNIX   ; / ADDR FOR CSF NUMBER COL
+     NDIX   = NDCOL + LNIX   ; / ADDR FOR INTEG ADDR
+
+  /* WORK CORE  R*8
+     /* READ BUFFER FOR EXPRESSION ( LRECL = LBUFC )
+     /* RECODS : NI,I4*LBUFC,I4*LBUFC,R8*LBUFC
+     CFP   = NDIX  + LNIX        ; / ADDR FOR COEFFICIENTS FOR INTEGRAL
+     CFP   = CFP + MOD(CFP-1,2)
+
+     /* WRITE BUFFER FOR DENSITY EXPRESSION ( LRECL =  LNIX )
+     /* RECODS : NI,I4*LNIJ,I4*LNIX,R8*LNIX
+     DENE  = CFP   + LBUFC * 2   ; / ADDR FOR INTEGRAL BUF
+
+     /* READ BUFFER FOR INTEGRAL ( LRECL = LBUFA )
+     XINT  = DENE   + LNIX  * 2   ; / ADDR FOR INTEGRAL BUF
+     LXBF  = (NCOR -   XINT )/2 ; / BUF SIZE FOR INTEGRAL
+
+     EXEC  READ_AO_INTEGRAL
+     REWIND NFTA ;
+     IF ERRCD > 0 THEN EXIT --
+     DO 
+       ERRCD = 7104 ;
+       FORMAT WRITE ' ==  ERROR in reading AO integrals == ' 
+       ( /A ); 1L;
+       END
+   /* CORE CHECK
+     NIP = XINT + LXBF*2  ;  LTRIX = NCOR - NIP
+
+     %%BLNK               %
+     %%RBUF  READ  BUFFER %
+     %%WBUF  WRITE BUFFER %
+     FORMAT WRITE --
+        ' - CORE INFORMATION - ', --
+        '  > RESERVED CORE  %BLNK          IS',NCOR,   ' WORD <<', --
+        '  > %RBUF  FOR FACTOR             IS',LBUFC*2,' WORD <<', --
+        '  > %RBUF  FOR INDEXES            IS',NIJX*2, ' WORD <<', --
+        '  > %RBUF  FOR INTEGRAL           IS',LXBF*2, ' WORD <<', --
+        '  > %WBUF  FOR ENERGY MATRIX      IS',NKEEP*2,' WORD <<',--
+        '  > %WBUF  FOR DENSITY EXPRESSION IS',LNIX *5,' WORD <<', --
+        '  > %RBUF  FOR INTEGRAL ADDRESS   IS',LTRIX , ' WORD <<'  --
+
+           (/A /(A,I10,A))  ;  1L ;
+     //IF ERRCD > 0 THEN EXIT 
+     IF LTRIX < LTRI THEN EXIT --
+     DO
+       ERRCD = 7131 ;
+       FORMAT WRITE ' ==  SIZE OF INTEGRAL ADDR IS TOO SMALL == ', --
+       ' ==  PLEASE CHECK THE ACTUALLY USED LTRI IN STEP WF OR EX ',--
+       ' ==  LTRI ( THIS RUN ) IS ',LTRI,--
+       ' ==  PLEASE EXTEND THE CORE SIZE OR CHANGE LTRI == '
+       ( A/ A / A,I10 / A ) ; 2L ;
+       END
+     END
+
+  >  PRINT_FILE_INF
+     %%FILE  FILE IS %
+     FORMAT WRITE --
+        ' -- FILES -- ' ,--
+        '  > AO INTEGRAL        %FILE  ',NFTA,--
+        '  > ENERGY EXPRESSION  %FILE  ',NFTC,--
+        '  > H-DIAG MATRIX      %FILE  ',NFED,--
+        '  > H-OFF  MATRIX      %FILE  ',NFEO,--
+        '  > DENSITY MATRIX     %FILE  ',NFTD
+        ( //A /2(A,I5,2X))
+        1L ;
+        END
+  PROCEDURE READ_AO_INTEGRAL
+     /* 1_EL INTEGRAL
+     DO FOR I=1,2
+        IA=1
+        CALL RDINTS(NFTA,NSYM,NOB,LBUFA,LXBF,IA,NR(XINT),ERRCD)
+        IF ERRCD ^= 0  THEN EXIT ERRCD = ERRCD + 7100
+        END
+     IF ERRCD ^= 0  THEN EXIT --
+        FORMAT WRITE --
+        '  ERROR OCCURERED IN READING AO INTEGRAL ( 1_EL )'; ( A ) ;
+     LUS1EL = IA - 1
+     IMAX=0
+     IMIN=0
+     CALL PRDINT (NFTA,IA,LXBF,IMIN,IMAX,ERRCD,NR(XINT))
+     IF ERRCD = 1  THEN ERRCD = 0
+     ELSE DO
+        ERRCD  = ERRCD + 7120
+        FORMAT WRITE --
+        '  ERROR OCCURERED IN READING AO INTEGRAL ( 2_EL ) '; ( A ) ;
+        FORMAT WRITE --
+        '  ERROR CODE IS ',ERRCD ; (A,I5)
+        IF ERRCD = 0 THEN FORMAT WRITE --
+        '   7120   MEANS BUFFER IS TOO SMALL !!  NEED MORE CORE **'
+        ( A )
+        FORMAT WRITE ' IA,IMIN,IMAX  > ',IA,IMIN,IMAX ; (A,3I10)
+        LUSBUF = LUS1EL + IMAX
+        FORMAT WRITE --
+        ' - USED CORE INFORMATION - ', --
+        '  > RESERVED INTEGRAL BUFFER      IS',LXBF*2,  ' WORD <<', --
+        '  > USED INTEGRAL BUFFER ( 1-EL ) IS',LUS1EL*2,' WORD <<', --
+        '  > USED INTEGRAL BUFFER ( 2-EL ) IS',IMAX*2,  ' WORD <<', --
+        '  > USED TOTAL INTEGRAL BUFFER    IS',LUSBUF*2,' WORD <<' ;
+           (A/(A,I10,A) ) ;
+        END
+     LXBF   = LUS1EL + IMAX
+     END
+
+  PROCEDURE WRITE_NFTD_HEADER
+     /* WRITE INFORMATION FOR NFTD : FOR DENSITY MATRIX
+     FORTRAN REWIND NFTD
+     FORTRAN WRITE(NFTD) IDIAG
+     LONE = 0
+     FOR ISYM = 1, NSYM ; LONE = LONE + NOB(ISYM)*(NOB(ISYM)+1)/2
+     END
+
+  PROCEDURE READ_EE_TAPE_HEADER
+     /* READ INFORMATION OF WAVE FUNCTION
+     FORTRAN REWIND NFTC
+     FORTRAN READ (NFTC) (NDY,I=1,37),LBUFC,IDIAG,NSYMC,ILWF, --
+                          NDY,NDY,NDY, MXRPS
+     FORTRAN READ (NFTC) (NOBC(I),I=1,NSYMC)
+     MCA = 0  ; /* ILWF IS LENGTH OF NWFSG ( WAVE FUNCTION READ BUFFER )
+     DO WHILE MCA < ILWF
+        FORTRAN READ ( NFTC ) MC  ; /* MC IS LENGTH OF THIS REC
+        MCA = MCA + MC
+        END
+     END
+
+  PROCEDURE CHECK_CONSISTENCY
+      EXEC  READ_EE_TAPE_HEADER
+      ERRCD   = 0
+      IF NSYM ^= NSYMC THEN EXIT  ERRCD   = 7135
+      FOR ISYM = 1, NSYM
+         IF NOB(ISYM) ^= NOBC(ISYM) THEN EXIT ERRCD   = 7134
+
+      IF ERRCD > 0 THEN DO
+           FORMAT WRITE --
+           ' NOB  ( INTEGERAL  FILE : NFTA )  NSYM,   < NOB >  ' ; ( A )
+           FORMAT WRITE NFTA, NSYM, (NOB(ISYM),ISYM=1,NSYM)
+           ( 25X, I3,5X,I3, (10I4) )
+           FORMAT WRITE --
+           ' NOB  ( EXPRESSION FILE : NFTC )  NSYM,   < NOB >  ' ; ( A )
+           FORMAT WRITE NFTC, NSYMC, (NOBC(ISYM),ISYM=1,NSYM)
+           ( 25X, I3,5X,I3, (10I4) )
+           END
+      END
+   %%SUBNAME  CFSORT %
+   PROCESS    NO LIST      MAP    HEADER  %SUBNAME
+   SUBROUTINE %SUBNAME --
+              (NKEEP,KEY,IKEEP,CHAIN,THRVC,CF,INDEX,COUNT,DEBUG)
+   %UPDATE
+     INTEGER * 4  NKEEP         ,-- # OF DIMEMSION
+                  COUNT         ; /  --
+
+     REAL    * 8  KEY  (NKEEP)  ,-- DATA
+                  CF   (NKEEP)  ,--
+                  THRVC         ,-- THRESHOLD
+                  DATA
+
+     INTEGER * 4  IKEEP(NKEEP)  ,-- CSF ID
+                  INDEX(NKEEP)  ,--
+                  CHAIN(0:NKEEP)
+     INTEGER * 4 DEBUG ;
+  BEGIN
+   /IF DEBUG > 0 THEN EXEC INPUT_PRINT
+    COUNT = 0
+    FOR I = 1, NKEEP
+    DO
+        DATA = DABS(KEY(I))
+        FORTRAN IF ( DATA .GT. THRVC ) THEN
+           COUNT=COUNT+1 ; CF(COUNT) = DATA ; CHAIN(COUNT) = I
+           ENDIF
+        END
+    FOR I = 1, COUNT-1
+    DO
+       DATA = CF(I)   ; IM = I
+       FOR J = I+1, COUNT
+       DO
+          FORTRAN IF ( CF(J) .GT. DATA  ) THEN
+             IM = J ; DATA = CF(J)
+             ENDIF
+          END
+       IF I = IM THEN EXIT
+       CF(IM) = CF(I) ; CF(I) = DATA
+       IJ = CHAIN(I)  ;
+       CHAIN(I) = CHAIN(IM) ; CHAIN(IM) = IJ
+       END
+    FOR I = 1, COUNT
+    DO
+       INDEX(I) = IKEEP(CHAIN(I)) ; CF(I) = KEY(CHAIN(I))
+       END
+    IF DEBUG > 1 THEN EXEC  DEBUG_PRINT
+    END
+    > DEBUG_PRINT
+       %%SKIP 5 %
+       IEND  = (COUNT - 1)/ %SKIP * %SKIP
+       FOR I = 1, IEND, %SKIP
+       FORMAT WRITE (INDEX(I+J),CF(I+J),J=0,%SKIP -1 )
+       ( ' > ',%SKIP(I6,F10.5) )
+       FORMAT WRITE (INDEX(J),CF(J),J=IEND+1,COUNT)
+       ( ' > ',%SKIP(I6,F10.5) )
+       END
+   %%SUBNAME DIAGDR %
+   PROCESS    NO LIST      MAP    HEADER  %SUBNAME
+   SUBROUTINE %SUBNAME  --
+       ( CR,     NR,     NCOR,   NFCV,   NFDI,   NFOF,   NFIV,  --
+         NSTAT,  KPS,    NSDIM,  NKEEP,  MAXIT, --
+         ET,     RTNCD )
+  %UPDATE
+  /*
+  /*     FUNCTION :  DIAGONALIZATION DRIVER
+  /*
+  /*     CALLED   : CIDRIV
+  /*     CALLING  : LDIAG
+  /*                .....
+
+   IMPLICIT REAL*8 (A-H,O-Z)
+   COMMON/COMPRM/IND(100),NL,NS,M,M2,M1,M12,IT,IPS,IO,IOA,IOB,IOF,ICV
+   /*     COMMON /HMATOF/HOFF(2382),IROW(2382),ICOL(2382)
+   /*     INTEGER * 4 LEMBF,IROW,ICOL
+   /*     REAL * 8 HOFF
+   /*     DATA LEMBF/2382/
+   /*                            CHANGED BY TASHI ON 89/10/24 AT HUCC
+   INTEGER * 4  --
+                --
+         NFCV,  -- 37 = CI VECTOR FILE ( OUTPUT )
+                --
+         NFDI,  -- 38 = HAMILTONIAN ( DIAG ELEMENT )
+                --
+         NFOF,  -- 39 = HAMILTONIAN ( OFF DIAG ELEMENT )
+                --
+         NFIV,  -- 36 = CI VECTOR FILE  ( INPUT INITIAL VECTOR )
+                --
+                --
+         NCOR,           -- FREE REGION UNIT IS WORD
+         NSOL,           -- # OF SOLUTION DUMMY
+         NSTAT,          -- # OF STATE
+         RTNCD,         -- RETURN CODE
+         ERRCD,         -- ERROR CODE
+         NKEEP,         -- INITIAL VECTOR
+         NSDIM,         -- INITIAL VECTOR
+                        -- = 0 : UNIT VECTOR
+                        -- > 0 : SOLUTION OF SMALL MATRIX ( # OF DIM )
+                        -- < 0 : READING FILE ( UNIT = IFILE + 9 )
+         IPS  ,KPS,     -- THRESHOLD IN DIAG 10 ** ( - IPS )
+         ICV  ,         -- = 0 NORMAL METHOD
+         -- NCVEC,         -- # OF CORRECTION VECTORS
+                        -- = 0 : NOT EXECUTE LDIAG ( LARGE DIAG )
+         MAXIT          -- # OF ITERATION
+
+   REAL   * 8           --
+         CR(NCOR),         -- CORE
+         ET(*)         -- EIGEN VALUE
+
+   /* NR : INTEGER*4 view of the same heap as CR (same base), threaded on
+   /* to SDIAG so DIAG's INTEGER*4 IORD scratch arg gets a typed actual.
+   INTEGER * 4 NR(*)
+
+   LOGICAL IOERR,IOEND
+   INTEGER * 4 IOSTAT
+
+   %COMDIAG
+
+   DATA IOSTAT/0/
+   BEGIN
+      /* SET INITIAL PARAMETER
+      IOA = NFDI ; IOB = NFOF ; IOC = NFIV ; IOF = NFCV ;
+      IPS = KPS  ; IT  = MAXIT; ICV = 0    ; IO = 1 ;
+      NL  = NKEEP; NS = NSDIM ; M   = NSTAT; RTNCD = 0
+      FOR I = 1, 100 ; IND(I)  = 2
+      /* END  OF SET INITIAL
+      IOEND = .FALSE. ; IOERR = .FALSE.
+      NSOL = NSTAT ; / changed by Mas 92-11-12
+      /* JUGE METHOD OF DIAG
+      IF NSDIM >= NKEEP
+      THEN DO
+         NS = NKEEP ; M12 = 0 ;
+         NEED   = NS * ( 3 * NS / 2 + 8  ) * 2
+         IF NEED > NCOR THEN ( ERRCD = 7230 ; EXEC ERROR PRINT )
+         CALL SDIAG(CR,NR,CR,ET,NCOR/2 )
+         END
+      /* USING LDIAG
+      ELSE DO
+         NS = NSDIM
+         IF NSOL > NS THEN NSOL = NS
+         /* INITIAL GUESS
+         IF  NFIV ^= 0
+         THEN DO
+            / INITIAL VECTOR IS TAKEN FROM NFIV
+            / CI VECTOR FILE  / HEADER
+            REWIND NFIV
+            BINARY  READ: NFIV ENDFLAG = IOERR  NSOL1,NKEEP1
+            IF ^ IOERR
+            THEN DO
+               IF NSOL1 > NKEEP1 THEN REWIND NFIV
+               / CI VECTOR FILE
+               KMIN = 1
+               / DO FOR  I=1,NSOL1
+               DO UNTIL IOERR ! IOEND
+                  BINARY  READ: NFIV ERRFLAG = IOERR ENDFLAG = IOEND --
+                              NK,NST, ET(NST),(CR(J),J=KMIN,KMIN+NK-1)
+                           /* NK,NST, ET(NS),(CR(J),J=KMIN,KMIN+NK-1)
+                           /*    ERROR DETECTED BY MAS FEB 7 1987 */
+                  KMIN=KMIN+NK
+                  END
+               NSOL1 = NST
+               REWIND NFIV
+               END
+
+            IF IOERR
+            THEN DO
+                1L; ' * IO ERROR OCCURED IN READING ' ;
+                PUT NFIV I5 ; 1L ;
+                NFIV = 0
+                END
+
+            ELSE IF  NSOL1 < NSTAT ! NK > NL
+            THEN NFIV = 0
+            ELSE DO
+               NSOL = MIN0(NSOL1,NSOL) ; NS = NK
+                   '  INITIAL VECTORS ( FILE ' ;
+               PUT NFIV I5 ; ' ) ' ; 1L ;
+               END
+            END
+         /* END OF SETTING INITIAL VECTOR  READING FROM NFIV
+
+         NSOL = NSOL + 1
+         /* CORE SET LARGE SCALE
+         /* CORE CHECK
+         DO UNTIL NEED < NCOR
+            NSOL = NSOL - 1
+            IF NSOL < NSTAT THEN ( ERRCD = 7231 ; EXEC ERROR PRINT )
+            M12 = NSOL * 2 + 1
+            DO UNTIL NEED < NCOR
+               M12 = M12 - 1
+               IF M12 < NSOL THEN EXIT
+               M2 = NSOL + M12
+               NEED = NL * ( M2 + M2 + MAX0(NSOL,M12)) + NL --
+                    + M2 * M2 * 2 + M2 * (M2+1)/2 + M2
+               NEED = NEED * 2
+               END
+            END
+
+
+
+         IF NFIV = 0 THEN EXEC INITIAL_GUESS
+
+         EXEC CORE SET FOR LARGE SCALE DIAG
+
+
+         CALL LDIAG --
+              (CR,CR(K1),CR(K2),CR(K3),CR(K4),CR(K5),CR(K6),CR(K7))
+
+         /* DIM (=NSMALL) OF INITIAL VECTOR  EXPANDED TO NLARGE
+
+         I = 0
+         UNTIL IND(I) ^= 1 ! I =  NSTAT ; I = I + 1
+         IF I < NSTAT ! IND(NSTAT) > 1
+         THEN DO
+            1L ; ' ** CONVERGENCE IS FAILED ** ( FROM ' ; PUT I I4 ;
+                 ' TO ' ; PUT NSTAT I4 ; ' ) ' ; 1L ;
+            NSTAT = I  - 1
+              ' ** NSTATE IS CHANGED TO ' ; PUT NSTAT I5 ; ' ** ' ; 2L
+            RTNCD = I
+            END
+         IF NSTAT <= 0 THEN EXIT ( ERRCD = 7250 ; EXEC ERROR PRINT )
+         ELSE ( 2L;' * WELL CONVERGED * ' ; 3L )
+         FOR I = 1, NSTAT    ; ET(I) = CR(K7+I - 1)
+
+
+         END
+      IF ERRCD > 0 THEN EXIT
+      EXEC STORE_CI_VECTOR_TO_NFCV
+      END
+
+   PROCEDURE  CORE SET FOR LARGE SCALE DIAG
+
+      FOR I = 1, NSTAT ; IND(I) = 2 ;
+      FOR I = NSTAT + 1, NSOL ; IND(I) = 4 ;
+
+      M  = NSOL
+      M1 = NSOL + 1  ; M2 = NSOL + M12 ;
+      NLMAX = NL * MAX0( NSOL, M12 )
+      NLM2  = NL * M2
+      K1    = 1 + NLM2  ; K2  = K1 + NLM2 ; / D & C ( HC ) &  C
+      K3    = K2+ NLMAX ; K4  = K3 + NL ;
+      K5    = K4+ M2*M2 ; K6  = K5 + M2*M2
+      K7    = K6+ M2*(M2+1)/2  ; / EIGEN VALUE
+      NEED  = (K7 + M2 - 1) * 2 ;
+
+      IF NEED > NCOR THEN ( ERRCD = 7230 ; EXEC ERROR PRINT )
+
+         3L ; '  > RESERVED CORE     = ' ; PUT NCOR I15 ; 1L ;
+              '  > USED CORE         = ' ; PUT NEED I15 ; 1L ;
+              '  > # OF VECTOR       = ' ; PUT NSOL I15 ; 1L ;
+              '  > CORRECTION VECTOR = ' ; PUT M12  I5  ; 2L ;
+
+         END
+
+   PROCEDURE  INITIAL_GUESS
+      IF NS = 1 -- UNIT VECTOR
+      THEN DO
+         REWIND NFDI
+         BINARY READ : NFDI NDUMY, NDUMY,( ET(20+I),I=1,NSTAT )
+         REWIND NFDI
+         IF NSOL > NS THEN NSTAT = NS
+         FOR I = 1, NL*NSOL ; CR(I) = 0.0D+00
+         FOR I = 1, NSOL    ; CR(I+NL*(I-1)) = 1.0D+00
+         END
+      ELSE DO
+         /* GENERATE INITIAL VECTOR MATRIX SIZE IS NSDIM
+         CALL SDIAG(CR,NR,CR,ET(21),NCOR/2 )
+         CALL EXPAND(CR,CR)
+         1L ; 3X ;
+         '  > INITIAL VECTORS ARE GENERATED BY SMALL MATRIX ' ;
+         ' ( SIZE IS' ;
+         PUT NSDIM I6 ; ' ) ' ; 3L ;
+         END
+      END
+
+ PROCEDURE ERROR PRINT
+      %ERMSG
+
+     IF ERRCD = 7230 THEN --
+     DO FORMAT WRITE  '  NEED MORE CORE ( RESERVED = ',NCOR, --
+             ', USING CORE = ',NEED,' WORDS ) ' ; (/2(A,I15),A )
+        END
+     ELSE IF ERRCD = 7231 THEN --
+      ('  INITIAL VECTORS ARE NOT AVAILABLE       ' ; 1L
+              '  I RECOMMEND YOU TO INPUT "NFIV=0,NSDIM=200" ' ; 1L
+              '  NEED CORE ' ; PUT NEED I10 ; ' WORD ' ; 1L
+              '  RESERVED  ' ; PUT NCOR I10 ; ' WORD ' ; 1L
+              '  # OF SOL  ' ; PUT NSOL I10 ;            1L )
+    END
+   PROCEDURE STORE_CI_VECTOR_TO_NFCV
+
+    / CI VECTOR FILE  / HEADER
+      REWIND NFCV
+      WRITE(NFCV) NSOL,NKEEP
+    /  WRITE(NFCV) NAME,NOCSF,NKEEP,IKEEP,IDTYP,JDFLG,THRES,NSTAT, --
+    /              ICONV,NLARGE,NSMALL,NSOL,M2,M1,M12,NIT,KPS,--
+    /              IOFLG,NFDI,NFOF,NFCV,ICV
+    / CI VECTOR FILE
+      KMIN = 1
+      DO FOR  I=1,NSOL
+         KMAX=KMIN+NKEEP-1
+         WRITE(NFCV) NKEEP,I,ET(I),(CR(J),J=KMIN,KMAX)
+         KMIN=KMIN+NKEEP
+         END
+      FORTRAN END FILE NFCV
+      REWIND NFCV
+      / CI VECTOR FILE  / END MARK
+      END
+   %%SUBNAME EMDEL %
+   PROCESS    NO LIST      MAP    HEADER  %SUBNAME
+   SUBROUTINE %SUBNAME  --
+               ( NFDI,  NFOF, NFDW, NFOW, NKEEP,IKEEP,  --
+                 IND ,  HDRBUF, HDIAG,   --
+               HORBUF,  ICRBUF, IRRBUF, NOCSF, RTNCD)
+  %UPDATE
+  /*
+  /*     FUNCTION :  UNIMPLEMENTED -- aborts loudly if ever reached
+  /*                 IDTYP(1)>1 pre-diagonalization CSF selection path
+  /*                 was never written and its provenance is unknown
+  /*
+  /*     CALLED   : CIDRIV
+  /*                .....
+      INTEGER*4 IKEEP, IND
+      REAL*8    HDRBUF, HDIAG, HORBUF, RTNCD
+  BEGIN
+    ' == EMDEL (IDTYP(1)>1 CSF-SELECTION PATH) IS NOT IMPLEMENTED == ' ; 1L ;
+    CALL ERSTOP ('EMDEL')
+    END

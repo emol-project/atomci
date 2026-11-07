@@ -1,0 +1,14 @@
+OPEN UNIT=7 FILE=be.csf
+END
+" INPUT DATA OF ATGEN.  # OF CORRELATING ORBITALS.
+  2S 2P 2D 1F )))
+" SHELL ( OCCUPIED ORBITALS )
+   2S    2P  )))
+" REF.
+   2S*2)  2P*0))
+   2S*0)  2P*2))
+   )))
+" ORDER OF COUPLING
+  2S 2P  )))
+   1S
+   -1

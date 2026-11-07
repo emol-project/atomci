@@ -1,0 +1,150 @@
+   PROCESS FILE 'ciex.f'
+   %%SUBNAME  EXMAIN%
+   PROCESS    NO LIST      MAP    HEADER  %SUBNAME
+      SUBROUTINE %SUBNAME (TITLE, FILES, METHOD, USCPU,  RTNCD)
+  %CPYRIGHT
+  %UPDATE
+  /   MODIFIED BY M.S.   01/12/1987   AT IMS
+  /   MODIFIED BY TASHI  10/10/1989   AT HUCC
+  /*
+  /*     FUNCTION :  CSF GENERATOR FOR SDCI
+  /*
+  /*     CALLED   : ATOMCI
+  /*     CALLING  : EXTAP1 -+--> EXTAPN -+--> EXIJ  -+--> SMAT -+-->
+  /*                        +--> QTISQT
+  /*                TBLSET,TBLSAV
+  /*
+  /*     INPUT    : NAMELIST &EX
+  /*  RESTART OFF
+  /*     INPUT    : FILE NFPTB ( UNIT = 11 AS NORMALY ) < WAVE FUNCTIONS
+  /*  RESTART ON
+  /*     INPUT    : FILE NFEXW ( UNIT = 14 AS NORMALY ) < INCOMPLETE EE APE
+  /*     OUTPUT   : FILE NFEXE ( UNIT = 15 AS NORMALY ) > EE TAPE
+  /*
+  IMPLICIT INTEGER   * 4 (A-Z)
+  %INCMAIN
+  %INCMACRO
+  %INCWORK
+  %param
+      INTEGER   * 4 VAR(%WORKCORE)
+      common/work/var
+
+  /*
+  /* DCL FOR LOCAL VAR
+  /*
+   INTEGER   * 4  NGOT,        -- LENGTH OF WORK REGION
+                  NAME(30),    -- COMMENT ON NFPTBX
+                  NPFLG0,-- DEBUG FLAG
+                  RETRY0,-- DEBUG FLAG
+                  TBLSIZ,-- K BYT
+                  FILE  ,--
+                  STATUS,--
+                  mshms, --
+                  NCOUNT,--
+                  NSKIP ,--
+                  TBLINF,--
+                  IBLNK--
+
+      DATA LWFL0  --
+           /2000/
+      DATA NPFLG0,RETRY0 --
+           /0,      0/
+      %INCDATA
+
+  %%NAMELIST EX %
+  /* NAMELIST ITEM
+  NAMELIST /%NAMELIST/ --                    STATUS  DEFAULT DIM TYPE
+            NFTF,    -- CFP TABLE            INPUT       10       I4
+            NFPTB,   -- CSF : INPUT  FILES   INPUT       11       I4
+            NFEXE,   -- EE TAPE :    FILES   OUTPUT      15       I4
+            NFEXW,   -- UNCOMPLETE  EE TAPE  INPUT       14       I4
+            NFTBL,   -- WIG SYM TABLE        WORK        88       I4
+            NAME,    -- COMMENT ON NFPTB               NONE    30*I4
+            NPFLG,   -- DEBUG PRINT FLAG                  0       I4
+            RETRY,   -- RESTART FLAG                      0       I4
+            LWFL,    -- LENGTH OF WRITE BUFFER(NFPTB)  2000       I4
+            TBLSIZ,  -- TABLE SIZE FOR WIG ( K BYTE)   5000       I4
+            TBLINF,  -- PRINT FLAG FOR INFORMATION LIST   0       I4
+            NCOUNT,  -- COUNTER                          50       I4
+            NSKIP,   -- SKIP                              1       I4
+            FILE,    -- NEW  OR OLD                    NEW        C4
+            STATUS,  -- SAVE OR DEL                    DEL        C4
+            mshms;   -- shms: shmsrc 0, shmsd 1           0       I4
+
+
+   %%CHECK IF ERRCD > 0 THEN EXIT %FINISH ; %
+
+   BEGIN
+      ERRCD =0 ; RTNCD = 0
+      call ctoi4 ('    ', iblnk)
+      %START
+      EXEC SETUP
+      FORTRAN READ(5,%NAMELIST,END=900)
+      call tshmsb(mshms)
+      EXEC DATA_CHECK ; %CHECK
+      EXEC PRINT_HEADER
+
+      REWIND NFEXE
+      CALL EXTAP1  --
+         (NAME,                     -- WORK REGION
+          NFPTB,NFEXE,NFEXW,NFTF,         -- UNIT NUMBER
+          NPFLG,LWFL,      -- PARAMETER LIST
+          RETRY,MCFLAG, ERRCD )
+      %CHECK
+      %FINISH
+      EXIT
+      FORTRAN 900 CONTINUE
+      FORMAT WRITE ' *******  END OF %SUBNAME  ******* ',--
+             '    NAMELIST - &%NAMELIST - IS NOT FOUND IN INPUT DATA  '
+      (/' ',A,A,20('*')////)
+      ERRCD = 6000
+      %FINISH
+      END
+
+      PROCEDURE DATA_CHECK
+         IF METHOD(55) ^= NFPTB
+         THEN DO
+            IF METHOD(25) = 0 THEN METHOD(55) = NFPTB
+            ELSE ERRCD = 6001
+            END
+         METHOD(61) = NFEXE
+         METHOD(62) = NFEXW   ;
+         METHOD(37) = NFTBL   ;
+         END
+      PROCEDURE SETUP
+         FOR  I= 1,18 ; NAME(I) = TITLE(I)
+         FOR  I=19,30 ; NAME(I) = IBLNK
+         NFTF   = METHOD(80)
+         NFPTB  = METHOD(55)
+         NFEXE  = METHOD(61)
+         NFEXW  = METHOD(62)
+         NFTBL  = METHOD(63)
+         LWFL = LWFL0
+         NPFLG = 0 ; 
+         / add MCFLAG
+         mshms=0
+         MCFLAG = 0; 
+         END
+  > PRINT_HEADER
+     FORMAT WRITE (TITLE(I),I=1,18),(NAME(I), I=1,18),  --
+                   METHOD(80),  NFTF,  METHOD(55),  NFPTB,  --
+                   METHOD(61),  NFEXE, METHOD(62),  NFEXW,  --
+                   METHOD(63),  NFTBL, RETRY,               --
+                   LWFL0,  LWFL,   --
+                   NGOT ,  FILES,  NPFLG
+     ('1',45('*'),3X,'EE TAPE(%SUBNAME)'/      --
+        /' TITLE:  ',18A4 /                                   --
+        /' NAME :  ',18A4 /                                   --
+        /'  NFTF : CFP TABLE            (',I3,') =',I6,      --
+        /'  NFPTB: CSF TAPE INPUT       (',I3,') =',I6,      --
+        /'  NFEXE: EE  TAPE OUTPUT      (',I3,') =',I6,      --
+        /'  NFEXW: EE  TAPE INPUT       (',I3,') =',I6,      --
+        /'  NFTBL: WORK FILE            (',I3,') =',I6,      --
+        //'     PARAMETER LIST                        ',   --
+        //'      RETRY            =',I8,  --
+          '      LWFL  (', I8,') =',I8,  --
+        //'      TOTAL FREE REGION =',I12, ' WORD ',--
+        //'  SUMMARY FILES UNIT = ',I3,'      PRINT FLAG = ',I3, --
+        //' ',30('--'),//)
+     END
+     %INCWKEXC

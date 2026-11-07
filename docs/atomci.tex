@@ -1,0 +1,71 @@
+\documentstyle[11pt,psfig,html]{article}
+%% Layout parameter
+\pagestyle{headings}
+\setlength{\topmargin}{-12mm}
+\setlength{\oddsidemargin}{0mm}
+\setlength{\evensidemargin}{0mm}
+\setlength{\textwidth}{167mm}
+\setlength{\textheight}{225mm}
+\setlength{\unitlength}{1mm}
+\setlength{\parskip}{3mm}
+\setlength{\parindent}{0in}
+
+
+%%%%% TITLE 
+\newcommand{\Ttitle}[1]{{\large {\bf #1}}\par}
+\newcommand{\Gtitle}[1]{{\large {\bf #1}}\par}
+\newcommand{\Ltitle}[1]{{\Large {\bf #1}}\par}
+\newcommand{\xspace}{\medskip \par}
+\newcommand{\xsp}{\par} 
+\newcommand{\xsup}[1]{{${}^{#1}$}}
+\newcommand{\xsub}[1]{${}_{#1}$}
+%%
+\newcommand{\htabsp}{\hspace*{10mm}}
+%%
+\newcommand{\METECC}{METECC-ZZZZZZ}
+%% 
+%%% &CNTL -> \cntlnamelsit ... etc 
+\newcommand{\cntlnamelist}{\&CNTL }
+\newcommand{\mcnamelist}{\&MC }
+\newcommand{\wfnamelist}{\&WF }
+\newcommand{\ainamelist}{\&AI }
+\newcommand{\trnamelist}{\&TR }
+\newcommand{\ptnamelist}{\&PT }
+\newcommand{\exnamelist}{\&EX }
+\newcommand{\cinamelist}{\&CI }
+\newcommand{\rsnamelist}{\&RS }
+\newcommand{\namelistend}{\&END }
+\newcommand{\getnamelist}{\&GET }
+\newcommand{\basnamelist}{\&BASVC }
+\newcommand{\checknamelist}{\&CHECK }
+\newcommand{\dscfnamelist}{\&DSCF }
+\newcommand{\hfnamelist}{\&HF }
+
+
+%% make box
+\newcommand{\mtab}[2]{\vspace*{5mm}%%
+{\makebox(20,2)[l]{\sf #1}%%
+ \begin{minipage}[t]{148mm}{\sf #2} \end{minipage}}%%
+}
+\newcommand{\kbox}[2]{%%\vspace*{5mm}%%
+{\makebox(20,2)[l]{\sf #1}}{\sf #2}}
+
+%% new environment 
+\newenvironment{indention}[1]%
+{\par\begingroup\setlength{\leftskip}{#1}}%
+{\par\endgroup}
+
+\begin{document}
+\input{atomci.002}
+\input{namelist.002}
+
+\renewcommand{\mtab}[2]{%%\vspace*{5mm}%%
+{\makebox(18,2)[l]{\sf #1}}{\sf #2}}
+\input{file.002}
+  
+\input{install.002}
+
+\renewcommand{\mtab}[2]{%%\vspace*{5mm}%%
+{\makebox(18,2)[l]{\sf #1}}{\sf #2}\\}%%
+\input{appendix.002}
+\end{document}

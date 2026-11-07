@@ -1,0 +1,151 @@
+ %%subname readia%
+ process  no list file '%subname.f'
+ subroutine %subname (num, lett)
+  %%lnmax 80%
+      implicit integer(a-z)
+      real*8 fnum, ffrac, whole, fractn
+      character * 1  line(%lnmax),in(10), lett, letsav
+      logical  number, numerl, eof
+      save     n, in, line, iprint, istat, unit
+
+      data  in/'0','1','2','3','4','5','6','7','8','9'/
+      data  iprint/0/  istat/0/  unit/5/  n/%lnmax/
+ %update 
+    begin
+
+  / subroutine readia ( num,lett )
+    
+  /    function 
+  /       read sysin
+  /       if data is an unsigned integer or a comma, returns that value
+  /               ( for a comma, returns zero )
+  /       else returns that character    ( type char*1 )
+  /       
+
+      num = 0
+      until lett ^= ' ' ; exec  get a character
+      if lett = ',';  then return;   /  returns 0! 
+      if iprint > 2 then  write(6,*) --
+         ' debug in readia(1): lett, n =', lett,n   
+      numerl = .false.
+ 
+      exec   read unsigned number
+      num = whole
+
+      exec   set column position
+      if iprint > 1 then  write(6,*) --
+         ' debug in readia:  num, numeral, lett =', num,numerl,lett   
+      return
+
+  entry readfa ( fnum, lett )
+    
+  /    function 
+  /       read sysin
+  /       if data is a floating point number or a comma, returns that value
+  /               ( for a comma, returns zero )
+  /       else returns that character    ( type char*1 )
+  /       
+
+      fnum = 0
+      until lett ^= ' ' ; exec  get a character
+      if lett = ',';  then return
+      
+      numerl = .false.
+      is = 1
+      if  lett = '-' then do; is = -1;  exec  get a character;  end
+      if  lett = '+' then  exec  get a character
+ 
+      exec   read unsigned number
+      fnum = whole
+      if lett = '.'  
+      then do
+         exec  get a character
+         exec   read unsigned number
+         fnum = fnum + fractn
+         end
+      fnum = fnum * is
+      exec  set column position
+      if iprint > 0 then  write(6,*) --
+         ' debug in readfa: fnum, numeral, lett =', fnum,numerl,lett   
+      return
+
+   entry irdset(itest)
+      iprint=itest
+      if iprint > 0 then  write(6,*) ' debug:  rdseta called: itest = '--
+         ,  itest
+      return
+
+   entry iriset(iunit)
+      unit  = iunit
+      if iprint > 0 then  write(6,*) ' debug:  riseta called: unit = '--
+         ,  iunit
+      return
+ 
+   entry newcd
+      n = %lnmax
+      if iprint > 0 then  write(6,*) ' debug:  newcda called '
+      end
+    
+   procedure  set column position
+      letsav = lett
+      if ^numerl then   = n + 1
+      if n <= %lnmax   then do
+         while line (n) = ' ' & n < %lnmax ; exec  get a character
+         if line(n) ^= ',' ; then = n - 1
+         end
+      if numerl  then lett = ','
+      else  lett = letsav
+      end
+    
+   procedure   get a character
+      
+      if n >= %lnmax then do
+         eof = .false.
+         n = 1
+         do until ( line(1) ^= '#' & line(1) ^= '"') ! eof
+            format read :unit endflag=eof line; ( %lnmax A1 )
+            if  iprint.ne.0;  format write:6 line; (' ***',%lnmax A1)
+            end
+         if eof then do
+            write (6,*)--
+               ' >> end of file (6) detected in program readia/readfa'
+            write (6,*) '    readia/readfa: free format read program '
+            write (6,*)--
+               ' >> error >>  program run terminated: the last record is'
+            format write:6 line; (' ***',%lnmax A1)
+            write (6,*) ' >> error >>  please check your input cards'
+            if .true. then stop
+            end
+         end
+      else do
+         = n + 1
+         end
+      lett = line(n)
+      if iprint > 2 then  write(6,*) --
+         ' debug in readia(2): lett, n =', lett,n   
+      end
+
+   procedure   read unsigned number
+
+      whole = 0
+      ffrac = 1
+      fractn = 0
+
+      do until ^number 
+         number = .false.
+         i = 1
+         do while i <= 10
+            if in(i) = lett
+            then   exit do
+               = whole * 10 + i - 1
+               = ffrac / 10.0d0
+               = fractn + ffrac * ( i - 1 )
+               exec  get a character
+               number = .true.
+               numerl = .true.
+               end
+            = i + 1
+            end
+         end
+      end
+ 

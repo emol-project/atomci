@@ -1,0 +1,9 @@
+      PROCEDURE WK_FREE
+         ACTION = %FREEALL
+         %%VNAME NDUMMY% ; TYPE = %I4 ; %WKCORE
+         END
+      PROCEDURE WK_ERROR
+         ERRCD = RTNWK ; 2L ;
+         2L ; ' == ERROR OCCURED IN WORK ALLOCATION == RETURN CODE IS '
+         PUT ERRCD I4 ;
+         END

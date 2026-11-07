@@ -1,0 +1,94 @@
+# B (doublet P odd) -- general CI (&WF RULE=0) with hand-authored CSF
+# macro table and inline &BASVC starting orbitals; MCSCF off. Every block is
+# raw: boron derives almost nothing and
+# passes almost everything through, unlike f.inp/fpt.inp. Golden: SD-CI =
+# -24.6461953967, verified against samples/native/boron.stdin.
+# See samples/atinputs/README.md for the payload sidecars and why this
+# needs raw blocks to express at all.
+
+title:  " B (DOUBLET P ODD) "
+deck:   boron.deck
+
+atom:
+  z:     5
+  ang:   P
+  spin:  2
+
+files:
+  cfptable:  ./CFPTBL
+  open:
+    - unit: 7, file: boron.time
+
+orbital:
+reference:
+ctrl:
+
+raw:
+  -
+    group: CNTL
+    params:
+      nrnfg: 1,0,1,1,0,1,1,1
+      title: " B (DOUBLET P ODD) "
+  -
+    group: AI
+    params:
+      iunit: 5
+      nwt: 47
+      z: 5.0D0
+      iiprnt: 0
+      idprnt: 0
+    payload:
+      kind: basis
+      path: boron.basis.txt
+  -
+    group: WF
+    params:
+      rule: 0
+      iunit: 5
+      nfwfa: 11
+      ispin: 2
+      ipar: 1
+      iorb: 3
+      itnel: 5
+    payload:
+      kind: csf
+      path: boron.csf.txt
+  -
+    group: TR
+    params:
+      nsym: 7
+      nbf: 10,9,8,8,6,4,2
+      nob: 8,7,6,5,4,3,2
+      mpob: 3,4,5,6,7,8,1,2,2,3,4,5,6,7,1,1,2,3,4,5,6,1,2,3,4,5,1,2,3,4,1,2,3,1,2
+      itvci: 0
+      iordr: 0
+      itrns: 2
+  -
+    group: BASVC
+    params:
+      idprnt: 0
+      iunit: 5
+    payload:
+      kind: vectors
+      path: boron.basvc.txt
+  -
+    group: EX
+    params:
+      retry: 0
+  -
+    group: CI
+    params:
+      nrun: 1
+      nstate: 1
+      nsdim: 100
+      ips: 7
+      nrnfg: 1,1,1,0,1,1
+      nfiv: 0
+      maxit: 150
+      ioflg: 0,0,0,0,0,1
+      idtyp: 0,0
+  -
+    group: RS
+    params:
+      rule: 1
+      pthr: -0.001

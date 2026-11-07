@@ -1,0 +1,19 @@
+  %%lmax 6%
+  %%dsn  plot%
+  %%npoint 151%
+  %%maxorb  90%
+  %%maxatom 100%
+  %%debug /  %
+  %%enter  %debug ' --> enter --> %subname ' ; %debug  1l ; %
+  %%exit   %debug ' <-- exit  <-- %subname ' ; %debug  1l ; %
+  %%ind 100%
+  %%read  format read : in %
+  %%writ  format write : 7 %
+  %%writ6 fortran write(6,*) %
+  %%atom 20%    ;  %%cgto 100% ;  %%fns 100%
+  %%dcl real * 8     exp (%cgto), ccgto(%cgto*5), xnorm(%cgto),  --
+                     cso (%cgto*2) ; %
+  %%thr 0.000001 %
+  %%dbg_real format write:6 %vname ; ( a12 , 8f12.6 )%
+  %%dbg_int1 format write:6  ' = %vname = ', --
+        ( %vname (i),i=%vs,%ve) ; ( a12,12i5 ) %

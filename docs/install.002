@@ -1,0 +1,172 @@
+\xspace
+\section*{How to Install}
+\xsp
+{\bf Step 1 }
+\xsp
+Change  a directory which you want to install and type in 
+          {\sf tar xvf ... }. 
+\xsp
+          It creates the following directories 
+\xsp
+\begin{indention}{12mm}%%
+{\sf 
+                source \\
+                root \\
+                seed  \\
+                include \\
+                fplincl \\
+                output \\
+	        samples\\
+	        bin\\
+	        doc\\
+}
+\end{indention}%%
+           and file {\sf create.ibm} in the main directory.
+\xspace
+{\bf Step 2 }
+\xsp
+          Type in {\sf  create.ibm}.  All files in 
+the subdirectory {\it source} and {\it root} are copied in the 
+current directory and you will get\\
+\begin{indention}{12mm}%%
+{\sf
+               CFPTBL  ...   cfp table\\
+               atgen   ...   csf generator\\
+               atomci  ...   atomci program\\
+               fpl     ...   FPL preprocessor\\
+               fpl90lib.o  ...   FPL link library.\\
+
+}
+\end{indention}%%
+          The three files, -- {\sf CFPTBL}, 
+{\sf atgen} and {\sf atomci} -- are all you need
+          for production run of ATOMCI. 
+You should keep at least these three files.     
+\xsp
+          It also runs test jobs
+\begin{indention}{12mm}%%
+{\sf
+                boron .stdin (Sample 1)\\
+                f.atg and f.stdin (Sample 2)\\
+                fpt.atg and fpt.stdin (Sample 3)\\
+}
+\end{indention}%%
+          These jobs creates 
+                {\sf boron.output f.NO etc}  in the main directory.
+\xsp
+          Sample outputs are stored in {\it output}.
+          Timin data are also recorded in {\it output}.
+\begin{indention}{12mm}%%
+{\sf 
+Tue May 31 12:10:48  1994\\
+====================== atomci installation starts =====\\
+Tue May 31 12:10:49  1994\\
+======================================== make all =====\\
+Tue May 31 12:10:50  1994\\
+======================== atomci installation ends =====\\
+Tue May 31 12:10:51  1994\\
+================================= test run starts =====\\
+Tue May 31 12:10:51  1994\\
+=========================================== boron =====\\
+Tue May 31 12:14:30  1994\\
+=============================== fluorin mc and sd =====\\
+Tue May 31 12:34:34  1994\\
+====================================== fluorin pt =====\\
+Tue May 31 12:37:43  1994\\
+=================================== test run ends =====\\
+}
+\end{indention}%%
+\xspace
+{\bf Utilities}
+\xsp
+     THe {\sf atomdiff} script compares newly generated outputs to those in
+     the subdirectory {\sf output}. 
+To get the difference files,
+type in.
+\begin{indention}{12mm}%%
+{\sf
+       atomdiff boron\\
+       atomdiff f\\
+       atomdiff fpt\\ 
+}
+\end{indention}%%
+\xsp
+ In the  subdirectory {\sf root}, there are documentation for FPL, 
+{\sf fpl90.doc}
+and brief descriptions
+about file management of ATOMCI systems,  {\sf README} file,
+\xspace
+\section*{SAMPLE 1: CI calculations on the ground state of Boron.}
+\xspace
+The {\bf boron.stdin}
+file included in the package is a sample input file
+for General CI on 
+the ground \xsup{2}P\xsub{o} state of
+the Boron atom. For sake of brevity we do not reproduce here the
+whole input list as it appears in the actual file.
+\xsp
+{\bf  Run by typing }
+\xsp
+{\sf
+atomci $<$ boron.stdin $>$ boron.output \&
+}
+\xsp
+The results are in the directory {\it output}.
+\xspace
+\section*{SAMPLE 2: CI calculations on the ground state of Fluorine}
+\xspace
+The {\bf f.stdin}
+file included in the package is a sample input file
+which allows to perform a SD-CI calculation on the
+ground \xsup{2}P\xsub{o} state of Fluorine using a set
+of 35 Spherical GTO's (13s,11p,6d,5f) and neglecting single and
+double excitations from the 1s core orbital. The natural orbitals are
+determined and then used to repeat the calculation.
+Notice the use of the \getnamelist NAMELIST to select the NO's
+from the first calculation.
+\xsp
+The first step will be the generation of the {\sf f.csf} input.
+\xspace
+{\bf atgen $<$ f.atg }
+\xsp
+Proceed then to perform the actual CI calculation
+\xspace
+{\bf {\sf atomci $<$ f.stdin $>$ f.output \&} }
+\xsp
+The results are in the directory {\it output}.
+\xspace
+Notice that the WFMAIN and AIMAIN steps are not repeated in the second
+run, since all the necessary files (EE, AO integrals) do not depend
+on the actual orbitals, and thus do not need to be regenerated.
+ITVCI=1 in the natural orbitals iteration. In this case the
+transformation coefficients are taken from the second record on
+unit 27 ({\sf f.NO}),
+i.e. are the natural orbitals generated in the
+first run (cfr. IOFLG=0,-1,-1,0,0, in both the first and second run).
+Notice also that the first 16 elements of the IND array could be
+reduced equivalently to 8, i.e.
+\xsp
+ IND= 2,0,1,2,  2,0,3,13,   2,1,1,1,  2,1,2,11, ... 
+\xsp
+is equivalent to
+\xsp
+ IND= 2,0,1,13, 2,1,1,11, ...
+\xspace
+\section*{SAMPLE 3: PT-CI calculations on the ground state of Fluorine}
+\xspace
+The last example is 
+a perturbative selection CI calculation on the
+ground \xsup{2}P\xsub{o} state of Fluorine using a set
+of 35 Spherical GTO's (13s,11p,6d,5f) and neglecting single and
+double excitations from the 1s core orbital
+({\bf fpt.stdin}) . The natural orbitals are selected 
+from the previous  calculation. 
+\xsp
+{\bf  Run by typing }
+\xsp
+{\sf
+atgen  $<$ fpt.atg\\ 
+atomci $<$ fpt.stdin $>$ fpt.output 
+}
+\xsp
+The results are in the directory {\it output}.

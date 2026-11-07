@@ -1,0 +1,9 @@
+      RTNCD = ERRCD ;
+      IF ERRCD = 0 THEN EXIT
+      2L ;
+      ' ==== ERROR RETURN FROM %SUBNAME ========== RETURN CODE IS '
+      PUT ERRCD I5 ; 1L ;
+      IF IOSTAT > 0 THEN DO
+         ' === IO STATUS CODE IS ' ; PUT IOSTAT I4 ; 1L ;
+         END
+      1L ;

@@ -1,0 +1,2399 @@
+  PROCESS  NO LIST  MAP 
+  PROCESS  HEADDER  FPL90
+  %%incdirectory './atomci/fpl/include/'%
+  %%MACHINE NEWS OS BSD4.3%
+  %%MVS_CODE  /  %
+  %%MTS_CODE  /  %
+  %%MAC_CODE  /   %
+  %%VM_CODE   /  %
+  %%VOS_3_CODE /  %
+  %%MSDOS_CODE /  %
+  %%UNIX_CODE     %
+  %%VOS_3 /  %
+  %%VM  /  %
+  %%MSDOS /  %
+  %%UNIX     %
+  %%MAC   /  %
+  %%MTS   /  %
+  %%DBG   /  %
+  %VOS_3 PROCESS FILE   '/MSEKIYA.FPLF.FORT(FPL90)'
+  %VOS_3 PROCESS INCLIB '/MSEKIYA.FPLINC.INCL'
+  %VM    PROCESS FILE  '/FPL90 FTN A1'  INCLIB '/'
+  %MTS   PROCESS FILE  'FPL90.FTN'  INCLIB 'INC.'
+  %MSDOS PROCESS INCLIB  '..\INCLIB'   FILE '..\MTSFORT\FPL90.FOR'
+  %MAC   PROCESS  FILE ':NEW:fpl90.f' INCLIB ':INC:'
+  %UNIX   PROCESS  FILE 'fpl90.f' INCLIB 'fplincl/'
+   PROGRAM FPL90
+   /* version 5 for fort77 ( Hitachi VOS_3, IBM PS55 or AIX )
+   /*    updated and checked            March  7, 1986  1290 lines
+   /*    updated and checked            Sep.  10, 1988  1671 lines
+   /* ---------- current version ---------------------------------
+   /*    updated and checked            Nov.  30, 1989  2180 lines
+   /*    updated and checked            Nov.   4, 1993  2180 lines
+   /* changed due to faulty News fortran compiler   SAS  nov. 4, 1993
+   /*    FPL SOURCE       FPL90.FPL
+   /*    INCLIB library   .\INCLIB
+   /*    PS55/PC286       FPL90.FOR                     2731 lines
+   /*                     FPL90LIB.FOR                   357 lines
+   /*                     FPLRMFT.FOR                     26 lines
+   /*                     FPLF77L.FOR                     27 lines
+   /*                     FPLM680.FOR                     23 lines
+   /* ---------- main revisions ----------------------------------
+   /*    March  7, 86   no ENTRY  statements
+   /*    March  7, 86   character string length is less than 256
+   /*    May   25, 89   FILE option added in PROCESS statement
+   /*    Oct.  27, 89   INCLIB option added in PROCESS statement
+   /*    Oct.  30, 89   IOSTAT parameter in READ/WRITE statement
+   /*    Nov.  27, 89   bugs corrected (macro substitution)
+   /*    Nov.  30, 89   program size reduced for PC (COMPIL separated)
+   /*    July  20, 90   COMMENT statement added
+   /*    Jan.  07, 91   for MTS-Version, (logical exist)
+   /*    June  28, 91   for UNIX version, with C code iqtime.c
+   /*    Nov.  04, 93   due to faulty News fortran compiler   SAS
+   /*
+   / macro definitions
+   /*
+ 
+   %%DBGIF   %DBG  IF DBGFLG  THEN   %
+ 
+   %%PROC  PROCEDURE %PROC_NAME;
+      %DBGIF   LIST DO;
+         %DBG  1L;
+         %DBG  '---PROC. %PROC_NAME ENTERED.';
+         %DBG  END; %
+ 
+   %%PROC_RECURS  PROCEDURE %PROC_NAME; RECURSIVE;
+      %DBGIF   LIST DO;
+         %DBG  1L;
+         %DBG  '---RECURSIVE PROC. %PROC_NAME ENTERED.';
+         %DBG  END; %
+ 
+   IMPLICIT        INTEGER  (A-Z) ;
+   LOGICAL         EQ,    REPLY ; 
+   %MTS_CODE LOGICAL     EXIST ;
+   CHARACTER       PRGTYP * 20 ;
+   CHARACTER       CHRSET (-70:39 ) * 1 ;
+   %LISTDCL
+   %FPLCOMM
+   %GETCOMM
+   %CHARCOM
+   %SYSINCOM
+   %MAC_CODE integer * 4 argc
+   %MAC_CODE character*32 argv(2)
+   %CHARSET
+   
+   BEGIN ;
+   / *----------------- set constant
+   /  Macintosh  get file name of FPL source files 
+   %MAC_CODE call ARGS(argc,argv)
+   %MAC_CODE if argc = 1 
+   %MAC_CODE then call GetSet(SYMB,NCHAR) 
+   %MAC_CODE else do 
+   %MAC_CODE    nchar=len(trim(argv(2))) 
+   %MAC_CODE    symb=argv(2) 
+   %MAC_CODE    end
+   %MAC_CODE open(UNIT=5,FILE=SYMB(1:NCHAR),STATUS='OLD')
+         SYSINL=1 ; NCARD(1)=0; fsname(1) = symb(1:nchar)
+   /  %MSDOS_CODE IPCSYM =  37
+   /  %VOS_3_CODE IPCSYM = 108
+   %MSDOS_CODE INCLBN = '.'
+   %VOS_3_CODE INCLBN = 'FPLLIB.INCL'
+   %MVS_CODE   INCLBN = '/MSEKIYA.FPLLIB.INCL'
+   %MTS_CODE   INCLBN = 'INC.'
+   %VM_CODE    INCLBN = '/'
+   %MAC_CODE   INCLBN = ':INC:'
+   %UNIX_CODE  INCLBN = 'include/'
+   %MSDOS_CODE INCLBL = 1
+   %VOS_3_CODE INCLBL = 11
+   %MTS_CODE   INCLBL = 4
+   %MVS_CODE   INCLBL = 20
+   %MAC_CODE   INCLBL = 0
+   %UNIX_CODE   INCLBL = 8
+   %VM_CODE    INCLBL = 1
+      / set constants
+      FOR K =    0, 255;  CHRSQN (K) = 1
+      FOR K = -128, 127;  PRTCHR (K) = ':'
+      /    RM fortran compiler error ( with optimization option )
+      /  FOR K =  -70,  39
+      /  IF CHRSET ( K ) .NE. ' '  THEN DO
+      /     CHRSQN ( ICHAR ( CHRSET ( K ) ) ) = K
+      /     PRTCHR ( K )                      = CHRSET ( K )
+      /     END ;
+      /    RM fortran compiler error ( with optimization option )
+      FOR K = -70, 39
+      IF CHRSET(K) ^= ' ' THEN PRTCHR ( K )  = CHRSET ( K )
+      FOR K = -70, 39 ;        CHRSQN ( ICHAR (CHRSET (K))) = K
+   /    modified source code      ( with optimization option )
+      FOR K =  -40, -15;  CHRSQN ( ICHAR (CHRSET (K))) = K - 30
+      CHRSQN ( ICHAR (' ') )  = 1;  PRTCHR ( 1 ) = ' '
+      BLNK    = CHRSQN (ICHAR(' '))
+      LPAR    = CHRSQN (ICHAR('('))
+      RPAR    = CHRSQN (ICHAR(')'))
+      MINUS   = CHRSQN (ICHAR('-'))
+      LETA    = CHRSQN (ICHAR('A'))
+      LETZ    = CHRSQN (ICHAR('Z'))
+      LET0    = CHRSQN (ICHAR('0'))
+      EQSYM   = CHRSQN (ICHAR('='))
+      UNDLN   = CHRSQN (ICHAR('_'))
+      LET9    = CHRSQN (ICHAR('9'))
+      SLASH   = CHRSQN (ICHAR('/'))
+      STAR    = CHRSQN (ICHAR('*'))
+      SEMC    = CHRSQN (ICHAR(';'))
+      COLON   = CHRSQN (ICHAR(':'))
+      ANDSYM  = CHRSQN (ICHAR('&'))
+      QTSYM   = CHRSQN (ICHAR(''''))
+      GTSYM   = CHRSQN (ICHAR('>'))
+      LTSYM   = CHRSQN (ICHAR('<'))
+      ORSYM   = CHRSQN (ICHAR('!'))
+      NOTSYM  = CHRSQN (ICHAR('^'))
+      EXCSYM  = CHRSQN (ICHAR(']'))
+      PCSYM   = CHRSQN (ICHAR('%%'))
+      NTITLE = 16
+      TITLE = '-----'
+      FOR I = 1, 20;  LEVELL(I) = '    '
+      NTSKIP = 0
+      IBLVL = 1
+      MAXLN = 56
+      / *---------------- preset GETS
+      CALL PSTGET
+      / *---------------- set default options
+      MAP   = .TRUE.
+      NOLIST = .FALSE.
+      PAGOPT = .FALSE.
+      DBGFLG = .FALSE.
+      / *---------------- initialize variables
+      NEWLN = .TRUE.
+      CMTCDC = 0
+      SUPCOM = .FALSE.
+      QUOT = .FALSE.
+      EOF = .FALSE.
+      LMODE = .FALSE.
+      PRCMOD = .FALSE.
+      GETCNT = 2
+      NTSKIP = 0
+      NTWARN = 0
+      CALL GCHAR
+      CALL GETS
+      LIST-2 DO ;
+      DO WHILE ^EOF
+            NSKIP = 0
+            NWARN = 0
+            CMPMOD = .FALSE.
+            SHFTSN = .FALSE.
+            DO CASE OF SYMB;   CHARACTER
+                /     July  20, 90   COMMENT statement added
+               'COMMENT     ': DO; 1C
+                                  CALL GETS
+                                  IF QTSTR THEN PUT SYMB(2:) C NCHAR-2
+                                           ELSE PUT SYMB C NCHAR
+                                  EXEC SCOPY
+                                  1L
+                                  END
+                /     July  20, 90   COMMENT statement added
+               'END         ': EOF = .TRUE.
+               'FUNCTION    ': ( MAIN = .FALSE.; EXEC SUB_PROGRAM )
+               'PROCESS     ': CALL PROOPT
+               'PROGRAM     ': ( MAIN = .TRUE.;  EXEC SUB_PROGRAM )
+               'SUBROUTINE  ': ( MAIN = .FALSE.; EXEC SUB_PROGRAM )
+               OTHERWISE       IF SYMB(1:1) = ';' THEN CALL GETS
+                               ELSE EXEC   SKIP_LINE
+            = NTSKIP + NSKIP
+            = NTWARN + NWARN
+            CALL ERRPRT (NSKIP, NWARN, 'IN THIS STEP.', 13 )
+            END
+         END
+      CALL ERRPRT (NTSKIP, NTWARN, 'IN THIS JOB.', 13 )
+      END
+ 
+   %%PROC_NAME GETSEMC%
+   %PROC
+      CURPAR = PARLVL
+      UNTIL TOPCHR = SEMC ! CURPAR > PARLVL  THEN  CALL  GETS
+      WHILE TOPCHR = SEMC  THEN  CALL  GETS
+      END
+ 
+   %%PROC_NAME HL%
+   %PROC
+      IF ^ NOLIST
+      THEN  LIST CALL IQPRHD ( TITLE, NTITLE, MAXLN )
+      END
+ 
+   %%PROC_NAME INITIALIZEA%
+   %PROC
+      CALL SETSTK;  /   CLEAR STACK   ( ENTRY POINT OF STACK )
+      PARLVL = 0;
+      QUOT = .FALSE.; LMODE = .FALSE.
+      FTNMOD = .FALSE.
+      SUPCOM = .FALSE.
+      CALL GETS
+      TITLE  = SYMB
+      NTITLE = NCHAR
+      INQUIRE ( 7, OPENED = REPLY )
+      IF ^ REPLY  THEN DO
+         %MSDOS_CODE  SYMB (NCHAR+1:NCHAR+4) = '.FOR'
+         %MAC_CODE    SYMB (NCHAR+1:NCHAR+2) = '.f'
+         %UNIX_CODE    SYMB (NCHAR+1:NCHAR+2) = '.f'
+         %VM_CODE     SYMB (NCHAR+1:NCHAR+4) = ' FTN'
+         %MTS_CODE    SYMB (NCHAR+1:NCHAR+4) = '.FTN'
+         %VOS_3_CODE OPEN ( 7, FILE = SYMB, ACTION = 'WRITE' )
+         %MTS_CODE   INQUIRE( FILE = SYMB, EXIST=EXIST )
+         %MTS_CODE   IF EXIST THEN OPEN ( 7, FILE = SYMB, STATUS='NEW' )
+         %MTS_CODE   ELSE OPEN ( 7, FILE = SYMB, STATUS='OLD' )
+         %MAC_CODE   OPEN ( 7, FILE = SYMB, STATUS='NEW' )
+         %UNIX_CODE OPEN ( 7, FILE = SYMB )
+         %MSDOS_CODE OPEN ( 7, FILE = SYMB )
+         %VM_CODE    OPEN ( 7, FILE = INCLBN // SYMB )
+         IQFSTN = 0
+         END
+      PUT PRGTYP C LPRGTP
+      PUT SYMB   C NCHAR
+      END
+ 
+   %%PROC_NAME INITIALIZEB%
+   %PROC
+      1L
+      1C;  '*     GENERATED BY FPL90 V('; PUT IQVDAT(17:) C8; ' '
+      PUT IQVDAT C8; ')'; 54C; PUT IQCDAT(17:) C8; ' '; PUT IQCDAT C8
+      WHILE ^EQ ( SYMB,  'BEGIN ' ) & ^EQ ( SYMB, 'DO ' ) & ^EOF
+      /     July  20, 90   COMMENT statement implemented
+      DO
+         EXEC X6D
+         IF EQ ( SYMB,  'COMMENT ' ) THEN DO
+            CALL GETS; 1C
+            IF QTSTR THEN PUT SYMB(2:) C NCHAR-2
+                     ELSE PUT SYMB C NCHAR
+            END
+         ELSE ( PUT SYMB C NCHAR; 1X )
+         EXEC SCOPY
+         END
+      /     July  20, 90   COMMENT statement implemented
+      EXEC GETSEMC
+      IF EQ ( TITLE, 'IQSCHR ' ) THEN DO
+         /*          WHY ? I = 0
+         EXEC X6D; 'CHARACTER*24 IDATE'
+         EXEC X6D; 'DATA         IDATE /'''
+         PUT IQCDAT C24 ; '''/ '
+         END
+      END
+ 
+   %%PROC_NAME SCOPY%
+   %PROC
+      CURPAR = PARLVL
+      IF TOPCHR = LPAR  THEN  = CURPAR - 1
+      CALL GETS
+      WHILE TOPCHR ^= SEMC  & CURPAR<=PARLVL
+      ( PUT SYMB C NCHAR; CALL GETS )
+      WHILE TOPCHR = SEMC  THEN  CALL  GETS
+      END
+ 
+   %%PROC_NAME SKIP_LINE%
+   %PROC
+      = NSKIP + 1
+      %DBGIF LIST 1L
+      LIST (1C; FOR I = 1, 13; '==')
+      EXEC GETSEMC
+      END
+ 
+   %%PROC_NAME SUB_PROGRAM%
+   %PROC
+      CMPMOD = .TRUE.
+      = MAXLN - 10; EXEC  HL; = MAXLN + 10
+      7C
+      PRGTYP = SYMB ; LPRGTP = NCHAR + 1;
+      EXEC INITIALIZEA
+      EXEC SCOPY
+      EXEC INITIALIZEB
+      IF  MAIN  THEN ( EXEC X6D ; 'CALL IQOPEN' )
+      CALL COMPIL ; 1L
+      END ;
+ 
+   %%PROC_NAME X6D%
+   %PROC
+      NCMTCD = 0
+      DO WHILE CMTCDC > NCMTCD
+         =  NCMTCD + 1
+         1L
+         1C;  PUT CMTCD(NCMTCD) C72
+         END
+      CMTCDC = 0
+      1L;  6X
+      END
+ 
+  PROCESS     HEADDER  COMPIL
+   SUBROUTINE COMPIL
+ 
+   IMPLICIT        INTEGER  (A-Z) ;
+   CHARACTER       PRCNAM*64, ERRFLG*8, ENDFLG*8, OPTLBL*12;
+   LOGICAL         EQ,     RECURS, GOTOFG, FTNFMT ;
+   INTEGER         FORLVL
+   CHARACTER       CHARTB (10000) * 1, TCSTR * 80 ;
+   INTEGER         SYMBTB (10000), SMTBMX, ITBFRE, CTBFRE ;
+   CHARACTER       ELMNAM * 80 ;
+   %LISTDCL
+   %FPLCOMM
+   %GETCOMM
+   %CHARCOM
+ 
+   BEGIN ;
+   / *----------------- set constant
+      FORLVL  = 0
+      STN = 0
+      BEXIT = 0
+      CALL SETSTK;  /   CLEAR STACK   ( ENTRY POINT OF STACK )
+      SMTBMX = 10000; IPINIT = 0
+      PARLVL = 0
+      ITBFRE = 1;    CTBFRE = 1
+      NST = 999
+      FOR K = 1, SMTBMX
+      SYMBTB (K) = 0
+      CMPMOD = .TRUE.
+      CALL STACK  (NST + 1) ;
+      EXEC BLOCK ;
+      CALL UNSTK  (STN) ;
+      EXEC X6
+      IF MAIN THEN ( 'CALL IQEXIT'; EXEC X6; 'STOP' )
+      ELSE         'RETURN'
+      DO WHILE  EQ (SYMB, 'PROCEDURE ') ! TOPCHR  = GTSYM
+         PRCMOD = .TRUE.
+         EXEC GETS_1
+         EXEC W_CONTINUE
+         1L;  '*     PROCEDURE '; PUT SYMB C NCHAR
+         EXEC SEARCH_SYMBOL
+         SYMBTB (IP+3) = SYMBTB (IP+3) + 1; / check duplicate def.
+         STN = SYMBTB (IP)           ;  / get and stack entry stn.
+         CALL STACK (STN + 1)
+         EXEC GETSEMC
+         IF EQ (SYMB, 'RECURSIVE ')  THEN  DO
+            '  -- RECURSIVE --'
+            RECURS = .TRUE.
+            EXEC X6;'IQ9998(IQ9999)=IQ'; PUT SYMBTB(IP) I4;
+            EXEC GETSEMC            ;  / genrate "stack IQxxxx"
+            EXEC X6; 'IQ9999=IQ9999+1';/ for recursive proc.
+            END
+         ELSE RECURS = .FALSE.
+         CALL STACK (NST + 1)
+         EXEC BLOCK
+         CALL UNSTK (STN)
+         CALL UNSTK (HEAD)
+         IF RECURS  THEN  DO
+            J = HEAD - 1
+            EXEC X6; 'IQ9999=IQ9999-1'; EXEC X6;'IQ'; PUT J I4
+            '=IQ9998(IQ9999)'  ;  / generate "restore IQxxxx"
+            END
+         GOTOAD = HEAD; EXEC W_GOTO
+         END
+      CMPMOD = .FALSE.
+      EXEC RETURN_JUMP         ;  / generate "return go to"
+      EXEC X6; 'END'
+      IF MAP ! ^NOLIST
+      THEN LIST  1L
+      END
+ 
+   %%PROC_NAME BLOCK%
+   %PROC_RECURS
+      IBLVL = IBLVL + 1
+      NST = NST + 1
+      CALL STACK (BEXIT)
+      BEXIT = NST
+      WHILE ^EQ (SYMB, 'END ') & TOPCHR ^= RPAR
+      EXEC STATEMENT
+      EXEC W_CONTINUE
+      EXEC GETSEMC
+      CALL UNSTK (BEXIT)
+      IBLVL = IBLVL - 1
+      END
+ 
+   %%PROC_NAME DO_X_STATEMENT %
+   %PROC_RECURS
+      EXEC GETS_1
+      IF      EQ (SYMB, 'WHILE ')  THEN  DO
+         EXEC PRE_WHILE
+         EXEC BLOCK
+         EXEC POST_WHILE_UNTIL
+         END
+      ELSE IF EQ (SYMB, 'UNTIL ')  THEN  DO
+         EXEC PRE_UNTIL
+         EXEC BLOCK
+         EXEC POST_WHILE_UNTIL
+         END
+      ELSE IF  EQ (SYMB, 'CASE ')  THEN  DO
+         CALL GETS; IF EQ (SYMB, 'OF ')  THEN  CALL  GETS
+         OPTLBL = SYMB
+         NCHOPT = NCHAR
+         IF EQ (SYMB, 'LOGICAL '  ) THEN  NCHOPT = 0
+         EXEC GETSEMC
+         EXEC W_CONTINUE
+         = IBLVL + 1
+         CALL STACK (BEXIT);  = NST + 2;  BEXIT = NST
+         PTR3 = BEXIT - 1
+         = NST + 1; PTR2 = NST
+         IF EQ (SYMB, 'CHARACTER ')  THEN  DO
+            NCHOPT = -NCHOPT; EXEC  GETSEMC;   END
+         DO WHILE ^EQ ( SYMB, 'END ') & TOPCHR ^= RPAR & --
+            ^EQ (SYMB, 'OTHERWISE ')
+            LMODE = .TRUE.
+     /      OPTLBL (3) = 0
+            IF TOPCHR = COLON   THEN  DO
+               CALL GETS; EXEC STATEMENT
+               END
+            ELSE DO
+               = NST + 1; CALL STACK (NST); /*** AS NEW PTR1 ***/
+               IF NCHOPT = 0  THEN  DO
+                  EXEC X6; 'IF ('
+                  WHILE TOPCHR ^= COLON  &  TOPCHR ^= SEMC
+                  ( PUT SYMB C NCHAR; CALL GETS )
+                  ')  GO TO '; PUT PTR2 I4
+                  EXEC W_GOTO_NST
+                  IF TOPCHR = SEMC
+                  THEN  EXEC ERROR_DO_CASE
+                  ELSE CALL GETS
+                  IF TOPCHR ^= SEMC   THEN DO
+                     STN = PTR2
+                     = NST + 1; PTR2 = NST;   END
+                  CALL STACK (PTR2)
+                  END
+               ELSE DO
+                  IF TOPCHR = STAR   THEN  DO
+                     EXEC GETS_1
+                     IF TOPCHR ^= SEMC   THEN  DO
+                        EXEC W_GOTO_NST
+                        = NST + 1; CALL STACK (NST);  /   AS PTR2 **/
+                        STN = PTR2
+                        CALL STACK (PTR2); /   AS PTR3 **/
+                        END
+                     ELSE DO
+                        EXEC W_CONTINUE
+                        CALL STACK (PTR2); /   AS PTR2 **/
+                        CALL STACK (PTR2); /   AS PTR3 **/
+                        END
+                     END
+                  ELSE DO; /     THREE BRANCH IF  ***/
+                     NCHT = IABS (NCHOPT)
+                     EXEC X6; 'IF ('; IF NCHOPT < 0 THEN ' IQCCMP('
+                     WHILE  TOPCHR ^= COLON  &  TOPCHR ^= SEMC
+                     ( PUT SYMB C NCHAR; CALL GETS )
+                     IF NCHOPT < 0  THEN ',';  ELSE  '-'
+                     PUT OPTLBL C NCHT
+                     IF NCHOPT < 0  THEN '))'; ELSE ')'
+                     PUT NST I4; ','; PUT PTR2 I4; ','; PUT PTR3 I4
+                     IF TOPCHR = SEMC
+                     THEN EXEC ERROR_DO_CASE; ELSE CALL GETS
+                     IF TOPCHR ^= SEMC   THEN  DO
+                        STN = PTR2
+                        = NST + 1
+                        PTR2 = NST
+                        END
+                     CALL STACK (PTR2)
+                     CALL STACK (BEXIT - 1)
+                     END
+                  END
+               LMODE = .FALSE.
+               IF TOPCHR ^= SEMC   THEN  DO
+                  CALL ASTACK (OPTLBL, 12)
+                  CALL STACK (NCHOPT)
+                  EXEC STATEMENT
+                  GOTOAD = BEXIT; EXEC W_GOTO
+                  CALL UNSTK (NCHOPT )
+                  CALL AUNSTK (OPTLBL, NDUM)
+                  END
+               ELSE CALL GETS
+               IF NCHOPT ^= 0  THEN  CALL UNSTK (PTR3)
+               CALL UNSTK (PTR2)
+               CALL UNSTK (STN)
+               END
+            END
+         IF EQ (SYMB, 'OTHERWISE ')  THEN  DO
+            IF NCHOPT  ^= 0   THEN  DO
+               GOTOAD = PTR3; EXEC W_GOTO
+               STN = BEXIT - 1
+               END
+            CALL GETS;  EXEC  STATEMENT
+            EXEC W_CONTINUE
+            STN = BEXIT
+            END
+         ELSE DO
+            IF NCHOPT  ^= 0   THEN  DO
+               GOTOAD = PTR3; EXEC W_GOTO
+               END
+            EXEC W_CONTINUE; STN = BEXIT
+            EXEC W_CONTINUE; EXEC GETSEMC
+            IF NCHOPT ^= 0 THEN  STN = BEXIT  - 1
+            END
+         CALL UNSTK (BEXIT)
+         = IBLVL - 1
+         END
+      ELSE IF  EQ ( SYMB, 'FOR ')  THEN  DO
+         = NST + 1
+         = FORLVL + 1
+         CALL STACK (NST + 1)
+         EXEC X6; 'DO '; PUT NST I4; ' '; EXEC SCOPY
+         CALL STACK (NST)
+         EXEC BLOCK
+         CALL UNSTK  (STN)
+         EXEC W_CONTINUE
+         = FORLVL - 1
+         CALL UNSTK (STN)
+         END
+      ELSE IF  EQ ( SYMB, 'FORTRAN ' ) THEN  DO
+         FTNMOD = .TRUE.
+         CALL GETS
+         EXEC BLOCK
+         FTNMOD = .FALSE.
+         END
+      ELSE DO
+         CALL STACK (NST + 1)
+         EXEC BLOCK
+         CALL UNSTK (STN)
+         END
+      END
+ 
+   %%PROC_NAME ERROR_DO_CASE%
+   %PROC
+      CALL MSGPRT( 'FPLE010: ERROR IN DO CASE STATEMENT.')
+      EXEC SKIP_LINE;
+      END
+ 
+   %%PROC_NAME EXEC_STATEMENT%
+   %PROC
+      IF FORLVL = 0
+      THEN DO
+         PRCMOD = .TRUE.
+         EXEC GETS_1
+         EXEC  SEARCH_SYMBOL
+         NST = NST + 1
+         K = IP + 2; KT = 1
+         WHILE SYMBTB (K) ^= 0; DO; K = SYMBTB (K); KT = KT + 1; END;
+         SYMBTB (K) = ITBFRE
+         SYMBTB (ITBFRE + 1) = NST
+         ITBFRE = ITBFRE + 2
+         EXEC X6; 'IQ';     PUT SYMBTB (IP) I4; '='; PUT KT I4
+         EXEC X6; 'GO TO '; PUT SYMBTB (IP) I4
+         STN = NST
+         PRCMOD = .FALSE.
+         EXEC GETSEMC
+         END
+      ELSE DO
+         CALL MSGPRT('FPLE011: EXEC STATEMENT IN A DOOLOOP')
+         EXEC SKIP_LINE
+         END
+      END
+ 
+   %%PROC_NAME FTN_STATEMENT%
+   %PROC
+      EXEC W_CONTINUE
+      IF TOPCHR = SEMC  THEN CALL GETS
+      1L;
+      IF INTSTR THEN DO
+         IF NCHAR > 4 THEN DO
+            CALL MSGPRT('FPLE012: TOO LONG STATEMENT NUMBER.' )
+            EXEC SKIP_LINE
+            END
+         ELSE DO
+            FOR I = 1, 5-NCHAR; ' '
+            PUT SYMB C NCHAR; ' '
+            END
+         CALL GETS
+         END
+      ELSE  '      '
+      PUT SYMB C NCHAR ; ' '; EXEC SCOPY
+      END
+ 
+   %%PROC_NAME GET_NONBLANK%
+   %PROC
+      UNTIL CHARNM ^= BLNK; CALL GCHAR
+      END
+ 
+   %%PROC_NAME GETS_1%
+   %PROC
+      SHFTSN = .TRUE.
+      CALL GETS
+      SHFTSN = .FALSE.
+      END
+ 
+   %%PROC_NAME GETSEMC%
+   %PROC
+      CURPAR = PARLVL
+      UNTIL TOPCHR = SEMC ! CURPAR > PARLVL  THEN  CALL  GETS
+      WHILE TOPCHR = SEMC  THEN  CALL  GETS
+   /  IF TOPCHR ^= RPAR  THEN  CALL  GETS
+      END
+ 
+   %%PROC_NAME HL%
+   %PROC
+      IF ^ NOLIST
+      THEN  LIST CALL IQPRHD ( TITLE, NTITLE, MAXLN )
+      END
+ 
+   %%PROC_NAME LCOPY%
+   %PROC
+      EXEC X6; 'IF ('; EXEC LCOPY_B; ')GO TO '
+      END
+ 
+   %%PROC_NAME LCOPY_B%
+   %PROC
+      SUPCOM = .TRUE.
+      LMODE = .TRUE.
+      CALL GETS
+      WHILE ^ ( EQ ( SYMB, 'THEN ' ) ! TOPCHR = SEMC  )
+      ( PUT SYMB C NCHAR; CALL GETS )
+      LMODE = .FALSE.; CALL GETS
+      END
+ 
+   %%PROC_NAME NLCOPY%
+   %PROC
+      EXEC X6; 'IF (.NOT.('; EXEC LCOPY_B; '))GO TO '
+      END
+ 
+   %%PROC_NAME POST_WHILE_UNTIL%
+   %PROC
+      CALL UNSTK (HEAD)
+      GOTOAD = HEAD; EXEC W_GOTO
+      CALL UNSTK (STN)
+      END
+ 
+   %%PROC_NAME PRE_UNTIL%
+   %PROC
+      NST = NST + 1
+      EXEC W_GOTO_NST
+      NST = NST + 1
+      STN = NST
+      EXEC LCOPY;  I = NST + 1;   PUT I I4
+      SUPCOM = .FALSE.
+      CALL STACK (NST + 1)
+      CALL STACK (NST)
+      STN = NST - 1
+      END
+ 
+   %%PROC_NAME PRE_WHILE%
+   %PROC
+      IF STN = 0  THEN DO
+         NST = NST + 1
+         STN = NST
+         END
+      HEAD = STN
+      EXEC NLCOPY; I = NST + 1;   PUT I I4
+      SUPCOM = .FALSE.
+      CALL STACK (NST + 1)
+      CALL STACK (HEAD)
+      END
+ 
+   %%PROC_NAME PUT_STRING%
+   %PROC
+      EXEC X6; 'CALL IQPUTC('
+      PUT SYMB C NCHAR;  ','
+      PUT NCHSTR I3;     ')'
+      EXEC GETSEMC
+      END
+ 
+   %%PROC_NAME RETURN_JUMP%
+   %PROC
+      IP = IPINIT
+      IF SYMBTB (1) = 0  THEN  EXIT ; / no "proc" registerd.
+      LIST IF  MAP  THEN  DO
+           2L; EXEC HL;  ' NO. OF CALLS'; 14C; '  PROCEDURE NAME'; 2L;
+           END
+      ELSE 1L
+      DO WHILE  SYMBTB (IP) ^= 0   ; / addr.    SYMBTB
+         K = SYMBTB (IP + 2)       ; / IPINIT   head statem. number
+         JREF = 0                  ; /   + 1    pointer IP (2nd proc.)
+         IF K ^= 0  THEN  DO       ; /   + 2    pointer K (1st)
+                                     /   + 3    number of proc. block
+                                     /   + 4... proc. name
+                                     /   + n    zero
+                                     /
+                                     /     new version
+                                     /   + 4    pointer to char. string
+                                     /   + 5    length
+                                     /
+                                     / IP (2nd) head statem. number
+                                     /   + 1    pointer IP (3rd)
+                                     /  .....
+                                     /
+                                     / K (1st)  pointer K (2nd)
+                                     /   + 1    proc. call return addr.
+                                     /
+                                     / K(last)  0 (null pointer)
+                                     /   + 1    proc. call return addr.
+                                     /
+            HEAD = SYMBTB (IP)
+            STN = HEAD + 1
+            JREF = 1
+            EXEC X6; 'GO TO('; PUT SYMBTB (K + 1) I4
+            DO WHILE  SYMBTB (K) ^= 0
+               = JREF + 1
+               K = SYMBTB (K)
+               ','; PUT SYMBTB (K + 1) I4
+               END
+            '),'; 'IQ'; PUT HEAD I4
+            IF MAP THEN  LIST  ( 4X; PUT JREF I8 )
+            END
+         ELSE LIST   ' * NO. REF.*'
+         IF SYMBTB (IP + 3) ^= 1  THEN  LIST DO
+            = NSKIP + 1
+            1C;
+            IF SYMBTB (IP + 3) > 1 THEN  ' *DUPLICATE*'
+            ELSE ' * MISSING *'
+            END
+         IF MAP  !  SYMBTB (IP + 3) ^= 1  THEN  LIST DO
+            14C
+            ITOP  = SYMBTB (4+IP)
+            ILAST = SYMBTB (5+IP) ; LPRCNM = ILAST - ITOP + 1
+            ICP = 0
+            DO FOR I = ITOP, ILAST
+               = ICP + 1
+               TCSTR (ICP:ICP) = CHARTB (I)
+               END
+            PUT TCSTR C LPRCNM
+            EXEC HL; 1L
+            END
+         IP = SYMBTB (IP + 1)
+         IF IP<= 0  THEN  EXIT
+         END
+      IF SYMBTB (1) ^= 0  THEN   (EXEC X6; 'STOP')
+      END
+ 
+   %%PROC_NAME SAVE_LIST_ELEM%
+   %PROC
+      CURPAR = PARLVL
+      ITOP  = 1
+      ELMNAM = SYMB
+      = ITOP + NCHAR
+      WHILE CHARNM = LPAR
+      DO UNTIL CURPAR = PARLVL
+         CALL  GETS
+         ELMNAM (ITOP:) = SYMB
+         = ITOP + NCHAR
+         / ITOP must be less than 66 /
+         END
+      SYMB = ELMNAM
+      NCHAR = ITOP - 1
+      END
+ 
+   %%PROC_NAME SCOPY%
+   %PROC
+      / order CALL GCHAR or GETS (symbol processed)
+      /       EXEC SCOPY
+      /       unprocessed symbol remains ( last GETS in SCOPY )
+      CURPAR = PARLVL
+      IF TOPCHR = LPAR  THEN  = CURPAR - 1
+      / IF TOPCHR = LPAR  THEN  = CURPAR - 1    SAS ? 88-12-21
+      CALL GETS
+      WHILE TOPCHR ^= SEMC  & CURPAR<=PARLVL
+      ( PUT SYMB C NCHAR; CALL GETS )
+      WHILE TOPCHR = SEMC  THEN  CALL  GETS
+      END
+ 
+   %%PROC_NAME SEARCH_SYMBOL%
+   %PROC
+      / xxx   INTEGER   PRCLBL (300),    --   PROC LABELS
+      IP = IPINIT;  IPPRV = 0;  ISPRV = 0
+      PRCNAM = SYMB
+      DO WHILE  IP ^= 0
+         ITOP  = SYMBTB (IP + 4)
+         ILAST = SYMBTB (IP + 5)
+         ICP   = 0
+         TCSTR = ' '
+         DO FOR I = ITOP, ILAST
+            = ICP + 1
+            TCSTR (ICP:ICP) = CHARTB (I)
+            END
+         IF EQ (PRCNAM, TCSTR )  THEN EXIT
+         ISPRV = IPPRV
+         IPPRV = IP
+         IP = SYMBTB (IP + 1)
+         END
+      IF IP = 0  THEN  DO ;    / not yet registered
+         NST = NST + 2
+         IP = ITBFRE
+         /  IF IP ^= IPINIT  THEN  SYMBTB (IPPRV + 1) = IP
+         SYMBTB (IP + 1) = IPINIT;  IPINIT = IP
+         SYMBTB (IP) = NST - 1
+         ITBFRE = IP + 6
+         ITOP   = CTBFRE
+         CTBFRE = CTBFRE + NCHAR
+         SYMBTB (IP + 4) = ITOP
+         SYMBTB (IP + 5) = CTBFRE-1
+         ICP = 0
+         DO FOR I = ITOP, CTBFRE - 1
+            = ICP + 1
+            CHARTB (I) = PRCNAM (ICP:ICP)
+            END
+    /    CHARTB (ITOP:CTBFRE-1) = PRCNAM
+         END
+      ELSE IF IPPRV ^= 0 THEN  DO
+         IF ISPRV ^= 0 THEN  SYMBTB (ISPRV + 1) = IP
+         ELSE IPINIT = IP
+         SYMBTB (IPPRV + 1) = SYMBTB (IP + 1)
+         SYMBTB (IP   + 1) = IPPRV
+         END
+      END
+ 
+   %%PROC_NAME SIMPLE_STATEMENT%
+   %PROC
+      EXEC X6; PUT SYMB C NCHAR; ' '; EXEC SCOPY
+      END
+ 
+   %%PROC_NAME SKIP_LINE%
+   %PROC
+      = NSKIP + 1
+      %DBGIF LIST 1L
+      LIST (1C; FOR I = 1, 13; '==')
+      EXEC GETSEMC
+      END
+ 
+   %%PROC_NAME STATEMENT %
+   %PROC_RECURS
+      IF FTNMOD THEN  EXIT  EXEC FTN_STATEMENT
+      /   GOTOFG = .FALSE.
+      DO CASE LOGICAL
+         CHRSTR: DO CASE OF NCHAR
+            * EXEC  SIMPLE_STATEMENT
+            2: DO CASE OF SYMB
+               CHARACTER
+               'DO ': EXEC DO_X_STATEMENT
+               'IF ': DO
+                  /
+                  /     code     for if ... then ...
+                  /          if ( .not.<<condition>> ) go to label-1
+                  /          <<statement>>
+                  / label-1: continue
+                  /
+                  / code for if ... then ... else ...   gotofg - off
+                  /          if ( .not.<<condition>> ) go to label-1
+                  /          <<statement>>
+                  /          go to label-2
+                  / label-1: <<statement>>
+                  / label-2: .....
+                  /
+                  / code for if ... then ... else ...   gotofg - on
+                  /          if ( .not.<<condition>> ) go to label-1
+                  /          <<statement>>
+                  / label-1: <<statement>>
+                  /          .....
+                  NST = NST + 1
+                  CALL STACK (NST)
+                  EXEC NLCOPY;   PUT NST I4
+                  SUPCOM = .FALSE.
+                  IF EQ (SYMB, 'THEN ' )  THEN  CALL  GETS
+                  IF EQ (SYMB, 'EXIT ' )  THEN  DO
+                     EXEC GETS_1
+                     IF TOPCHR ^= SEMC  THEN  DO
+                        EXEC STATEMENT
+                        END
+                     ELSE CALL  GETS
+                     GOTOAD = BEXIT; EXEC W_GOTO
+                     GOTOFG = .TRUE.
+                     END
+                  ELSE  ( EXEC STATEMENT; GOTOFG = .FALSE. )
+                  IF EQ (SYMB, 'ELSE ')  THEN  DO
+                     IF GOTOFG THEN  HEAD = 0
+                     ELSE DO
+                        = NST + 1; HEAD = NST
+                        EXEC W_GOTO_NST
+                        END
+                     CALL UNSTK (STN)
+                     CALL STACK (HEAD)
+                     CALL GETS
+                     IF EQ (SYMB, 'EXIT ' ) THEN  DO
+                        EXEC GETS_1
+                        IF TOPCHR ^= SEMC  THEN  DO
+                           EXEC STATEMENT
+                           END
+                        ELSE CALL  GETS
+                        GOTOAD = BEXIT; EXEC W_GOTO
+                        GOTOFG = .TRUE.
+                        END
+                     ELSE   ( EXEC STATEMENT; GOTOFG = .FALSE. )
+                     END
+                  EXEC W_CONTINUE
+                  CALL UNSTK (STN)
+                  IF GOTOFG & STN = 0 THEN CALL MSGPRT  --
+               ('"EXIT" APPEARED IN BOTH "THEN" AND "ELSE" CLAUSES.')
+                  END
+               OTHERWISE EXEC SIMPLE_STATEMENT
+            3: DO CASE OF SYMB
+               CHARACTER
+               'FOR ': DO
+                  NST = NST + 1
+                  = FORLVL + 1
+                  CALL STACK (NST)
+                  EXEC X6; 'DO '; PUT NST I4; ' '
+                  EXEC SCOPY
+                  EXEC STATEMENT
+                  EXEC W_CONTINUE
+                  CALL UNSTK (STN)
+                  EXEC W_CONTINUE
+                  = FORLVL - 1
+                  END
+               'PUT ': DO
+                  CALL GETS
+                  DO CASE LOGICAL
+                     CHRSTR: DO
+                        EXEC SAVE_LIST_ELEM
+                        EXEC X6
+                        'CALL IQPUT'; PUT PRTCHR (CHARNM) C1; '('
+                        PUT  SYMB C NCHAR; ','
+                        EXEC GET_NONBLANK; EXEC SCOPY; ')'
+                        END
+                     QTSTR:  EXEC PUT_STRING
+                     OTHERWISE DO
+                        CALL MSGPRT ( 'FPLE014: PUT LIST INVALID' )
+                        EXEC SKIP_LINE
+                        END
+                  END
+               OTHERWISE EXEC SIMPLE_STATEMENT
+            4: DO CASE OF SYMB
+               CHARACTER
+               'ELSE ': DO
+                 CALL MSGPRT ('FPLE015: ELSE WITH NO CORRESPONDING IF')
+                           EXEC SKIP_LINE
+                           EXEC WARNING_LINE ; / dummy by mas
+                           END
+               'EXEC ': EXEC EXEC_STATEMENT
+               'EXIT ': DO
+               / CALL MSGPRT( 'FPLW001: EXIT WITH NO CORRESPONDING IF')
+               /           EXEC WARNING_LINE ;
+               /*  deleted by mas june 15 90
+                           EXEC GETS_1
+                           IF TOPCHR ^= SEMC  THEN EXEC STATEMENT
+                           ELSE CALL  GETS
+                           GOTOAD = BEXIT; EXEC W_GOTO
+                           END
+                'LIST ': DO
+                  IF CHARNM = MINUS
+                  THEN ( EXEC GET_NONBLANK; EXEC GETS_1 )
+                  ELSE ( SYMB (1:1) ='1' ;  NCHAR = 1)
+                  EXEC X6; 'CALL IQUSTK ('
+                  PUT SYMB C NCHAR; ')'
+                  CALL GETS
+                  EXEC STATEMENT
+                  EXEC X6; 'CALL IQUUSK '
+                  END
+               'THEN ': DO
+               CALL MSGPRT ('FPLE016: THEN WITH NO CORRESPONDING IF')
+                           EXEC SKIP_LINE
+                           END
+               OTHERWISE EXEC SIMPLE_STATEMENT
+            5: DO CASE OF SYMB
+               CHARACTER
+               'UNTIL ': DO
+                  EXEC PRE_UNTIL
+                  NST = NST + 1
+                  EXEC STATEMENT
+                  EXEC POST_WHILE_UNTIL
+                  END
+               'WHILE ': DO
+                  EXEC PRE_WHILE
+                  NST = NST + 1
+                  EXEC STATEMENT
+                  EXEC POST_WHILE_UNTIL
+                  END
+               OTHERWISE EXEC SIMPLE_STATEMENT
+            6: DO CASE OF SYMB
+               CHARACTER
+               'BINARY ':
+               'FORMAT ': DO
+                  IF EQ (SYMB, 'BINARY ') THEN  FTNFMT = .FALSE.
+                  ELSE (FTNFMT = .TRUE.; = NST + 1; CALL STACK (NST) )
+                  EXEC GETS_1
+                  DO EXEC X6
+                     IF      EQ (SYMB, 'READ ' ) THEN  'READ (5'
+                     ELSE IF EQ (SYMB, 'WRITE ') THEN  'WRITE(6'
+                     ELSE IF EQ (SYMB, 'PUNCH ') THEN  'WRITE(7'
+                     CALL GETS
+                     IF TOPCHR = COLON  THEN  DO
+                        CALL GETS; 13C
+                        PUT SYMB C NCHAR; CALL  GETS; END
+                     IF FTNFMT THEN  (','; PUT NST I4 )
+                     END
+                  NCHEND = 0
+                  NCHERR = 0
+                  DO WHILE EQ(SYMB, 'ENDFLAG ') --
+                         ! EQ(SYMB, 'ERRFLAG ') --
+                         ! EQ(SYMB, 'IOSTAT ')
+                     = NST + 1
+                     IF EQ (SYMB, 'ENDFLAG ')  THEN  DO
+                        CALL GETS; CALL GETS
+                        ENDFLG     = SYMB
+                        NCHEND = NCHAR; PTR1 = NST
+                        ',END=';     PUT NST I4
+                        END
+                     ELSE  IF EQ (SYMB, 'ERRFLAG ')  THEN DO
+                        CALL GETS; CALL GETS
+                        ERRFLG     = SYMB
+                        NCHERR = NCHAR; PTR2 = NST
+                        ',ERR=';     PUT NST I4
+                        END
+                     ELSE DO
+                        ','; PUT SYMB C  NCHAR; '='
+                        CALL GETS; CALL GETS
+                        /  EXEC SAVE_LIST_ELEM
+                        /   SAS  DO LOOP IN A I/O LIST MAY CAUSE
+                        /   AMBIGUITY     89-11-01
+                        PUT SYMB C  NCHAR
+                        END
+                     CALL GETS
+                     END
+                  ')'; PUT SYMB C NCHAR; EXEC SCOPY
+                  IF FTNFMT THEN  DO
+                     CALL UNSTK (STN)
+                     EXEC X6; 'FORMAT('; EXEC SCOPY
+                     END
+                  IF NCHEND ^= 0 ! NCHERR ^= 0  THEN  DO
+                     = NST + 1
+                     EXEC W_GOTO_NST
+                     IF NCHEND ^= 0  THEN  DO
+                        STN = PTR1
+                        EXEC X6; PUT ENDFLG C NCHEND; '=.TRUE.'
+                        EXEC W_GOTO_NST
+                        END
+                     IF NCHERR ^= 0  THEN  DO
+                        STN = PTR2
+                        EXEC X6; PUT ERRFLG C NCHERR; '=.TRUE.'
+                        EXEC W_GOTO_NST
+                        END
+                     STN = NST
+                     END
+                  END
+               OTHERWISE EXEC SIMPLE_STATEMENT
+            OTHERWISE DO CASE OF SYMB
+               CHARACTER
+                /     July  20, 90   COMMENT statement added
+               'COMMENT ': DO
+                              EXEC W_CONTINUE; 1L
+                              CALL GETS; 1C
+                              IF QTSTR THEN PUT SYMB(2:) C NCHAR-2
+                                       ELSE PUT SYMB C NCHAR
+                              EXEC SCOPY
+                              END
+                /     July  20, 90   COMMENT statement added
+               'FORTRAN ': DO
+                  FTNMOD = .TRUE.
+                  CALL GETS
+                  EXEC STATEMENT
+                  FTNMOD = .FALSE.
+                  END
+               'PROCESS ': ( CALL  PROOPT; EXEC STATEMENT )
+               OTHERWISE EXEC SIMPLE_STATEMENT
+         QTSTR:   EXEC PUT_STRING
+         INTSTR: DO
+            EXEC X6;'CALL IQ'; PUT PRTCHR (CHARNM) C1
+            'SET('; PUT SYMB C NCHAR;')'
+            EXEC GETSEMC;   END
+         TOPCHR = EXCSYM: EXEC EXEC_STATEMENT
+         TOPCHR = SEMC  : ( EXEC W_CONTINUE; CALL GETS )
+         TOPCHR = EQSYM : DO
+                 EXEC X6; CALL GETS
+                 EXEC SAVE_LIST_ELEM
+                 PUT SYMB C NCHAR
+                 ' = '
+                 PUT SYMB C NCHAR
+                 ' ';  EXEC SCOPY
+                 END
+         TOPCHR = LPAR  :  EXEC DO_X_STATEMENT
+         OTHERWISE  DO
+                CALL MSGPRT('FPLE017: INVALID FPL STATEMENT' )
+                EXEC SKIP_LINE
+                END
+             END
+ 
+   %%PROC_NAME W_CONTINUE%
+   %PROC
+      IF STN ^= 0 THEN ( EXEC X6; 'CONTINUE' )
+      END
+ 
+   %%PROC_NAME W_GOTO%
+   %PROC
+      EXEC X6; 'GO TO '; PUT GOTOAD I4
+      END
+ 
+   %%PROC_NAME W_GOTO_NST%
+   %PROC
+      EXEC X6; 'GO TO '; PUT NST I4
+      END
+ 
+   %%PROC_NAME WARNING_LINE%
+   %PROC
+      = NWARN + 1
+      %DBGIF LIST 1L
+      LIST (1C; FOR I = 1, 13; '......')
+      END
+ 
+   %%PROC_NAME X6%
+   %PROC
+      NCMTCD = 0
+      DO WHILE CMTCDC > NCMTCD
+         =  NCMTCD + 1
+         1L
+         1C;  PUT CMTCD(NCMTCD) C72
+         END
+      CMTCDC = 0
+      1L;  2C
+      IF STN ^= 0   THEN  PUT STN I4; ELSE 4X; ' '
+      STN = 0
+      END
+ 
+   PROCESS   HEADDER PSTGET
+   SUBROUTINE PSTGET
+   /     version 3 for PCFPL    Sept. 25, 1986
+   IMPLICIT         INTEGER  (A-Z)
+   %GETCOMM
+   BEGIN
+      IQ9999 = 1
+      FRSTRD = .TRUE.
+      CNTMOD = .FALSE.
+      CNTPRV = .FALSE.
+      ERMAC0 = '?MACRO0?'
+      ERMAC1 = '?MACRO1?'
+      CMMODE = .FALSE.
+      INDENT = 1
+      CC = 75
+      MACRO = .FALSE.
+      TNMAC = 1
+      MACTBL (1, TNMAC) = 1
+      MACREG = 20000-1000
+      MACLVL = 0
+      IMT = 0
+      END
+ 
+   PROCESS        HEADDER ERRPRT
+   SUBROUTINE ERRPRT (NSKIP,NWARN,MSG,LMSG)
+   INTEGER    NSKIP, NWARN, LMSG
+   CHARACTER*(*) MSG
+   BEGIN
+      IF NSKIP ^= 0 THEN  LIST  DO
+         1L;  FOR I = 1, 13; '==' ; 20C; ' '
+         PUT NSKIP I5; ' LINES ARE NOT PROCESSED '; PUT MSG C LMSG;
+         2L; END
+      IF NWARN ^= 0 THEN  LIST  DO
+         1L;  FOR I = 1, 13; '..'; 20C; ' '; PUT NWARN I5;
+         ' STATEMENTS MAY CAUSE ERROR '; PUT MSG C LMSG;
+         2L; END
+      END
+ 
+   PROCESS        HEADDER MSGPRT
+   SUBROUTINE MSGPRT (MSG)
+   INTEGER   LMSG,LS
+   CHARACTER*(*) MSG
+   %SYSINCOM
+   BEGIN
+      LMSG = LEN (MSG) ;
+      LS = LEN( FSNAME(SYSINL))
+      LIST  DO
+          1L; 'File "' ; PUT fsname(SYSINL) C LS ; '" ; Line' ;
+          PUT NCARD(SYSINL) I6 ; ' ## ' ;
+          PUT MSG C LMSG; 1L;
+          END
+      END
+ 
+   PROCESS    HEADDER PROOPT
+   SUBROUTINE PROOPT
+   /     PROCESS_OPTION in main program is removed here to reduce
+   /     the size of the main program.
+   /     FPLCOMM updated   ---  MAP added
+   /                                  Nov. 30, 1989
+   IMPLICIT INTEGER  (A-Z)
+   LOGICAL     EQ,   REPLY, POSOPT ;
+   %MTS_CODE LOGICAL     EXIST ;
+   %LISTDCL
+   %GETCOMM
+   %CHARCOM
+   %FPLCOMM
+   BEGIN
+      DO WHILE  TOPCHR ^= SEMC
+         CALL GETS
+         IF EQ (SYMB, 'HEADDER ')  THEN  DO
+            CALL GETS;
+            TITLE  = SYMB
+            NTITLE = NCHAR
+            IF PAGOPT  THEN  N0 = 0
+                ELSE  N0 = MAXLN
+            LIST CALL IQPRHD ( TITLE, NTITLE, N0 )
+            END
+         IF EQ (SYMB, 'FILE ')  & ^ CMPMOD  THEN  DO
+            CALL  IQCBUF
+            INQUIRE ( 7, OPENED = REPLY )
+            IF REPLY THEN CLOSE (7)
+            CALL GETS;
+            IF TOPCHR ^= SLASH THEN DO
+               IF CHRSTR THEN DO
+         %MSDOS_CODE  SYMB (NCHAR+1:NCHAR+4) = '.FOR'
+         %MAC_CODE    SYMB (NCHAR+1:NCHAR+2) = '.f'
+         %UNIX_CODE    SYMB (NCHAR+1:NCHAR+2) = '.f'
+         %VM_CODE     SYMB (NCHAR+1:NCHAR+4) = ' FTN'
+         %MTS_CODE    SYMB (NCHAR+1:NCHAR+4) = '.FTN'
+                  END
+               ELSE IF QTSTR THEN DO
+                  SYMB(1:) = SYMB(2:)
+                  SYMB(NCHAR-1:) = ' '
+                  END
+              %VOS_3_CODE OPEN ( 7, FILE = SYMB, ACTION = 'WRITE' )
+              %VM_CODE    OPEN ( 7, FILE = SYMB, ACTION = 'WRITE' )
+              %MSDOS_CODE OPEN ( 7, FILE = SYMB )
+
+              %UNIX_CODE OPEN ( 7, FILE = SYMB )
+              %MTS_CODE   INQUIRE( FILE = SYMB, EXIST=EXIST )
+              %MTS_CODE   IF EXIST THEN OPEN ( 7, FILE = SYMB, STATUS='NEW' )
+              %MTS_CODE   ELSE OPEN ( 7, FILE = SYMB, STATUS='OLD' )
+              %MAC_CODE   OPEN ( 7, FILE = SYMB, STATUS='NEW' )
+               IQFSTN = 0
+               END
+            END
+         IF EQ (SYMB, 'INCLIB ') THEN  DO
+            CALL GETS
+            IF CHRSTR THEN DO
+               INCLBN = SYMB
+               INCLBL = NCHAR
+               END
+            ELSE IF QTSTR THEN DO
+               INCLBN = SYMB(2:NCHAR-1)
+               INCLBL = NCHAR-2
+               END
+            END
+         IF EQ (SYMB, 'NO ')  THEN  DO
+            POSOPT = .FALSE.; CALL  GETS;  END
+         ELSE POSOPT = .TRUE.
+         IF EQ (SYMB, 'LIST ')  THEN NOLIST = ^ POSOPT
+         ELSE IF EQ (SYMB, 'PAGE      ')  THEN PAGOPT= POSOPT
+         ELSE IF EQ (SYMB, 'DEBUG     ')  THEN DBGFLG= POSOPT
+         ELSE IF EQ (SYMB, 'MAP       ')  THEN MAP   = POSOPT
+         ELSE IF EQ (SYMB, 'LEVELLINE ')  THEN  IF POSOPT  THEN DO
+            CALL GETS; IF IBLVL <= 20 THEN  LEVELL (IBLVL) = SYMB (1:1)
+            END
+         ELSE FOR I = IBLVL, 20; LEVELL (I) = '    '
+         END
+         IF NOLIST THEN PAGOPT = .TRUE.
+      CALL GETS
+      END
+ 
+   PROCESS       HEADDER GETS
+   SUBROUTINE GETS
+   /     version 2 for fort77 ( Hitachi 280H )
+   /                                  Feb.  19, 1986
+   /     version 3 for PCFPL    Sept. 25, 1986
+   IMPLICIT INTEGER  (A-Z)
+   LOGICAL  GQUOT
+   %LISTDCL
+   %GETCOMM
+   %CHARCOM
+   %FPLCOMM
+   BEGIN
+      GETCNT = GETCNT + 1
+      IF GETCNT = 2 THEN  DO
+         IF CMPMOD  THEN  DO
+            IF SHFTSN  THEN IPFSTN = IQFSTN + 2
+            ELSE            IPFSTN = IQFSTN + 1
+            LIST (1C;  PUT  IPFSTN I5 ) ; / 1C; /   ' '
+            END
+         IF IBLVL > 24  THEN  INDENT = 24; ELSE  INDENT = IBLVL
+         END
+      CHRSTR = .FALSE.; INTSTR = .FALSE.;   QTSTR = .FALSE.
+      TOPCHR = CHARNM
+      IF CHARNM < 0
+      THEN DO CASE OF CHARNM
+         *
+         LETZ: DO
+            LSYMBW  = 0; SYMBW = ' ';
+            IF PRCMOD THEN DO UNTIL ^PRCMOD
+               UNTIL CHARNM > LET9 & CHARNM ^= UNDLN; EXEC PACK_S
+               IF    CHARNM ^= BLNK THEN PRCMOD = .FALSE.
+               ELSE DO
+                  EXEC GET_NONBLANK
+                  IF CHARNM > LET9 THEN PRCMOD = .FALSE.
+                  ELSE DO
+                     = LSYMBW + 1
+                     SYMBW (LSYMBW:LSYMBW) = '_'
+                     EXEC PACK_S
+                     END
+                  END
+               END
+            ELSE UNTIL CHARNM > LET9 & CHARNM ^= UNDLN; EXEC PACK_S
+            CHRSTR = .TRUE.; EXEC POST_PACKS
+            END
+         * DO
+            LSYMBW = 0; SYMBW = ' ';
+            UNTIL CHARNM > LET9 ! CHARNM < LET0; EXEC PACK_S
+            INTSTR = .TRUE.; EXEC POST_PACKS
+            END
+         END
+      ELSE DO CASE OF CHARNM
+         * DO CASE OF CHARNM
+            LTSYM: DO
+               EXEC GET_NONBLANK
+               IF CHARNM = EQSYM THEN DO
+                  SYMB = '.LE.'
+                  NCHAR = 4; EXEC GET_NONBLANK
+                  END
+               ELSE DO
+                  SYMB = '.LT.';  NCHAR = 4
+                  END
+               END
+            LPAR: ( = PARLVL + 1; EXEC COPY_A_LETTER )
+            * DO CASE OF CHARNM
+               ORSYM: ( SYMB = '.OR.'; NCHAR = 4; EXEC GET_NONBLANK )
+               OTHERWISE EXEC  COPY_A_LETTER
+            ANDSYM: DO
+               IF LMODE THEN DO
+                  SYMB  = '.AND.'; NCHAR = 5
+                  EXEC GET_NONBLANK
+                  END
+               ELSE EXEC  COPY_A_LETTER
+               END
+            OTHERWISE EXEC  COPY_A_LETTER
+         RPAR: ( = PARLVL - 1; EXEC COPY_A_LETTER )
+         NOTSYM: DO
+            EXEC GET_NONBLANK
+            IF CHARNM = EQSYM THEN DO
+               SYMB  = '.NE.'
+               NCHAR = 4; EXEC GET_NONBLANK
+               END
+            ELSE DO
+               SYMB  = '.NOT.'; NCHAR = 5
+               END;  END
+         * DO CASE OF CHARNM
+            GTSYM: DO
+               EXEC GET_NONBLANK
+               IF CHARNM = EQSYM THEN DO
+                  SYMB = '.GE.'
+                  NCHAR = 4; EXEC GET_NONBLANK
+                  END
+               ELSE ( SYMB = '.GT.'; NCHAR = 4 )
+               END
+            OTHERWISE EXEC  COPY_A_LETTER
+         QTSYM: DO
+            LSYMBW  = 0; SYMBW = ' ';  NCHSTR = -1;  QTSTR = .TRUE.
+            GQUOT = .TRUE.
+            DO WHILE  GQUOT
+               UNTIL ^GQUOT;      EXEC  PACK_CHRSTR
+               EXEC PACK_CHRSTR;  NCHSTR = NCHSTR - 1;  END
+            EXEC POST_PACKS
+            NCHSTR = NCHAR + NCHSTR;  END
+            / NCHSTR:   LOGICAL STRING LENGTH OF SYMB
+            / NCHAR:    PHYSICAL STRING LENGTH OF SYMB
+         EQSYM: DO
+            IF LMODE THEN (SYMB = '.EQ.'; NCHAR = 4; EXEC GET_NONBLANK )
+            ELSE EXEC COPY_A_LETTER
+            END
+         OTHERWISE EXEC  COPY_A_LETTER
+      END
+ 
+   %%PROC_NAME COPY_A_LETTER%
+   %PROC
+      SYMB  = PRTCHR (CHARNM)
+      NCHAR = 1
+      EXEC GET_NONBLANK
+      END
+ 
+   %%PROC_NAME GET_NONBLANK%
+   %PROC
+      UNTIL CHARNM ^= BLNK; CALL GCHAR
+      END
+ 
+   %%PROC_NAME PACK_S%
+   %PROC
+      IF LSYMBW  < 255 THEN  DO
+         = LSYMBW + 1
+         SYMBW (LSYMBW:LSYMBW) = PRTCHR (CHARNM)
+         CALL GCHAR
+         END
+      END
+ 
+   %%PROC_NAME PACK_CHRSTR%
+   %PROC
+      IF LSYMBW  < 255 THEN  DO
+         = LSYMBW + 1
+         SYMBW (LSYMBW:LSYMBW) = CHRREP
+         CALL GCHAR
+         IF   CHARNM = QTSYM  THEN GQUOT = ^GQUOT
+         END
+      END
+ 
+   %%PROC_NAME POST_PACKS%
+   %PROC
+      NCHAR = LSYMBW
+      SYMB = SYMBW
+      IF LSYMBW > 80 THEN DO
+         / ERROR MESSAGE
+         LIST DO
+     CALL MSGPRT( 'FPLE002: TOO LONG IDENTIFIER OR CHARACTER STRING.')
+            1L; ' SAVED ***'; PUT SYMB ( 1:40) C40; '***'
+            1L; ' SAVED ***'; PUT SYMB (41:80) C40; '***'
+            1L; ' IGNORED :'; PUT SYMBW(81:150) C70; 1L;
+            NSKIP = NSKIP + 1
+            END
+         NCHAR = 80
+         END
+      IF CHARNM = BLNK THEN EXEC  GET_NONBLANK
+      END
+ 
+   / macro definitions
+   %%PROC1  PROCEDURE %PROC_NAME ;
+   %DBGIF LIST DO ;
+   %DBG 1L ;
+   %DBG '---PROC. %PROC_NAME ENTERED. ' ;
+   %DBG END ;
+    %
+   %%PROC  PROCEDURE %PROC_NAME ; %
+ 
+   PROCESS     HEADDER GCHAR
+   SUBROUTINE GCHAR
+   /     version 2 for fort77 ( Hitachi 280H )
+   /                                  Feb.  19, 1986
+   /     version 3 for PCFPL    Sept. 25, 1986
+   /     revised                Nov. 4, 1989
+   IMPLICIT INTEGER  (A-Z)
+   LOGICAL     EXIST ;
+   LOGICAL          EQ
+   CHARACTER        CARD * 80,     TCSTR * 80, SYSFNM * 80
+   CHARACTER        CARDSV (5)*80
+   INTEGER          CCSAVE (5),    SYSUN (5),  MAXSYS
+   INTEGER          SYSINN,        MAXCOL
+   /* Mas file position of fpl source
+   LOGICAL          ERR
+   %GETCOMM
+   %CHARCOM
+   %FPLCOMM
+   %SYSINCOM
+   DATA             MAXSYS/5/
+   DATA             SYSUN /5,10,11,12,13/
+   DATA             MAXCOL/73/
+   BEGIN;           / REV. 89-11-08
+      IF NEWLN
+      THEN  DO WHILE  NEWLN
+         UNTIL CHARNM ^= BLNK; EXEC READ_CHAR
+         IF    CHARNM = SLASH
+         THEN  EXEC PROCESS_COMMENT
+         ELSE  NEWLN = .FALSE.
+         END
+      ELSE  EXEC READ_CHAR
+      IF CHARNM = SEMC & ^QUOT THEN NEWLN = .TRUE.
+      %DBGIF  LIST DO
+      %DBG  ' GCHAR: '
+      %DBG  PUT CHRREP C1
+      %DBG  END
+      END
+ 
+   %%PROC_NAME PROCESS_COMMENT%
+   %PROC1
+      %DBGIF LIST 'COMMENT:'
+      CMMODE = .TRUE.;           / REV. 89-11-08
+      %DBGIF LIST DO
+      %DBG  'COMMT:(TOP) ';
+      %DBG   PUT CHRREP C1
+      %DBG END
+      EXEC READ_CHAR
+      IF CHARNM = STAR
+      THEN  DO
+         LC = 73
+         DO WHILE  CHARNM ^= SEMC  & CMMODE
+            IF LC > 72 & CHARNM ^= BLNK
+            THEN DO
+               IF CMTCDC < 100   THEN = CMTCDC + 1
+               CMTCD (CMTCDC)  = '*'; LC = 2
+               END
+      %DBGIF LIST DO
+      %DBG  'COMMT:('
+      %DBG  PUT LC I3
+      %DBG  ') ';
+      %DBG   PUT CHRREP C1
+      %DBG END
+            EXEC READ_CHAR
+            CMTCD (CMTCDC) (LC:LC) = CHRREP
+            = LC + 1
+            END
+         END
+      ELSE  DO UNTIL  CHARNM = SEMC ! ^CMMODE
+         EXEC READ_CHAR
+         END
+      CMMODE = .FALSE.
+      QUOT = .FALSE.
+      %DBGIF LIST ':END COMMENT:'
+      END
+ 
+   %%PROC_NAME READ_TEXT%
+   %PROC
+      IF IMT = 0;           / REV. 89-11-08   READ FROM SYSIN
+      THEN DO UNTIL CC <= 74;              / READ FROM SYSIN
+         IF CC >= 80
+         THEN CC = 1;
+         ELSE  CC = CC + 1
+         IF CC <= 74  THEN  DO
+            IF CC = MAXCOL THEN CC = 73
+            CHRREP  = CARD (CC:CC)
+            CHARNM  = CHRSQN (ICHAR(CHRREP))
+            IF ^CMMODE   THEN DO
+  /* changed due to faulty News fortran compiler   SAS  nov. 4, 1993
+  /            IF CHARNM = MINUS  THEN --
+  /            IF CC = 72 ! (CARD (CC+1:CC+1) = '-' & ^QUOT) THEN DO
+  /               CNTMOD = .TRUE.
+  /               EXEC READ_SOURCE_CARD
+  /               END
+  /* changed due to faulty News fortran compiler   SAS  nov. 4, 1993
+               IF CHARNM = MINUS  THEN --
+               IF CC = 72  THEN DO
+                  CNTMOD = .TRUE.
+                  EXEC READ_SOURCE_CARD
+                  END
+               ELSE IF CARD (CC+1:CC+1) = '-' & ^QUOT  THEN DO
+                  CNTMOD = .TRUE.
+                  EXEC READ_SOURCE_CARD
+                  END
+  /* changed due to faulty News fortran compiler   SAS  nov. 4, 1993
+               END
+            ELSE IF CC = 74 THEN ( CMMODE = .FALSE.; NEWLN = .TRUE. )
+            END
+         ELSE DO
+            IF QUOT THEN DO
+               CHARNM = QTSYM; CHRREP = PRTCHR (CHARNM); CC = 74
+               END
+            ELSE IF NEWLN THEN DO
+               CNTMOD = .FALSE.
+               EXEC READ_SOURCE_CARD
+               GETCNT = 0
+               END
+            ELSE DO
+               CHARNM = SEMC; CHRREP = PRTCHR (CHARNM); CC = 74
+               END
+            END
+         %DBGIF LIST DO
+         %DBG 1L
+         %DBG ' READ_TEXT:(CC =';
+         %DBG PUT CC I3;
+         %DBG  ') ';
+         %DBG PUT CHRREP C1
+         %DBG END
+         END
+      ELSE IF IMT > 0;   / READ FROM CORE
+      THEN DO
+         CHRREP = MACLST (IMT)
+         CHARNM = CHRSQN (ICHAR(CHRREP))
+         %DBGIF LIST DO
+         %DBG 1L
+         %DBG ' READ_TEXT:(IMT=';
+         %DBG PUT IMT I3;
+         %DBG  ') ';
+         %DBG PUT CHRREP C1
+         %DBG END
+         = IMT + 1
+         IF IMT > MACREG  THEN DO
+            CALL MSGPRT ( 'FPLS008: SYSTEM ERROR ( MACRO READ ). ')
+            CALL IQEXIT
+            END
+         END
+      IF CHARNM = QTSYM & ^CMMODE  THEN QUOT = ^QUOT
+      END
+ 
+  /     ----------------------------------------------------------
+  /             format of macro save area
+  /     ----------------------------------------------------------
+  /             contents of MACTOP is A0 ( the last macro )
+  /
+  /                      addr. label  MACLST (character*NBYT)
+  /   the first macro     1       Fn: macro name
+  /                       2           ......
+  /                                   blank
+  /                               Ft: macro text
+  /                                   ......
+  /                               ..............
+  /                               ..............
+  /   second last macro           Bn: macro name
+  /                                   ......
+  /                                   blank
+  /                               Bt: macro text
+  /                                   ......
+  /
+  /   the last macro              An: macro name
+  /                                   ......
+  /                                   blank
+  /                               At: macro text
+  /                                   ......
+  /
+  /                    addr    MACTBL(1, *)  MACTBL(2, *)
+  /                     1          Fn           Ft
+  /                     2         ....         ....
+  /
+  /                   TNMAC-1      Bn           Bt
+  /                   TNMAC        An           At
+  /
+ 
+   %%PROC_NAME READ_CHAR%
+   %PROC
+      EXEC READ_TEXT
+      DO WHILE  CHARNM = PCSYM
+         EXEC READ_TEXT
+         IF CHARNM = PCSYM
+         THEN  IF ^QUOT THEN  EXEC REGISTER_MACRO
+                        ELSE  EXIT
+         ELSE DO
+            IF  CHARNM < LETA ! CHARNM > LETZ   THEN DO
+               IF IMT > 0 THEN DO;  / END OF CORE MACRO TEXT
+                  IMT = MCNSTK (MACLVL)
+                  CHRREP = MCASTK (MACLVL)
+                  CHARNM = CHRSQN (ICHAR(CHRREP))
+                  = MACLVL - 1
+                  END
+               /  NOT MACRO FOR THE CASE OF ELSE OF ABOVE IF.
+               ELSE  LIST DO
+       CALL MSGPRT('FPLS004: ILLEGAL PERCENT SYMBOL IN THE TEXT.')
+                  1L
+                  CALL IQEXIT
+                  END
+               END
+            ELSE DO;                / MACRO SUBSTITUTION
+               EXEC PACK_MACRO_NAME
+               %DBGIF LIST DO
+               %DBG  1L
+               %DBG  ':MACRO NAME(INS):'
+               %DBG  PUT MACNAM C LMACNM
+               %DBG  ':'
+               %DBG  END
+               /   IF CHARNM = BLNK  THEN EXEC READ_TEXT
+               = MACLVL + 1;        / SAVE LAST CHARACTER
+               MCNSTK (MACLVL) = IMT
+               MCASTK (MACLVL) = CHRREP
+               ITMAC = TNMAC - 1;   / SEARCH MACRO FROM CORE FILE
+               DO WHILE ITMAC ^= 0
+                  ADTXT = MACTBL (2, ITMAC)
+                  ADNAM = MACTBL (1, ITMAC)
+                  TCSTR = ' '
+                  ICP   = 0
+                  DO FOR I = ADNAM, ADTXT - 1
+                     = ICP + 1
+                     TCSTR (ICP:ICP) = MACLST (I)
+                     END
+                  IF EQ (MACNAM, TCSTR )  THEN EXIT
+                  ELSE = ITMAC - 1
+                  END
+               IF ITMAC = 0  THEN DO;  / MACRO NOT FOUND IN CORE FILE
+                  / 89-10-27  OPEN FILE FOR THE MACRO TEXT.  SAS
+                  SYSFNM = INCLBN
+          %VOS_3_CODE SYSFNM(INCLBL+1:)='('//MACNAM(1:LMACNM)//')'
+          %MSDOS_CODE SYSFNM(INCLBL+1:)='\'//MACNAM(1:LMACNM)//'.INC'
+          %UNIX_CODE   SYSFNM(INCLBL+1:)=MACNAM(1:LMACNM)
+          %MTS_CODE   SYSFNM(INCLBL+1:)=MACNAM(1:LMACNM)
+          %VM_CODE    SYSFNM(INCLBL+1:)=MACNAM(1:LMACNM)//' INC A1'
+          %MAC_CODE   SYSFNM(INCLBL+1:)=MACNAM(1:LMACNM)//'.INC'
+          Inquire (file=sysfnm, exist=exist)
+          if ^exist 
+          then sysfnm=%incdirectory//MACNAM(1:LMACNM)
+          Inquire (file=sysfnm, exist=exist)
+ 
+          if ^exist then do 
+             CALL MSGPRT --
+                ( 'FPLS009: No include file: '//MACNAM(1:LMACNM))
+             CALL IQEXIT
+                end
+ 
+                  EXEC OPEN_SYSIN
+                  EXEC READ_SOURCE_CARD
+                  EXEC READ_TEXT
+                  END
+               ELSE DO
+                  / 89-10-27  MACRO TEXT IN CORE.   SAS
+                  IMT  = ADTXT
+                  EXEC READ_TEXT
+                  END
+               END
+            END
+         END
+      %DBGIF LIST DO
+      %DBG  ' READ_CHAR: '
+      %DBG  PUT CHRREP C1
+      %DBG  END
+       END
+ 
+   %%PROC_NAME REGISTER_MACRO%
+   %PROC1
+      %DBGIF LIST 'REGISTER MACRO:'
+      IF MACTBL(1, TNMAC) > MACREG
+      THEN EXIT DO
+         CALL MSGPRT ( 'FPLE002: NO SPACE FOR A NEW MACRO. ' )
+         EXEC SKIP_LINE1
+         END
+      EXEC READ_TEXT
+      EXEC PACK_MACRO_NAME
+           %DBGIF LIST DO
+               %DBG  1L
+               %DBG  ':MACRO NAME(DEF):'
+               %DBG  PUT MACNAM C LMACNM
+               %DBG  ':'
+               %DBG  END
+      MACRO = .TRUE.
+      IP = MACTBL(1, TNMAC)
+      IPMAX  = IP + LMACNM
+      ICP = 0
+      DO FOR I = IP, IPMAX - 1
+         = ICP + 1
+         MACLST (I) = MACNAM (ICP:ICP)
+         END
+      MACTBL (2, TNMAC) = IPMAX
+      %DBGIF  LIST ' MACRO TEXT:'
+      DO UNTIL CHARNM < LETA ! CHARNM > LETZ
+         UNTIL CHARNM = PCSYM
+            ( EXEC READ_TEXT;  EXEC PACK_MACRO_TEXT )
+         EXEC READ_TEXT
+         EXEC PACK_MACRO_TEXT
+         END
+      MACRO = .FALSE.
+      = TNMAC + 1
+      %DBGIF LIST   ':END MACRO TEXT:'
+      %DBGIF LIST  1L
+ 
+      MACTBL (1, TNMAC) = IPMAX
+      END
+ 
+   %%PROC_NAME PACK_MACRO_NAME%
+   %PROC1
+      MACNAM = ' '
+      LMACNM = 0
+      IF CHARNM < LETA ! CHARNM > LETZ
+      THEN EXIT DO
+    CALL MSGPRT ('FPLE003: MACRO NAME MUST BEGIN WITH A LETTER A-Z.')
+         EXEC SKIP_LINE1
+         END
+      DO WHILE CHARNM <= LET9 ! CHARNM = UNDLN
+         IF LMACNM < 80 THEN DO
+            = LMACNM + 1
+            MACNAM (LMACNM:LMACNM) = PRTCHR (CHARNM)
+            END
+         EXEC READ_TEXT
+         END
+      END
+ 
+   %%PROC_NAME SKIP_LINE1%
+   %PROC1
+      = NSKIP + 1
+      %DBGIF  LIST 1L
+      LIST (1C; FOR I = 1, 13; '******')
+      UNTIL CHARNM = SEMC; EXEC READ_TEXT
+      NEWLN = .TRUE.
+      END
+ 
+   %%PROC_NAME READ_SOURCE_CARD%
+   %PROC1
+      SYSINN = SYSUN (SYSINL)
+      IF ^NOLIST  THEN  EXEC  PRINT_SOURCE
+      IF ^CNTPRV & CNTMOD  THEN DO
+            JP = 0
+                UNTIL CARD (JP:JP) ^= ' '  ! JP = 73 ; JP = JP + 1
+                END
+      ERR = .FALSE.
+      CARD = ' '
+      IF ^EOF
+      THEN DO ; /* use pointer of fpl source for Error mesage
+                FORMAT READ : SYSINN  ENDFLAG=EOF ERRFLAG=ERR CARD; 
+                (A72)
+                NCARD(SYSINL) = NCARD(SYSINL) + 1 
+                END
+      IF ERR THEN EXIT DO
+                CALL MSGPRT ('FPLS006: SYSIN READ ERROR')
+                CARD = ' END; / READ ERROR.  GENERATED STATEMENT'
+                END
+      ELSE IF EOF THEN  EXEC CLOSE_SYSIN
+      ELSE DO
+                IF ^CNTPRV & CNTMOD  THEN DO
+                J = 0
+                UNTIL CARD (J:J) ^= ' '  ! J = 73 ; J = J + 1
+                ICIND = J - JP
+                END
+                CNTPRV = CNTMOD
+                CC = 80
+                END
+      MAXCOL = 73
+      UNTIL MAXCOL <= 1 ! CARD (MAXCOL:MAXCOL) ^=' '
+      = MAXCOL - 1
+      = MAXCOL + 1
+      %DBGIF LIST 1L
+      END
+ 
+   %%PROC_NAME OPEN_SYSIN%
+   %PROC1
+ 
+      %DBGIF LIST 'OPEN SYSIN:'
+      / 89-10-27  SWITCH TO INCLIB.  SAS
+      IMT = 0
+      IF SYSINL >= MAXSYS THEN EXIT LIST DO
+                1L; 'FPLS004: SYSIN NESTING LEVEL IS TOO DEEP (MAX LEVEL=';
+                PUT MAXSYS I2; ').'; 1L; END
+      IF SYSINL > 0 THEN DO
+                CCSAVE (SYSINL) = CC
+                CARDSV (SYSINL) = CARD
+                END
+      = SYSINL + 1
+      SYSINN = SYSUN (SYSINL)
+         /* SET NEW SYSIN file name 
+         fsname(SYSINL)=sysfnm
+         NCARD(SYSINL)=0
+      IF SYSINL > 1
+      THEN  DO
+         %VOS_3_CODE OPEN ( SYSINN, STATUS = 'OLD', FILE = SYSFNM, --
+         %VOS_3_CODE        ACTION = 'READ' )
+         %MSDOS_CODE OPEN ( SYSINN, STATUS = 'OLD', FILE = SYSFNM )
+         %MSDOS_CODE
+         %UNIX_CODE OPEN ( SYSINN, STATUS = 'OLD', FILE = SYSFNM )
+         %VM_CODE OPEN ( SYSINN, STATUS = 'OLD', FILE = SYSFNM )
+         %VM_CODE
+         %MTS_CODE OPEN ( SYSINN, STATUS = 'OLD', FILE = SYSFNM )
+         %MAC_CODE OPEN ( SYSINN, STATUS = 'OLD', FILE = SYSFNM )
+                END
+      END
+ 
+   %%PROC_NAME CLOSE_SYSIN%
+   %PROC1
+      %DBGIF LIST 'CLOSE SYSIN:'
+      / 89-10-27  RETURN TO THE PREVIOUS SYSIN.   SAS
+      IF SYSINL > 1
+      THEN DO
+                CLOSE ( SYSINN )
+                EOF     = .FALSE.
+                IMT =   MCNSTK (MACLVL)
+                CHRREP = MCASTK (MACLVL)
+                = MACLVL - 1
+                = SYSINL - 1
+                CC      = CCSAVE (SYSINL)
+                CARD    = CARDSV (SYSINL)
+                SYSINN = SYSUN  (SYSINL)
+                FRSTRD = .TRUE.
+                END
+      ELSE DO
+                CARD    = '   END; / END OF SYSIN.  GENERATED STATEMENT'
+                CC      = 1
+                IMT = 0
+                END
+      END
+ 
+   %%PROC_NAME PACK_MACRO_TEXT%
+   %PROC
+      %DBGIF LIST DO
+      %DBG  ' IMT='
+      %DBG  PUT IPMAX I5
+      %DBG  ': '
+      %DBG  PUT CHRREP C1
+      %DBG  END
+      MACLST (IPMAX) = CHRREP
+      = IPMAX + 1
+  END
+ 
+   %%PROC_NAME PRINT_SOURCE%
+   %PROC
+      IF FRSTRD THEN DO
+             FRSTRD = .FALSE.
+             END
+      ELSE LIST DO
+         /    1L;
+         123C;  FOR J = 73, 80;  PUT CARD (J:J) C1
+         7C
+         /  INDENT  1   7+72=  79
+         /  INDENT 10  34+73= 106
+         /  INDENT 24  49+73= 121
+         FOR  J = 2, INDENT
+         IF J > 10  THEN  PUT LEVELL (J) C1; ELSE PUT  LEVELL(J) C3
+         IF CNTPRV THEN DO
+            J = 0
+            WHILE J < ICIND ; (' ' ; J = J + 1 )
+            END
+         J = 0
+         UNTIL CARD (J:J) ^= ' '   !  J = 73;  J = J + 1
+         FOR  JT = J, 72;  PUT CARD (JT:JT) C1
+         EXEC HL;      1L
+         END
+      END
+ 
+   %%PROC_NAME HL%
+   %PROC
+      IF ^ NOLIST
+      THEN LIST CALL IQPRHD ( TITLE, NTITLE, MAXLN )
+      END
+ 
+ 
+   PROCESS    HEADDER EQ 
+   FUNCTION EQ ( A, B )
+   LOGICAL EQ
+   CHARACTER   A*(*), B*(*)
+   BEGIN
+      IF LEN (A) < LEN (B) 
+      THEN  EQ = A .EQ. B
+      ELSE  EQ = B .EQ. A
+      END
+ 
+  PROCESS    HEADDER ASTACK
+   %%STACK_COMMON
+   INTEGER  ISTLVL, ISTACK (1000), ASTLVL ;
+   CHARACTER ASTCKL(10000)*1 ;
+   COMMON  /STKCOM/ ISTLVL, ISTACK, ASTLVL ;
+   COMMON  /ASTKCM/ ASTCKL ; %
+ 
+   SUBROUTINE ASTACK (STRNG, NCHAR)
+   %STACK_COMMON
+   INTEGER ILAST
+   CHARACTER   STRNG*(*)
+   BEGIN
+      ISTACK(ISTLVL) = NCHAR
+      = ISTLVL + 1
+      ILAST = ASTLVL + NCHAR - 1
+      ICP = 0
+         DO FOR I = ASTLVL, ILAST
+         = ICP + 1
+         ASTCKL (I) = STRNG (ICP:ICP)
+         END
+      = ASTLVL + NCHAR
+      END
+ 
+   PROCESS     HEADDER AUNSTK
+   SUBROUTINE AUNSTK (STRNG, NCHAR)
+   %STACK_COMMON
+   INTEGER ILAST
+   CHARACTER   STRNG*(*)
+   BEGIN
+      = ISTLVL - 1
+      NCHAR = ISTACK(ISTLVL)
+      ILAST = ASTLVL - 1
+      = ASTLVL - NCHAR
+      ICP = 0
+      DO FOR I = ASTLVL, ILAST
+         = ICP + 1
+         STRNG (ICP:ICP) = ASTCKL (I)
+         END
+      END
+ 
+   PROCESS     HEADDER STACK
+   SUBROUTINE STACK (I)
+   %STACK_COMMON
+   INTEGER  I
+   BEGIN
+      ISTACK(ISTLVL) = I
+      = ISTLVL + 1;  END
+ 
+   PROCESS     HEADDER UNSTK
+   SUBROUTINE UNSTK (I)
+   %STACK_COMMON
+   INTEGER  I
+   BEGIN
+      = ISTLVL - 1
+      I = ISTACK(ISTLVL)
+      END
+ 
+   PROCESS     HEADDER SETSTK
+   SUBROUTINE SETSTK
+   %STACK_COMMON
+   BEGIN
+      ISTLVL = 1 ; ASTLVL = 1
+      END
+ 
+ 
+   %VOS_3 PROCESS  FILE '/MSEKIYA.FPLF.FORT(FPL90LIB)'
+   %VM    PROCESS  FILE  '/FPLLIB FTN A1'
+   %MSDOS PROCESS  FILE '..\MTSFORT\FPL90LIB.FOR'
+   %UNIX  PROCESS  FILE 'fpl90lib.f'
+   %MTS   PROCESS  FILE 'FPL90LIB.FTN'
+   %MAC   PROCESS  FILE ':NEW:fpl90lib.f'
+   PROCESS     HEADDER IQOPEN 
+ 
+   SUBROUTINE IQOPEN
+   IMPLICIT        INTEGER  (A-Z) ;
+   %LISTDCL
+   BEGIN
+      CALL IQSCHR
+      CALL IQDATE   ( IQCDAT( 1: 8) )
+      CALL IQTIME   ( IQCDAT( 9:16) )
+      CALL IQINST   ( IQCDAT(17:24) )
+      DO  FOR I = 1, 3
+         IQLINE (I) = ' ';   IQLCLM (I) = 1  ; IQLPGE(I)=0
+         IQLCNT (I) = ' ';   IQLNNO (I) = 0
+         END
+      IQLMAX (1) = 132; IQLMAX (2) = 72; IQLMAX (3) = 132
+      IQFSTN = 0
+      END
+ 
+   PROCESS     HEADDER IQCBUF
+   SUBROUTINE IQCBUF
+   IMPLICIT        INTEGER  (A-Z) ;
+   %LISTDCL
+   BEGIN
+ 
+      UNITNO = IQUNIT
+      IQUNIT = 0
+      DO WHILE IQUNIT <= 3
+         = IQUNIT + 1
+         IF IQLCLM(IQUNIT) ^= 1 THEN CALL IQEMIT
+         END
+      IQUNIT = UNITNO
+      END
+ 
+   PROCESS     HEADDER IQEXIT
+   SUBROUTINE IQEXIT
+   IMPLICIT        INTEGER  (A-Z) ;
+   BEGIN
+ 
+      CALL IQCBUF
+      IF .true.  THEN  STOP
+      END
+ 
+   PROCESS   HEADDER IQPRHD
+   SUBROUTINE IQPRHD ( TITLE, NTITLE, MAXLN )
+   IMPLICIT        INTEGER  (A-Z) ;
+   %LISTDCL
+   CHARACTER    TITLE*24, ICNTL*1
+   BEGIN
+          /* debug 
+     IF IQUNIT = 1 THEN DO
+            IF IQLPGE (1) = 0 THEN DO
+               IQLNNO (1) = 0
+               IQLCNT (1) = '1'
+               EXEC PRINT_HEADDER
+               END
+            ELSE IF  MAXLN = 0 THEN DO
+               IQLNNO (1) = 0
+               IQLCNT (1) = '1'
+               EXEC PRINT_HEADDER
+               END
+            ELSE IF IQLNNO (1) > MAXLN THEN DO
+               IF IQLCLM (1) ^= 1 THEN CALL IQEMIT
+               IQLNNO (1) = 0
+               IQLCNT (1) = '1'
+               EXEC PRINT_HEADDER
+               END
+            END
+     END
+ 
+   %%PROC_NAME PRINT_HEADDER%
+   %PROC
+      IF IQFSRD THEN  ( ICNTL = ' '; IQFSRD = .FALSE. )
+      ELSE 
+          ( ICNTL = '1'; %MAC_CODE ICNTL = ' '; FORMAT WRITE ' '; (A) )
+      IQLPGE (1) = IQLPGE (1) + 1
+      FOR K = NTITLE+1, 18 ; TITLE (K:K) = ' '
+      FORMAT WRITE ICNTL, '-',TITLE(1:NTITLE), --
+         '-', TITLE(NTITLE+1:), ' FPL V(',IQVDAT(17:24), ' ', --
+         IQVDAT(1:8), ') ', IQCDAT(17:24), ' ',--
+         IQCDAT(1:8), ' P', IQLPGE(1);
+         (A, A, A, A, A, A, A, A, A, A, A, A, A, A, I3)
+      IQLNNO (IQUNIT) = 0
+      IQLINE (IQUNIT) = ' '
+      IQLCNT (IQUNIT) = ' '
+      /*   CALL IQEMIT
+      END
+ 
+   PROCESS     HEADDER IQSCHR
+   SUBROUTINE IQSCHR
+   /     version 2 for fort77 ( Hitachi 280H )
+   /                                  Feb.  19, 1986
+   /     version 3 for PCFPL    Sept. 25, 1986
+   IMPLICIT        INTEGER  (A-Z) ;
+   %LISTDCL
+ 
+   BEGIN
+       IQVDAT =  IDATE
+       IQULVL =  0 ;  IQUNIT =  1 ;
+       IQFSRD = .TRUE.
+      END
+ 
+   PROCESS    HEADDER IQPUTC
+   SUBROUTINE IQPUTC (ISYMB, NCH)
+   IMPLICIT        INTEGER  (A-Z) ;
+   %LISTDCL
+   INTEGER    NCH
+   CHARACTER  ISYMB*(*)
+   BEGIN
+ 
+      IF IQLCLM (IQUNIT) + NCH - 1 > IQLMAX (IQUNIT) THEN DO --
+         CALL IQEMIT
+         IF IQUNIT=2 THEN ( IQLCLM(2)= 7; IQLINE(2)(6:6)='*' )
+         END
+      ICT = IQLCLM (IQUNIT)
+      IQLCLM (IQUNIT) = ICT + NCH
+      ICMAX = ICT + NCH - 1
+      IQLINE (IQUNIT) (ICT:ICMAX) = ISYMB
+      END
+ 
+   PROCESS    HEADDER IQPUTI
+   SUBROUTINE IQPUTI (ISYMB, NCH)
+   IMPLICIT        INTEGER  (A-Z) ;
+   %LISTDCL
+   INTEGER    ISYMB, NCH
+   CHARACTER*1   NUM (0:9)
+   SAVE NUM
+   DATA NUM   /'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'/
+   BEGIN
+ 
+      IF IQLCLM (IQUNIT) + NCH - 1 > IQLMAX (IQUNIT) THEN DO --
+         CALL IQEMIT
+         IF IQUNIT=2 THEN ( IQLCLM(2)= 7; IQLINE(2)(6:6)='*' )
+         END
+      INTN = IABS (ISYMB)
+      ICT = IQLCLM (IQUNIT) + NCH
+      IQLCLM (IQUNIT) = ICT
+      IF INTN = 0 THEN IQLINE (IQUNIT) (ICT-1:ICT-1) = NUM (0)
+      ELSE DO
+         DO WHILE INTN ^= 0
+            ICT = ICT - 1; IF ICT < 1 THEN EXIT
+            K = MOD (INTN, 10); INTN = INTN / 10
+            IQLINE (IQUNIT) (ICT:ICT) = NUM (K)
+            END
+         IF ISYMB < 0  &  ICT > 1
+         THEN  IQLINE (IQUNIT) (ICT-1:ICT-1) = '-'
+         END
+      END
+ 
+   PROCESS     HEADDER IQEMIT
+   SUBROUTINE IQEMIT
+   IMPLICIT        INTEGER  (A-Z) ;
+   %LISTDCL
+   BEGIN
+ 
+      LMAX = IQLMAX (IQUNIT) ;
+      DO FOR LMAX = LMAX,2,-1
+         IF IQLINE (IQUNIT) (LMAX:LMAX) ^= ' ' THEN EXIT
+         END
+      IF IQUNIT = 1 ! IQUNIT = 3 ;
+      THEN  DO
+         FORMAT WRITE IQLCNT(IQUNIT), IQLINE (IQUNIT) (1:LMAX)
+         ( A, A )
+         END
+      ELSE IF IQUNIT = 2 ;
+      THEN DO
+         = IQFSTN + 1
+     /   FORMAT PUNCH   IQLINE (IQUNIT) (1:LMAX), IQFSTN  (A,I8)
+         FORMAT PUNCH   IQLINE (IQUNIT) (1:LMAX)   ;   ( A )
+         END
+      IQLCLM (IQUNIT) = 1 ;
+      IQLNNO (IQUNIT) = IQLNNO (IQUNIT) +1 ;
+      IQLCNT (IQUNIT) = ' '
+      IQLINE (IQUNIT) = ' '
+      END
+ 
+   PROCESS    HEADDER IQUSTK
+   SUBROUTINE IQUSTK ( IUNIT )
+   IMPLICIT        INTEGER  (A-Z) ;
+   %LISTDCL
+   BEGIN
+ 
+      IQULVL = IQULVL + 1
+      IQUNST ( IQULVL ) = IQUNIT
+      IQUNIT           = IUNIT
+      END
+ 
+   PROCESS    HEADDER IQUUTK
+   SUBROUTINE IQUUSK
+   IMPLICIT        INTEGER  (A-Z) ;
+   %LISTDCL
+   BEGIN
+ 
+      IQUNIT = IQUNST ( IQULVL )
+      IQULVL = IQULVL - 1
+      END
+ 
+   PROCESS    HEADDER IQCSET
+   SUBROUTINE IQCSET (ICSET)
+   IMPLICIT        INTEGER  (A-Z) ;
+   %LISTDCL
+   BEGIN
+ 
+      IQLCLM(IQUNIT) = ICSET
+      END
+ 
+   PROCESS    HEADDER IQLSET
+   SUBROUTINE IQLSET (ILSET)
+   IMPLICIT        INTEGER  (A-Z) ;
+   %LISTDCL
+   BEGIN
+ 
+      K = 0; WHILE K < ILSET; DO; CALL IQEMIT ; K = K + 1; END
+      END
+ 
+   PROCESS    HEADDER IQPSET
+   SUBROUTINE IQPSET (IPSET)
+   IMPLICIT        INTEGER  (A-Z) ;
+   %LISTDCL
+   BEGIN
+ 
+      IF IQUNIT = 1 ! IQUNIT = 3 ;
+      THEN  DO
+         IF  IQLCLM (IQUNIT) > 1  THEN  CALL IQEMIT
+         IQLNNO (IQUNIT) = 1
+         IQLCNT (IQUNIT) = '1'
+         END
+      ELSE IF IQUNIT = 2 ;
+      THEN DO
+         IPSET = IPSET
+         END
+      END
+ 
+   PROCESS    HEADDER IQXSET
+   SUBROUTINE IQXSET (IXSET)
+   IMPLICIT        INTEGER  (A-Z) ;
+   %LISTDCL
+   BEGIN
+ 
+      IQLCLM (IQUNIT) = IQLCLM (IQUNIT) + IXSET
+      END
+ 
+   PROCESS    HEADDER IQCCMP
+   FUNCTION IQCCMP ( A, B )
+   INTEGER  IQCCMP
+   CHARACTER   A*(*), B*(*)
+   BEGIN
+      IF      A > B   THEN  IQCCMP =  1
+      ELSE IF A < B   THEN  IQCCMP = -1
+      ELSE                  IQCCMP = 0
+      END
+ 
+   /*  Fri Jun 28 12:02:46 MDT 1991
+   PROCESS   HEADDER IQINST
+   SUBROUTINE IQINST ( IINST )
+   CHARACTER    IINST*8
+   BEGIN
+      IINST = '%MACHINE'
+      END
+
+
+   PROCESS   HEADDER FPLF77L 
+   %VOS_3 PROCESS  FILE '/MSEKIYA.FPLF.FORT(FPLF77L)'
+   %VM    PROCESS  FILE  '/FPLF77L FTN A1'
+   %MSDOS PROCESS  FILE '..\MTSFORT\FPLF77L.FOR'
+   %UNIX   PROCESS  FILE 'FPL77LIB.f'
+   %MTS   PROCESS  FILE 'FPL77LIB.FTN'
+   %MAC   PROCESS  FILE ':NEW:fpl77lib.f'
+ 
+   PROCESS     HEADDER IQDATE
+   SUBROUTINE IQDATE ( MDATE )
+   CHARACTER  CDATE * 12, MDATE * 8
+   BEGIN
+      /*--FOR Lahey fortran  -----/
+      CALL DATE ( CDATE )
+      MDATE = CDATE
+      END
+ 
+   PROCESS     HEADDER IQTIME
+   SUBROUTINE IQTIME ( MTIME )
+      CHARACTER CTIME * 12, MTIME * 8
+   BEGIN
+      /*--FOR Lahey fortran  -----/
+      CALL TIME ( CTIME )
+      MTIME = CTIME (1:8)
+      END
+ 
+   PROCESS   HEADDER FPLVS24 
+   %VOS_3 PROCESS  FILE '/MSEKIYA.FPLF.FORT(FPLVS)'
+   %VM    PROCESS  FILE '/FPLVS24  FTN A1'
+   %MSDOS PROCESS  FILE '..\MTSFORT\FPLVS.FOR'
+   %UNIX   PROCESS  FILE 'FPLVS.f'
+   %MTS   PROCESS  FILE 'FPLVS.FTN'
+   %MAC   PROCESS  FILE ':NEW:fplvs24.f'
+ 
+   PROCESS     HEADDER IQDATE
+   SUBROUTINE IQDATE ( MDATE )
+      CHARACTER  MDATE * 8
+      CHARACTER*4  CHAR4
+      CHARACTER*12 CHAR12
+      INTEGER*4    NOW(8)
+      CHARACTER*3 MONTH(12)
+      DATA MONTH/'JAN','FEB','MAR','APR','MAY','JUN', --
+                 'JUL','AUG','SEP','OCT','NOV','DEC'/
+      /*--FOR IBM VS   FORTRAN  -----/
+ 
+   BEGIN
+      CALL DATIM ( NOW )
+      NOW(8) = MOD(NOW(8),100)
+      FORTRAN WRITE(MDATE,'(A3,I2,A1,I2)') --
+              MONTH(NOW(7)),NOW(6),' ',NOW(8)
+      END
+ 
+   PROCESS     HEADDER IQTIME
+   SUBROUTINE IQTIME ( MTIME )
+      CHARACTER* 8  MTIME
+      CHARACTER*12 CHAR12
+      INTEGER*4    NOW(8)
+      /*--FOR IBM VS   FORTRAN  -----/
+   BEGIN
+      CALL DATIM ( NOW )
+      NOW(4) = 100 + NOW(4)
+      NOW(3) = 100 + NOW(3)
+      FORTRAN WRITE(CHAR12,'(I4,I3,I3)')  NOW(5),NOW(4),NOW(3)
+      CHAR12(5:5) = ':' ; char12(8:8) = ':' ;
+      MTIME = CHAR12 (1:7)
+      END
+ 
+   PROCESS    HEADDER FPLM680 
+   %VOS_3 PROCESS  FILE '/MSEKIYA.FPLF.FORT(FPLM680)'
+   %VM    PROCESS  FILE '/FPLFM680  FTN A1'
+   %MSDOS PROCESS  FILE '..\MTSFORT\FPLM680.FOR'
+   %UNIX   PROCESS  FILE 'FPLM680.f'
+   %MTS   PROCESS  FILE 'FPLM680.FTN'
+   %MAC   PROCESS  FILE ':NEW:fplm680.f'
+ 
+   PROCESS     HEADDER IQDATE
+   SUBROUTINE IQDATE ( MDATE )
+   CHARACTER  MDATE * 8
+      /*--FOR VOS_3     FORTRAN  -----/
+   BEGIN
+      CALL DATE ( MDATE )
+      END
+ 
+   PROCESS     HEADDER IQTIME
+   SUBROUTINE IQTIME ( MTIME )
+      CHARACTER CTIME * 12, MTIME * 8
+      /*--FOR VOS_3      FORTRAN -----/
+   BEGIN
+      CALL CLOCK ( CTIME, 1 )
+      MTIME = CTIME (1:8)
+      END
+ 
+   PROCESS    HEADDER FPLRMFT 
+   %VOS_3 PROCESS  FILE '/MSEKIYA.FPLF.FORT(FPLRMFT)'
+   %VM    PROCESS  FILE '/FPLRMFT FTN A1'
+   %MSDOS PROCESS  FILE '..\MTSFORT\FPLRMFT.FOR'
+   %UNIX   PROCESS  FILE 'FPLRMFT.f'
+   %MTS   PROCESS  FILE 'FPLRMFT.FTN'
+   %MAC   PROCESS  FILE ':NEW:fplrmft.f'
+ 
+   PROCESS     HEADDER IQDATE
+   SUBROUTINE IQDATE ( MDATE )
+   INTEGER * 2   YY, MM, DD
+   CHARACTER  MDATE * 8
+   BEGIN
+      CALL GETDAT ( YY, MM, DD )
+      WHILE  YY > 99 THEN = YY - 100
+      WRITE ( MDATE, '(I2, A, I2, A, I2)') YY,'-',MM,'-',DD
+      END
+ 
+   PROCESS     HEADDER IQTIME
+   SUBROUTINE IQTIME ( MTIME )
+      INTEGER * 2   HH, MM, SS, HS
+      CHARACTER  MTIME*8
+   BEGIN
+      CALL GETTIM ( HH, MM, SS, HS )
+      WRITE ( MTIME, '(I2, A, I2, A, I2)') HH,':',MM,':',SS
+      END
+
+
+   PROCESS    HEADDER FPLNEWS 
+   %VOS_3 PROCESS  FILE '/MSEKIYA.FPLF.FORT(FPLNEWS)'
+   %VM    PROCESS  FILE '/FPLNEWS FTN A1'
+   %MSDOS PROCESS  FILE '..\MTSFORT\FPLNEWS.FOR'
+   %UNIX   PROCESS  FILE 'fplnews.f'
+   %MTS   PROCESS  FILE 'FPLNEWS.FTN'
+   %MAC   PROCESS  FILE ':NEW:fplnews.f'
+ 
+   PROCESS     HEADDER IQDATE
+   SUBROUTINE IQDATE ( MDATE )
+   INTEGER    iarr(3), YY
+   CHARACTER  MDATE * 8
+   /       intrinsic  idate
+   BEGIN
+      CALL idate ( iarr )
+      yy = mod(iarr(3),100)
+      WRITE ( MDATE, '(I2, A, I2, A, I2)') YY,'-',iarr(2),'-',iarr(1)
+      END
+ 
+   PROCESS     HEADDER IQTIME
+   SUBROUTINE IQTIME ( MTIME )
+      INTEGER    iarr(3) 
+      CHARACTER  MTIME*8
+   /       intrinsic  itime
+   BEGIN
+      CALL itime ( iarr )
+      WRITE ( MTIME, '(I2, A, I2, A, I2)') --
+                        iarr(1),':',iarr(2),':',iarr(3)
+      END
+

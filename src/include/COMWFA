@@ -1,0 +1,11 @@
+   common/comwfa/topadr,nshl,nel,wfadr,wf,ws,wr
+   common/comwfa/nsymax,nstmax,nst2max
+   integer * 4  topadr( 18 )    ; /* top addr for
+   integer * 4  nshl ( 400 )    ; /* number of shell state in nel
+   integer * 4  nel  ( 400 )    ; /* number of electron
+   integer * 4  wfadr( 400 )    ; /* addr for wave function
+   integer * 4  wf   ( 2400 )   ; /* shell state
+   integer * 4  ws   ( 2400 )   ; /* spin  multi
+   integer * 4  wr   ( 2400 )   ; /* orb   multi
+   integer      nsymax,nstmax,nst2max
+

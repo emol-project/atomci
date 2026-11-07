@@ -1,0 +1,902 @@
+             F P L 9 0     M A N U A L
+                                              JAN 12 1993
+     Contents
+
+1.  Introduction
+
+2   FPL90 Source Structure
+
+2.1  Source Card Format
+2.2  Continuation
+2.3  Comment
+
+3.  Syntax of the FPL90
+
+4.  Macro Substitutions
+
+5.  Sample Programs
+
+5.1  N-Queens Program
+5.2  FPL90 Program
+
+6.  Contents of FPL diskette.
+
+1.  Introduction
+
+    FPL90 is a programming language based on FORTRAN. A FPL90 program
+is to be preprocessed by the FPL90 preprocessor to produce a fortran
+program.  We describe here some of the main features of the FPL90.
+   1) One can write a program in a completely goto-less and label-less
+      form.  Block structure of the algorithm can be transparently
+      manifested in the source program.
+   2) The preprocessor itself is written compactly in FPL90 ( ca. 1700
+      source cards ): thus, a user can easily add a new feature to the
+      preprocessor.
+   3) Simple parameterless internal procedures can be defined within a
+      fortran subprogram.  Recursive call of internal procedures is
+      permitted if so declared.
+   4) Simple macros may be defined.
+   5) Output listing is automatically indented according to the block
+      structure of the source code.
+
+2.  FPL90 Source Structure
+
+2.1  Source Card Format
+    A FPL90 source program may be written in any position between
+columns 2 and 72. It may contain blank cards. Columns 73 to 80 may be
+used for card identification. If the last character in a line is not a
+"semicolon", the FPL7 preprocessor supplies a semicolon symbol before
+processing.
+2.2  Continuation
+    Two consecutive - symbols, i.e. "--" is regarded as a continuation
+symbol.  The rest of the contents of the card is ignored, and the FPL90
+preprocessor reads the next card logically connected as a single line.
+2.3  Comment
+    The "slash" symbol at the top of a logical line indicates that the
+following text is a comment until a "semicolon" symbol is encountered.
+Comment line which starts with the symbol "/*" is copied as a comment
+card to the output Fortran statements.
+
+3.  Syntax of the FPL90
+
+    We use the following conventions to describe the FPL90 syntax.
+   1) Words enclosed by the symbols "<" and ">" represents the elements
+      of the FPL90 syntax. The definitions are given in this section.
+   2) Words enclosed by the symbols "<<" and ">>" should be interpreted
+      from the text. It usually refer to Fortran type statement or
+      concept.
+   3) The "or" symbol "!" separates alternatives. One and only one of
+      the alternatives should be chosen from the list. "null" in an
+      alternative list indicates that the selection is optional.
+   4) The square brackets "[" and "]" are used to indicate grouping.
+      An alternative list is, when neccessary, enclosed by them.
+   5) The other letters and symbols should be written as it stands.
+
+   ex.   [A!B];([null!C])       means one of the followings.
+           A;()
+           A;(C)
+           B;()
+           B;(C)
+
+<FPL90 program>   := <program unit>
+                  ! <FPL90 program> ; <program unit>
+
+<program unit>   := [ <process option> ; ! null ]
+                    [ PROGRAM ! SUBROUTINE ! FUNCTION ]
+                    <<subprogram name>> [ (<<parameter list>>) ! null ];
+                    [<declaration part> ; ! null ]
+                    [ BEGIN ! DO ] ; <block> ;
+                    [ <local procedures> ; ! null ]
+
+<process option> := PROCESS <option list>
+
+         ex.     PROCESS LIST NO MAP
+
+<option list>    := <option>  ! <option list> <option>
+
+<option>         := [ NO ! null ] [ LIST ! MAP ]
+                  ! HEADDER <<headder>>
+                  ! FILE    [ <<file name>> ! '<<file name>>' ! / ]
+                  ! INCLIB  [ <<file or directry name>> !
+                             '<<file or directry name>>' ]
+         note 1   LIST     FPL source printing by the preprocessor
+                  MAP      printing of internal procedures
+                  HEADDER  set headder of FPL source printing
+                  FILE     specify fortran source file name
+         note 2   FILE option controls output file name of fortran
+                  source code. If FILE option is not used, file name
+                  assumes default file name.
+                  1. default   File name is taken from firstly
+                     encountered program or subprogram name. ".FOR" is
+                     added to it to make a full name.
+                  2. <<file name>>    In this case, ".FOR" is added
+                    to "file name". Only an identifier is allowed for
+                    this type of specification.
+                  3. '<<file name>>'  Full file name can be specified
+                    by enclosing file name with "'" symbol.
+                  4. /   Current output fortran file is closed if there
+                    was any, and new file assumes default file name
+                    ( see case 1.).                          
+         note 3   INCLIB option specifies macro inclusion file or directry
+                  name. If INCLIB option is not used, file or directry name
+                  assumes default value.
+                  ( For MS DOS )
+                  1. default   Directry name is the current directry. 
+                    ".INC" is added to it to make a full file name, i.e.,
+                       file  = .\<<macro name>>.INC
+                  2. <<directry name>>    In this case, 
+                       file  = <<directry name>>\<<macro name>>.INC
+                    Only an identifier is allowed for this type of
+                    file specification.
+                  3. '<<directry name>>'  Any directry name can be
+                    specified by giving directry name as a character
+                    string.
+                   ( For main frame )
+                  4. default   File name is FPLLIB.INCL, i.e.,
+                       file  = FPLLIB.INCL(<<macro name>>)
+                  5. <<file name>>    In this case, 
+                       file  = <<file name>>(<<macro name>>)
+                    Only an identifier is allowed for this type of
+                    file specification.
+                  6. '<<file name>>'  Any directry name can be
+                    specified by giving directry name as a character
+                    string.
+
+<declaration part>
+                 := <<declaration statement>>
+                  ! <declaration part> ; <<declaration statement>>
+         ex.
+         IMPLICIT INTEGER * 4 (A-Z)
+         INTEGER * 4    --
+         N,      --       CURRENT ROW OF THE QUEEN.
+         NS,     --       SIZE OF THE BOARD (DEFAULT  8).
+         TSOL,   --       TOTAL NUMBER OF SOLUTIONS (DEFAULT 10).
+         POS(20); /       COLUMN POSITION OF THE QUEEN IN EACH ROW.
+         INTEGER  IQ9999, IQ9998(0:300); /  stack of the return address
+         DATA     IQ9999 /0/;            /  initial pointer
+
+<block>          := <statement list> ; END
+
+<statement list> := <statement> ! <statement list> ; <statement>
+
+<local procedures>
+                 := <procedure> ! <local procedures> ; <procedure>
+
+<procedure>      := PROCEDURE <procedure name> [ ; RECURSIVE ! null ] ;
+                    <block>
+
+         note     "RECURSIVE" should be added for a procedure which
+                  may be called recursively. Since the procedure is
+                  parameterless, a user is entirely responsible for the
+                  generation control of the variables.
+                  Return address of the procedure call is stacked in
+                  an integer array IQ9998 and stack pointer name is
+                  IQ9999. Thus a user must provide those variables as
+
+                  INTEGER   IQ9999, IQ9998(300)
+                  in each subprogram if it contains a recursive internal
+                  procedure or in a common block as
+
+                  INTEGER  IQ9999, IQ9998(1000)
+                  COMMON /RECURS/ IQ9999, IQ9998
+
+<statement>      := <<FORTRAN statement which does not start with
+                     the reserved words of FPL90 with or without a
+                     statement number ( at most three digits )>>
+                  ! <if statement>
+                  ! <for statement>
+                  ! <while statement>
+                  ! <until statement>
+                  ! <exec statement>
+                  ! <exit statement>
+                  ! <read-write statement>
+                  ! <list statement>
+                  ! <put statement>
+                  ! <list specification>
+                  ! <fortran statement>
+                  ! <do block>
+                  ! <do for block>
+                  ! <do while block>
+                  ! <do until block>
+                  ! <do case arithmetic block>
+                  ! <do case character block>
+                  ! <do case logical block>
+                  ! <do fortran block>
+                  ! <variable modification>
+
+         note     List of FPL90 reserved word
+                  DO,      IF,      END,     FOR,     PUT,
+                  ELSE,    EXEC,    EXIT,    LIST,    THEN,
+                  BEGIN,   WHILE,   UNTIL,   BINARY,  FORMAT
+                  FORTRAN, PROCESS
+
+<logical expression>
+                  := <<fortran logical expression>>
+                   ! <<fortran logical expression in which .EQ.,
+                     .GT.,.LT., .NE., .GE., .LE., .NOT., .AND., AND
+                     .OR. are replaced by =, >, <, ^=, >=, <=,
+                     ^, & and symbol "!" respectively>>
+
+         ex.      One can write     A <= B ! X ^= Y instead of
+                               A .LE. B .OR. X .NE. Y
+
+<if statement>   := IF <logical expression>
+                    [ ; ! THEN ! ; THEN ] <statement>
+                    [ null ! ; ELSE <statement> ]
+
+         ex.  1   IF A > B                       ( ; default semicolon )
+                  THEN C = D                     ( ; default semicolon )
+                  ELSE C = E
+
+         ex.  2   IF A > B THEN C = D
+
+<for statement>  := FOR <<do loop specification>> ; <statement>
+
+         ex.      FOR I = 1, N ; A(I) =  0
+
+         note.    This statement is converted to a fortran DO-loop.
+                  A call to a internal procedure is not allowed in the
+                  statement part of a for-statement because a object
+                  code contains a go-to jump to a do-loop.
+
+<while statement>:= while <logical expression> ; <statement>
+
+         ex.      WHILE I < N ! ^ ERROR ;
+                  FORMAT READ:10 ERRFLAG = ERROR I, W ; ( I5,5E15.5)
+
+<until statement>:= until <logical expression> ; <statement>
+
+         ex.      UNTIL I >= N ; ( I = I + I; SUM = SUM + I )
+
+<exec statement> := EXEC <procedure name>
+
+         ex.      EXEC  SCAN ALL POSSIBLE CONFIGURATIONS
+
+<procedure name> := <<words written in capital letters and symbol "_"
+                      or words separated by a single blank>>
+
+         ex.  1   SCAN ALL POSSIBLE CONFIGURATIONS
+
+         ex.  2   SCAN_ALL_POSSIBLE_CONFIGURATIONS
+
+<exit statement> := EXIT [ null ! <statement> ]
+
+         note 1   EXIT causes the quitting of the execution of the
+                  current block. If it appears in the outermost block,
+                  the effect is euivalent to the RETURN statement, and
+                  the use of EXIT instead of RETURN is recommended.
+
+         note 2   An optional statement, if it exists, is executed
+                  before the exit from the current block.
+
+         note 3   The following two programs are similar, but give
+                  different program controls.
+
+                      program 1            program 2
+                   DO WHILE A           WHILE A
+                      .....             DO .....
+                      .....                .....
+                      IF X THEN EXIT       IF X THEN EXIT
+                      .....                .....
+                      END                  END
+                   H = .....            H = .....
+
+                  When the condition X is met, the control goes to the
+                  statement H = .... in program 1, whereas the condition
+                  A in the WHILE statement is tested in program 2.  If A
+                  is true, DO block is again executed in this case.
+
+         ex.      IF ERROR
+                  THEN  EXIT  ' ERROR OCCURED WHILE READING DATA '
+
+<read-write statement>
+                 := [ FORMAT ! BINARY ] [ READ ! WRITE ! PUNCH ]
+                    [ null ! : <<unit number>> ]
+                    [ null ! ENDFLAG = <<simple logical var. name>> ]
+                    [ null ! ERRFLAG = <<simple logical var. name>> ]
+                    [ null ! IOSTAT = <<simple character var. name>> ]
+                    <<input output list>>
+                    [ null ! ; ( <<format specification>> ) ]
+
+<list statement> := LIST [ null ! -1 ! -2 ! -3 ]  <statement>
+
+         note     Three printout units are provided for <put statement>.
+                  Their dd names are FT06F001, FT07F001 and FT08F001.
+                  The record sizes are 132, 80 and 132 respectively.
+                  Unit numbers can be specified by LIST ( or LIST-1 )
+                  LIST-2 and LIST-3 respectively. Unit specification is
+                  valid only in the following statement. After 
+                  execution of this statement, the outer specification
+                  is restored.  Default unit no. in the outermost
+                  block is 1. For example,
+                  
+                                     Printout Unit no.
+                PROGRAM MAIN1
+                BEGIN
+                   .....
+                   PUT .....               1   ( default unit )
+                   .....
+                   LIST-2  DO
+                      .....
+                      'xxxxx'              2
+                      PUT .....            2
+                      .....
+                      LIST   DO
+                         .....
+              a)         CALL SUB
+                         PUT .....         1
+                         'xxxxx'           1
+                         .....
+                         END
+              b)      CALL SUB
+                      .....
+                      PUT .....            2
+                      END
+                   PUT .....               1   ( default unit )
+                   .....
+                   END
+
+                SUBROUTINE SUB
+                BEGIN
+                   PUT .....               2  when called from a)
+                   .....                   1  when called from b)
+                   .....
+                   LIST-3 PUT .....        3
+                   .....
+                   END
+
+         ex.     LIST  CALL PRTHD ( TITLE )
+
+<do block>       := DO <block>
+
+         ex.      FOR I = 1, N ; A(I) =  0
+
+<do for block>   := DO FOR <<do loop specification>> ; <block>
+
+         ex.     DO FOR KR = 1, NS
+                    1L; 5X; '+'; FOR KC = 1, NS; '---+'
+                    1L; 5X; 'I';
+                    FOR KC = 1, NS
+                    IF POS(KR)=KC THEN ' Q I'; ELSE '   I'
+                    END
+
+<do while block> := DO WHILE <logical expression> ; <block>
+
+         ex.      DO WHILE  KX <= NS
+                     POS(1) = KX/2 + 1
+                     N      = 1
+                     EXEC   SCAN ALL POSITIONS IN THE NEXT ROW
+                     KX     = KX + 2
+                     END
+
+<do until block> := DO UNTIL <logical expression> ; <block>
+
+<do case arithmetic block>
+                 := DO CASE OF <<simple variable>> ;
+                    <arithmetic conditional statements> ;
+                    <do case ending>
+
+         ex.      DO CASE OF IITYP
+                     *  F1 = -FT              ; /  when IITYP < 2
+                     2: F1 =  FT              ; /  when IITYP = 2
+                     *  (F1 = -FT;  F2 =  FT) ; /  when IITYP > 2
+                     END OF DO CASE    ; / "OF DO CASE" after END is --
+                                            not processed
+
+<do case character block>
+                 := DO CASE OF <<variable>> ; CHARACTER ;
+                    <character conditional statements>;
+                    <do case ending>
+
+         ex.        DO CASE OF SYMB ; CHARACTER
+                     CHARACTER
+                    'DO ':  EXEC DO_X_STATEMENT
+                    'IF ':  DO
+                            NST = NST + 1
+                            CALL STACK (NST)
+                            *****
+                            *****
+                            END
+                     OTHERWISE EXEC SIMPLE_STATEMENT
+
+<do case logical block>
+                 := DO CASE LOGICAL
+                    <logical conditional statements> ;
+                    <do case ending>
+
+         ex.        DO CASE LOGICAL
+                       CHRSTR: DO CASE OF NCHAR ;/ when QHRSTR is true /
+                                  *  EXEC  SIMPLE_STATEMENT
+                                  2: DO CASE OF SYMB
+                                     *****
+                                  OTHERWISE DO CASE OF SYMB
+                                     *****
+                                     OTHERWISE EXEC SKIP_LINE
+                       QTSTR:  EXEC PUT_STRING ; / when QTSTR is true /
+                       INTSTR: DO  ***** END
+                       SYMB (1) = EXCSYM: EXEC EXEC_STATEMENT
+                       SYMB (1) = SEMC:  ( EXEC W_CONTINUE; CALL GETS )
+                       SYMB (1) = EQSYM: DO ***** END
+                       SYMB (1) = LPAR:  EXEC DO_X_STATEMENT
+                       OTHERWISE EXEC SKIP_LINE
+
+<do case ending> := [ END ! OTHERWISE <statement> ]
+
+         note     OTHERWISE means the following statement is executed
+                  when none of the conditions are satisfied in the
+                  conditional statements.
+
+         ex.     DO CASE OF K
+                    *         CALL SUB ;   /*      K < 3
+                    3:
+                    5:
+                    7:        CALL SUB1;   /*      K = 3,5 or 7
+                    *         CALL SUB2;   /*      7 < K < 11
+                    11:       CALL SUB3;   /*      K = 11
+                    OTHERWISE CALL SUB4;   /*      (K = 4 or 6 )
+                                           /*      or K > 11
+
+<arithmetic conditional statements>
+                 := <a. c. st's> <arithmetic conditional statement>
+
+<character conditional statements>
+                 := <c. c. st's> <character conditional statement>
+
+<logical conditional statements>
+                 := <l. c. st's> <logical conditional statement>
+
+<arithmetic conditional statement>
+                 := <arithmetic conditions> <statement>
+
+<character conditional statement>
+                 := <character conditions> <statement>
+
+<logical conditional statements>
+                 := <logical conditions> <statement>
+
+<arithmetic conditions>
+                 := [ * ! <<arithmetic expression>> : ]
+                  ! <arithmetic conditions> ;
+                    [ * ! <<arithmetic expression>> : ]
+
+         note     We show some examples of the conditions and their
+                  meanings.
+
+     arithmetic condition       meaning
+
+        *         the value of the variable ( var ) isgreater than the
+                  range specified in the previous arithmetic conditional
+                  statement ( max-prev ) and less than the range specifi
+                  specified in the following statement ( min-next ):
+                  i. e.  max-prev < var < min-next
+
+        3:        var = 3
+
+        3:; 7:    var = 3 or 7
+
+        * ; K+1:  max-prev < var <= K+1
+
+        7:; *     7 <= var < min-next
+
+<character conditions>
+                 := [ * ! <<variable>> : ! <<character constant>> : ]
+                  ! <character conditions> ;
+                    [ * ! <<variable>> : ! <<character constant>> : ]
+
+         note     The meaning of the character condition is almost the
+                  same as the arithmetic conditions. The character strin
+                  string is compared following the internal code of the
+                  machine. The variable to be compared should be an
+                  array of integer * 4 and the last column should
+                  contain the binary "zero".
+
+     character condition       meaning
+
+        *         the value of the variable ( var ) isgreater than the
+                  range specified in the previous character conditional
+                  statement ( max-prev ) and less than the range specifi
+                  specified in the following statement ( min-next ):
+                  i. e.  max-prev < var < min-next
+
+     'FORTRAN ':  var = 'FORTRAN '
+
+     'READ ':
+     'WRITE ':    var = 'READ ' or 'WRITE '
+
+     *
+     'WRITE ':    max-prev < var <=  'WRITE '
+
+     'WRITE ':
+     *            'WRITE ' <= var < min-next
+
+<logical conditions>
+                 := <logical expression> :
+                  ! <logical conditions> ; <logical expression> :
+
+         note     If two or more two logical expessions are specified,
+                  those conditions are "or" concatinated.
+
+     logical condition       meaning
+
+       I < K :            I .LT. K
+
+       J = K :
+       J = L :            J = K or L
+
+<list specification>
+                 := <<integer constant>> [ P ! L ! X ! C ]
+
+         note     P   for a new page
+                  L   for line feed
+                  X   for skipping columns from the current position
+                  C   for specifying the column position
+
+         ex.      1P  Eject a page
+                  3L  Feeding three lines ( two blank lines left )
+                  5X  Skip 5 columns. Already written text is untatched
+                  33C Set at the 33-th columns
+
+                  ( 1L )
+                  'abcd'; 10C; 'efgh'; 7C; PUT K I5; 6X; 'xyz'; 1L
+                    will print ( assuming K = 9999 )
+
+                 column   1234567890123456789012
+                         abcd    9999gh    xyz
+
+<put statement>  := [ PUT <<simple or array variable>> [ I ! C ]
+                       [ <<integer constant>> ! <<variable>> ] ]
+                   ! [ null ! PUT ] <<character constant>>
+
+         note     I   printing as a integer
+                  C   printing as a character string
+                  [ <<integer constant>> ! <<variable>> ]
+                      for the field length
+
+         ex.      PUT K I5    print K as an integer ( field size 5 )
+
+                  PUT SYMBOL C LENGTH
+                              print SYMBOL as a character string of
+                              length LENGTH
+
+                  '-----'     will print -----
+                  PUT '-----' will also print -----
+
+<variable modification>
+                 :=  = <<simple variable>>
+                     <<the rest of an arithmetic expression>>
+
+         note     This statement may be conveniently used to add /
+                  subtruct a certain number.
+
+         ex.      = ISTACK + 1  means  ISTACK = ISTACK + 1
+
+                  = K * 2       means  K      = K * 2
+
+<fortran statement>
+                 := FORTRAN
+                    <<any fortran statement with or without a statement
+                    number>>
+
+         ex.      FORTRAN WRITE (*,FMT='(10I5)') JJ
+
+                  FORTRAN 300  GO TO 310
+
+<do fortran block>
+                 := DO FORTRAN
+                    <<a group of any fortran statements separated by
+                      semicolon, with or without a statement number>>
+                    END
+
+         ex.       DO FORTRAN
+                     IF ( NDIM .EQ. 1 ) THEN
+                        SWGHT =  TR (1) * 2.0D0 ; GO TO 10
+                     ELSE IF ( NDIM .EQ. 2 ) THEN
+                        SWGHT =  TR(1) + TR(2)
+                        GO TO 20
+                        END IF
+                     EMIN =   0 ; EMAX = 100
+                     END
+
+
+   "DO" and ";END" pair in the above syntax may be replaced by
+the left and the right parentheses "(" and ")".
+
+
+         ex.        ( for I = 1, N;  A (I) = C * B (I); B (I) = 0.0D0)
+                    is euivalent to
+                       DO FOR I = 1, N
+                          A (I) = C * B (I)
+                          B (I) = 0.0D0
+                          END
+
+4.  Macro Substitutions
+
+<macro string definition>
+                 := %<macro identifier> <macro text> %;
+
+<macro identifier>
+                 := %<<identifier>>
+
+<macro text>     := <<a character string which contains no percent
+                    symbol exept used as a part of a macro identifier>>
+
+     Previously defined macro identifier in the text is replaced by the
+     corresponding macro text before processing.
+
+         ex. 1
+                  %%SUBJECT HE%             ; / macro definitions
+                  %%PREDICATE %VERB %COMPLEMENT.%
+                               / note that macro identifier appears --
+                                 in the macro text.
+                  %%VERB IS%
+                  %%COMPLEMENT A COMPOSER%
+
+                  '%SUBJECT %PREDICATE'        ; / text /
+
+                  %%VERB WILL BECOME%   ; / macro definition /
+
+                  '%SUBJECT %PREDICATE'        ; / text /
+
+           The above text is equivalent to
+
+                  'HE IS A COMPOSER.'          ;
+
+                  'HE WILL BECOME A COMPOSER.' ;
+
+         ex. 2
+                  %%STACK LEVEL = LEVEL + 1; ASTACK(LEVEL) =%
+                  %%UNSTACK = ASTACK(LEVEL); LEVEL = LEVEL - 1%
+                  %STACK BB
+                  CALL F(BB)
+                  XX %UNSTACK;
+
+           is equivalent to
+
+                  LEVEL = LEVEL + 1; ASTACK(LEVEL) =BB
+                  CALL F(BB)
+                  XX= ASTACK(LEVEL); LEVEL = LEVEL - 1
+
+
+5.  Sample Programs
+
+5.1  N-Queen Program
+
+   A sample FPL program is given here. The program solves N-queens
+   problem.
+   
+5.1.1  FPL source program
+  
+  process  headder nqueen
+  program nqueen
+
+  integer      --
+  n,           --  current row of the queen.
+  ns,          --  size of the board (default  8).
+  tsol,        --  total number of solutions (default 10).
+  pos(20),     --  column position of the queen in each row.
+  iq9999 /0/,  --  stack pointer for recursive call proc.
+  iq9998(0:300);/  stack for return address
+
+  begin
+   4c; 'enter board size and number of solutions: '; 1l
+   fortran read(*,*) ns,tsol
+   if  ns <= 1     then  ns = 8
+   if  ns > 20 then exit do 
+    'given board size ('; put ns i5 ;
+                  ' ) is too large. ( max = 20 )' ; end
+   if  tsol= 0     then  tsol = 10
+   else if tsol > ns then tsol = ns
+   3l;10c; put ns i3; '-queens problem'; 1l
+  isol = 0
+    kx =  1
+    while  kx <= ns
+    do
+      pos(1) = kx/2 + 1
+      n = 1
+      exec  scan all positions in the next row
+      = kx + 2
+      end
+    2l; for k=5,ns; '    '; '  end of program N-queen'
+    end
+
+   procedure scan all positions in the next row ; recursive
+   if isol >= tsol then exit
+     = n + 1
+     pos (n) = 0
+     until pos (n) = ns
+   do pos (n) = pos (n) + 1
+     kmax = n - 1
+   for k = 1, kmax
+   if pos(n) = pos(k) ! iabs (pos(n) - pos(k)) = n-k then exit
+   if n < ns
+   then  exec scan all positions in the next row
+   else  exec display chess board
+   end
+   = n - 1
+    end
+
+   procedure   display chess board
+    = isol + 1
+    3l; '   solution'; put isol i4; 1l
+    1l; '   +--'; for kc = 1, ns; '----'; '-+'
+      do for kr = 1, ns
+      1l; '   | +'; for kc = 1, ns; '---+'; ' |'
+      1l; '   | |';
+      for kc = 1, ns; if pos(kr)=kc then ' Q |'; else '   |'; ' |'
+     end
+      1l; '   | +'; for kc = 1, ns; '---+'; ' |'
+    1l; '   +--'; for kc = 1, ns; '----'; '-+'
+   end
+
+5.1.2 Compile source list
+
+    FPL90 compile list is given below.  Note the source indentation
+in the compile list.  The number in the first four column positions
+indicates corresponding card number of the object fortran code.
+
+
+-NQUEEN-               FPL V(LAHEY286 11/14/89) OS/2-RMF 89-11-14 P  1
+      process  headder nqueen
+    1 program nqueen
+ 
+      integer      --
+    3 n,           --  current row of the queen.
+      ns,          --  size of the board (default  8).
+      tsol,        --  total number of solutions (default 10).
+      pos(20),     --  column position of the queen in each row.
+      iq9999 /0/,  --  stack pointer for recursive call proc.
+      iq9998(0:300);/  stack for return address
+ 
+    3 begin
+    5    4c; 'enter board size and number of solutions: '; 1l
+    7    fortran read(*,*) ns,tsol
+    9    if  ns <= 1     then  ns = 8
+   11    if  ns > 20 then exit do
+   12       'given board size ('; put ns i5 ;
+   14       ' ) is too large. ( max = 20 )' ; end
+   16    if  tsol= 0     then  tsol = 10
+   18    else if tsol > ns then tsol = ns
+   22    3l;10c; put ns i3; '-queens problem'; 1l
+   27    isol = 0
+   28    kx =  1
+   29    while  kx <= ns
+   30    do
+   30       pos(1) = kx/2 + 1
+   31       n = 1
+   32       exec  scan all positions in the next row
+   34       = kx + 2
+   34       end
+   36    2l; for k=5,ns; '    '; '  end of program N-queen'
+   40    end
+ 
+   43 procedure scan all positions in the next row ; recursive
+   46    if isol >= tsol then exit
+   48    = n + 1
+   49    pos (n) = 0
+   51    until pos (n) = ns
+   52    do pos (n) = pos (n) + 1
+   53       kmax = n - 1
+   54       for k = 1, kmax
+   55       if pos(n) = pos(k) ! iabs (pos(n) - pos(k)) = n-k then exit
+   60       if n < ns
+   60       then  exec scan all positions in the next row
+   63       else  exec display chess board
+   67       end
+   69    = n - 1
+   69    end
+ 
+   73 procedure   display chess board
+   74    = isol + 1
+   75    3l; '   solution'; put isol i4; 1l
+   79    1l; '   +--'; for kc = 1, ns; '----'; '-+'
+   85    do for kr = 1, ns
+   86       1l; '   | +'; for kc = 1, ns; '---+'; ' |'
+   92       1l; '   | |';
+   94       for kc = 1, ns; if pos(kr)=kc then ' Q |'; else '   |'; ' |'
+  101       end
+  
+-NQUEEN-              FPL V(LAHEY286 11/14/89) OS/2-RMF 89-11-14 P  2
+ 
+  103    1l; '   | +'; for kc = 1, ns; '---+'; ' |'
+  109    1l; '   +--'; for kc = 1, ns; '----'; '-+'
+  114    end
+  114
+                 # OF CALLS     PROCEDURE NAME
+ 
+                       1        DISPLAY_CHESS_BOARD
+                       2        SCAN_ALL_POSITIONS_IN_THE_NEXT_ROW
+
+5.1.3 Output list 
+ 
+   enter board size and number of solutions:      8  3
+ 
+                      note. 8 and 3 are user input
+ 
+           8-queens problem
+ 
+ 
+ 
+   solution   1
+ 
+   +-----------------------------------+
+   | +---+---+---+---+---+---+---+---+ |
+   | | Q |   |   |   |   |   |   |   | |
+   | +---+---+---+---+---+---+---+---+ |
+   | |   |   |   |   | Q |   |   |   | |
+   | +---+---+---+---+---+---+---+---+ |
+   | |   |   |   |   |   |   |   | Q | |
+   | +---+---+---+---+---+---+---+---+ |
+   | |   |   |   |   |   | Q |   |   | |
+   | +---+---+---+---+---+---+---+---+ |
+   | |   |   | Q |   |   |   |   |   | |
+   | +---+---+---+---+---+---+---+---+ |
+   | |   |   |   |   |   |   | Q |   | |
+   | +---+---+---+---+---+---+---+---+ |
+   | |   | Q |   |   |   |   |   |   | |
+   | +---+---+---+---+---+---+---+---+ |
+   | |   |   |   | Q |   |   |   |   | |
+   | +---+---+---+---+---+---+---+---+ |
+   +-----------------------------------+
+ 
+ 
+   solution   2
+ 
+   +-----------------------------------+
+   | +---+---+---+---+---+---+---+---+ |
+   | | Q |   |   |   |   |   |   |   | |
+   | +---+---+---+---+---+---+---+---+ |
+   | |   |   |   |   |   | Q |   |   | |
+   | +---+---+---+---+---+---+---+---+ |
+   | |   |   |   |   |   |   |   | Q | |
+   | +---+---+---+---+---+---+---+---+ |
+   | |   |   | Q |   |   |   |   |   | |
+   | +---+---+---+---+---+---+---+---+ |
+   | |   |   |   |   |   |   | Q |   | |
+   | +---+---+---+---+---+---+---+---+ |
+   | |   |   |   | Q |   |   |   |   | |
+   | +---+---+---+---+---+---+---+---+ |
+   | |   | Q |   |   |   |   |   |   | |
+   | +---+---+---+---+---+---+---+---+ |
+   | |   |   |   |   | Q |   |   |   | |
+   | +---+---+---+---+---+---+---+---+ |
+   +-----------------------------------+
+ 
+ 
+   solution   3
+ 
+   +-----------------------------------+
+   | +---+---+---+---+---+---+---+---+ |
+   | | Q |   |   |   |   |   |   |   | |
+   | +---+---+---+---+---+---+---+---+ |
+   | |   |   |   |   |   |   | Q |   | |
+   | +---+---+---+---+---+---+---+---+ |
+   | |   |   |   | Q |   |   |   |   | |
+   | +---+---+---+---+---+---+---+---+ |
+   | |   |   |   |   |   | Q |   |   | |
+   | +---+---+---+---+---+---+---+---+ |
+   | |   |   |   |   |   |   |   | Q | |
+   | +---+---+---+---+---+---+---+---+ |
+   | |   | Q |   |   |   |   |   |   | |
+   | +---+---+---+---+---+---+---+---+ |
+   | |   |   |   |   | Q |   |   |   | |
+   | +---+---+---+---+---+---+---+---+ |
+   | |   |   | Q |   |   |   |   |   | |
+   | +---+---+---+---+---+---+---+---+ |
+   +-----------------------------------+
+ 
+                  end of program N-queen
+
+5.2  FPL90 Program
+
+    Source program of FPL90 itself is a good sample program of FPL90.
+    A user can easily modify or extend the syntax of FPL according the
+    individual need.
+
+6.  Contents of FPL diskette.  
+
+    FPL diskette contains the following members under directory FPL.
+
+     fpl90.fpl          fpl90 source program
+     fpl90.f            fpl90 in FORTRAN
+     fpl90lib.f         fpl90 library in FORTRAN
+     iqtime.c           fpl90 library in C

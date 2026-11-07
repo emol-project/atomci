@@ -1,0 +1,11 @@
+      common/comstr/LIJB,LIJBU,WT(2048)
+      common/comstr/KMT(2048),I1T(2048),I2T(2048),I3T(2048),I4T(2048)
+      common/comstr/LTRIX,LTRIXU,ISQN(32768)
+      common/comstr/NIJX,NIJXU,INDEXI(16384),INDEXJ(16384)
+      common/comstr/LISL,LISLU,IGCD(2048),ISCD(2048)
+      integer * 4   LIJB,LIJBU
+      integer * 4   KMT,I1T,I2T,I3T,I4T
+      integer * 4   LTRIX,LTRIXU,ISQN
+      integer * 4   NIJX,NIJXU,INDEXI,INDEXJ
+      integer * 4   LISL,LISLU,IGCD,ISCD
+      real * 8      WT

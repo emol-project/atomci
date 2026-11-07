@@ -1,0 +1,29 @@
+/**********************************************************************
+/*
+/*  (c) COPYRIGHT FUKASHI SASAKI,  MASAHIRO SEKIYA, TAKESHI NORO,
+/*       KAZUMASA OHTSUKI, and YOU OSANAI,
+/*       1990-2003.
+/*
+/*  PERMISSION IS GRANTED TO USE, COPY, MODIFY, AND REDISTRIBUTE THIS
+/*  PROGRAM AND ITS DOCUMENTATION, IN SOURCE OR BINARY FORM, FOR
+/*  NON-COMMERCIAL RESEARCH AND EDUCATIONAL PURPOSES.  IT MAY NOT BE
+/*  SOLD, LICENSED FOR A FEE, INCLUDED IN A COMMERCIAL PRODUCT, OR
+/*  OTHERWISE COMMERCIALLY EXPLOITED.  FULL TERMS: LEGENDS.TXT.
+/*
+/*  ANY PUBLICATION BASED UPON RESULTS OBTAINED FROM THIS MATERIAL
+/*  MUST INCLUDE THE FOLLOWING ATTRIBUTION:
+/*
+/*       THIS WORK IS BASED, IN PART, ON RESULTS FROM THE
+/*       ATOMCI PACKAGE.
+/*
+/*       and refer to the following papers:
+/*
+/*       (a) F. Sasaki, Int. J. Quantum Chem. Vol.8, pp.605 (1974);
+/*       (b) F. Sasaki, M. Sekiya, T. Noro, K. Ohtsuki, and Y. Osanai,
+/*          "Non--Relativistic Configuration Interaction
+/*            Calculations for Many-Electron Atoms: ATOMCI",
+/*            pp.163--219 : Methods and Techniques in
+/*            Computational Chemistry in METECC-94
+/*            edited by E. Clementi (ETEF, Cagliari, 1993).
+/*
+/**********************************************************************

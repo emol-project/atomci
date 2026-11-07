@@ -1,0 +1,55 @@
+   PROCEDURE ERROR_INFORMATION
+      RTNCD = ERRCD ;
+      %ERMSG
+      DO CASE OF ERRCD
+         8001 :
+         8002 : ( ' === INCONSISTENCY: FILE UNIT  NFCIS AND NFPTS > '
+                   PUT NFCIS  I4 ;  PUT NFPTS I4 ;  1L )
+         8111 :
+         8112 :
+         8113 :
+         8114 :
+         8115 : ( ' === IO ERROR IN READING FROM NFCIS ' ;
+                  PUT NFCIS I4 ; 1L )
+         8121 :
+         8122 :
+         8123 :
+         8124 :
+         8125 : ( ' === EOF DETECTED IN READING FROM NFCIS ' ;
+                  PUT NFCIS I4 ; 1L )
+         8131 : ( ' === CAN NOT READ REFERENCE CSF === ' ; 1L )
+         8132 : ( ' === INCONSISTENCY: DATA READ FROM NFCIS ' ;
+                  PUT NFCIS I4 ; 1L )
+         8201 :
+         8202 :
+         8203 : ( ' === INCONSISTENCY: DATA READ FROM NFPTB  ' ;
+                  PUT NFPTB I4 ; 1L )
+         8211 : ( ' === IO ERROR IN READING FROM NFPTB ' ;
+                  PUT NFPTB I4 ; 1L )
+         8301 :
+         8302 :
+         8303 :
+         8304 :
+         8305 :
+         8306 : ( ' === INCONSISTENCY: DATA READ FROM NFPTB  ' ;
+                  PUT NFPTB I4 ; 1L )
+         8310 :
+         8311 :
+         8312 :
+         8313 :
+         8314 : ( ' === IO ERROR IN READING FROM NFPTB ' ;
+                  PUT NFPTB I4 ; 1L )
+         8321 :
+         8322 :
+         8323 : ( ' === INCONSISTENCY: DATA READ FROM NFPTH2 ' ;
+                  PUT NFPTO I4 ; 1L )
+         8330 : ( ' === IO ERROR IN READING FROM NFPTH1 ' ;
+                  PUT NFPTD I4 ; 1L )
+         8331 :
+         8332 :
+         8333 :
+         8334 :
+         8335 : ( ' === IO ERROR IN READING FROM NFPTH2 ' ;
+                  PUT NFPTO I4 ; 1L )
+         OTHERWISE ( ' == ERROR ERROR == ' )
+      END

@@ -1,0 +1,610 @@
+ %%subname wfgens%
+ process  no list file '%subname.f'
+ %%proc procedure %proc_name; = msglvl + 1;
+         errmsg(msglvl) = '%proc_name';%
+  
+ %%proc_end = msglvl - 1; end;%
+
+   subroutine %subname (  --
+      irps,name,lrps,nfta,nftf,npflg,smaxs,rmaxs,  --
+      ispin,iorb,ipar,itnel,nrnfg,nref,mxkrps, mxtlr, irtncd )
+
+      parameter (kbasis=150)
+
+      %update 
+      %param
+
+    / declarations ( including save statements )
+
+      implicit integer ( a-z )
+      %comcfp
+      external ior,isp
+      external lcoda
+      character * 1 lcoda 
+      logical  nrpflg
+      real t
+      integer*4 tin,tout
+      integer   * 4 sdci
+      integer nwsq(kbasis)
+      character * 1 lrep(kbasis)
+      integer irep(kbasis)
+      dimension name(30),     fshl(20)
+      dimension ssmin(10), ssmax(10), srmin(10), srmax(10)
+      dimension nel(10),spin(10),nrp(10),smin(10),smax(10),rmin(10),--
+        rmax(10),ngrs(30,10)
+      dimension nwth(kbasis)
+      dimension is(11),ir(11),ils(10),igs(10),ilr(10),igr(10)
+      dimension  iq(10),iqsd(10),iqsdt(10)
+      dimension nwen(10),nwesl(10)  ,irps(lrps)
+      dimension ingrs(11) ,nweq(10), ngrsp(11)
+      integer*2  ns,nwen,nweq,nwesl ,irps,krps,nel
+      dimension nwtn(kbasis),nwtc(20)
+      dimension nrs(10)
+      dimension elnta(10)
+      dimension namv(20)
+      dimension itrps(10)
+      equivalence (nel(1),nweq(1))
+      character * 1  lett, tlett
+      character * 80 errmsg (10), wrnmsg, snam(20)
+      logical   warnfg, assgnd
+   / Error detected by msekiya at Aug 27 1994
+   /  integer iq9998(300)
+      integer iq9998(0:300)
+      save
+        
+    / data statements
+
+      data n0    /0/
+      data is(1),ir(1)/1,1/
+      data ingrs(1)/0/
+      data byt/256/
+
+   begin
+
+      sbn=0
+      elecn=0
+      erttl=0
+      mxkrps = 1
+      mxtlr  = 0
+      sdci = nrnfg
+      nrpflg = .false.
+      call clockm(tin)
+      /    do for i=1,kbasis
+         /    if(i.le.20) then  fshl(i)=blank
+         /    nwtn(i)=blank
+         /    end
+      ispp=0
+      irprnt=1
+      if(npflg.le.1) then  irprnt=0
+      if(npflg.ge.5) then  ispp=1
+      rmins=1
+      smins=1
+      rewind nfta
+      call setcfp (nftf)
+      if (ispp.gt.0) 
+      then format write iname,ibel,icnn,ilfn,icmtn,icdx, --
+         immint, ilstad
+         ('0',18a4/'  ibel ',i10,'  icnn ',i10,'  ilfn ',i10 / --
+          '0',18i6/'0',18i6)
+      j=isptst(ispp)
+      call irdset(irprnt)
+      call readia ( ntmp, lett )
+      if lett = 'd' ! lett = 'D' 
+      then do
+         call dspcfp ( nftf )
+         call newcd
+         call readia ( ntmp, lett )
+         end
+
+      nwt=0;        /  read coupling order of shells
+      /  nwth(i): LSQ-id for singlet-S-singlet state in the upper 2 bytes
+      /           and 0 for the lower 2 bytes, that means LS-id of the vacuum
+      /           state of the i-th shell
+      /  nwtn(i): principal quantum number in the upper half, l-value stored
+      /           in the lower half as multiplicity, ie, 2l+1. 
+      do while lett = ','
+         = nwt + 1
+         exec  read shell
+         nwth(nwt)=lsqn(lf,lf+1,1)*byt
+         nwtn(nwt)=lf+byt*nsn
+         end
+
+
+      call newcd;  /  read filled shells by default
+      /  fshl(i): the same as nwtn, but for the i-th "filled shell" by default
+      /      i.e, principal quantum number in the upper half, l-value stored
+      /           in the lower half as multiplicity. 
+      /  elecn:   total number of electrons in the closed shells by default
+      call readia (ntmp, lett)
+      nwf = 0
+      elecn = 0
+      do while lett = ','
+         = nwf + 1
+         exec  read shell
+         elecn=elecn+2*lf
+         fshl(nwf)=lf+byt*nsn
+         end
+
+      / call newcd; / MC has no lf/cr in between   fort.8 file !!! sas
+      / read orbital sequence -- coupling sequence correspondence
+      /  nwsq(i): the i-th shell in the coupling sequence is 
+      /           nwsq(i)-th orbital within the shells that have the same 
+      /           l-value
+      /  caution: this input is optional         
+      call readia (ntmp, lett)
+      j = 0
+      do while lett = ','
+         = j + 1
+         nwsq(j)= ntmp
+         call readia (ntmp, lett)
+         end
+
+      j=1; /  set  nwtc and nwth
+      do for i=1,nwt
+         if(j.le.nwf) & (nwtn(i  ).eq.fshl(j)) 
+         then do
+            nwtc(j)=i
+            j=j+1
+            nwth(i  )=nwth(i  )+2*mod(nwtn(i),byt)
+            end
+         end
+
+      do for i = 1, nwt
+         irep (i) = nwtn (i) / byt
+         lrep (i) = lcoda ( mod ( nwtn (i), byt ) )
+         end
+
+      format write (irep(i),lrep(i),i=1,nwt)
+        (/ ' coupling sequence of shells'/(1x,15(i3,a1)))
+
+      do for j = 1, nwf
+         i = nwtc (j)
+         irep (j) = nwtn (i) / byt
+         lrep (j) = lcoda ( mod ( nwtn (i), byt ) )
+         end
+
+      format write (irep(i),lrep(i),i=1,nwf)
+         (/ ' default closed shells'/(1x,15(i3,a1)))
+      if ( nwsq(1) .gt. 0 ) then format write  (nwsq(i),i=1,nwt)
+           (/' orbital sequence '/(1x,15i4))
+      if ( nwsq(1) .eq. 0 ) then  format write --
+           ' orbital sequence is default, i. e. the same as ', --
+           'the coupling sequence'
+        (/,a,a)
+
+      write(nfta) name,nwt,nwf,ispin,iorb,ipar,itnel,(nwtn(i),i=1,nwt),--
+         (nwtc(i),i=1,nwf), n0, (nwsq(i),i=1,nwt), sdci, lrps
+      write(nfta) iname,ibel,icnn,ilfn,icmtn,icdx,immint,ilstad
+      format write iname
+          (/' cfp table is taken from '/ 1x,18a4 / )
+
+      call newcd
+      itype = 0
+      iconf=0
+      int=0
+      itstv=0
+      nref = 0
+
+      call readia (ntmp, lett)
+      do until lett = ')' & sdci = 0
+         if lett = ')'  then do; / deliminater for ref & SD spaces
+            nref = itstv
+            nrpflg = .true.
+            sdci = 0
+            call readia (ntmp, lett)
+            end
+         else if lett ^= ',' then  exec  symbol value assignment
+         else do  exec  configuration specification
+            exec  configuration generation
+            end
+         end
+      write (nfta) n0,n0,n0
+      write (nfta) mxkrps
+      rewind nfta
+      format write   itstv,itype,int
+        (/' csf summary:', --
+         /     '  number of configurations:    ', i17, --
+         /     '  number of configuration types:',i16, --
+         /     '  core storage for csf (i*2): ',  i18)
+      call newcd
+      if(erttl.ne.0) then  format  write  erttl
+         (' total error in stgen ',i7,/ --
+        ' following steps will not run.     ***** error *****')
+      call clockm(tout)
+      t=float(tout-tin)/1000.
+      format write  t;(/' ',33('-'),' stgen  used time =',f10.2,' sec')
+      irtncd = erttl
+      end 
+
+
+   %%proc_name read shell% %proc
+         nsn = ntmp
+         call readia(lf,lett)
+         call dcoda (lett, lf)
+         if lf = 0 then exec  error
+         call readia (ntmp, lett)
+         %proc_end
+
+   procedure error 
+         write (6,*)  ' >> error in "wfgen.fpl" >>'
+         format write  '    proc: ',errmsg(msglvl); (a,a)
+         = erttl + 1
+         end
+
+   %%proc_name symbol value assignment %   %proc
+
+      assgnd = .false. 
+      do for j=1,sbn
+         if(snam(j).eq.lett) then exit assgnd = .true.
+         end
+      call readia (ntmp, tlett)
+      if tlett ^= '=' then exec  error
+      call readia (ntmp, tlett)
+      if tlett ^= ',' then exec  error
+
+      if ^assgnd then do
+         = sbn + 1
+         if sbn > 20 then do 
+            = sbn - 1
+            exec  error
+            end
+         j = sbn
+         end
+      namv (j) = ntmp
+      snam (j) = lett
+      call readia (ntmp,lett)
+      %proc_end
+
+
+   %%proc_name configuration specification%   %proc
+      
+      do for k=1,10; / set upper limits of intermediate angular momentum
+         ssmin(k)=1; ssmax(k)=113;
+         srmin(k)=1; srmax(k)=113;
+         smin(k)=smins; rmin(k)=rmins;
+         smax(k)=smaxs; rmax(k)=rmaxs;
+         end
+
+      parn=0
+      elnn=elecn
+      ns = 0;  / ns-th shell specification
+
+      do while lett ^= ')'; /  means "not" end of configuration spec.
+         = ns + 1;  / ns-th shell specification
+         exec  shell specification
+         end
+      call readia (ntmp,lett)
+      %proc_end
+
+
+   %%proc_name shell specification%   %proc
+      
+      j = 0;  / initialize list of principal quantum numbers
+      do while lett = ','; /  means "not" end of q.n.list
+         = j + 1
+         ngrs(j,ns)=ntmp
+         call readia (ntmp,lett)
+         end
+      nrs(ns)=j
+     
+      / shell type
+      call dcoda (lett, ntmp)
+      if ntmp = 0  then  exec error; / not one of "s,p,d,... etc"
+      nrp(ns)= ntmp
+
+      / check *
+      call readia (ntmp,lett)
+      if lett ^= '*' then  exec error;
+
+      / electron occupation number
+      call readia (ntmp,lett)
+      /    given by simple integer
+      if lett = ',' then do
+         nel (ns) = ntmp
+         call readia (ntmp,lett)
+         end
+      /    given by "A + 2" , "b - 3" type format
+      else do
+         assgnd = .false.
+         do for ku = 1, sbn
+            if lett = snam(ku) then exit assgnd = .true.
+            end
+         if ^assgnd then exec error
+         else do
+            nel(ns) = namv (ku)
+            call readia (ntmp,lett)
+            if lett = '+' ! lett = '-' then do
+               call readia (ntmp,tlett)
+               if tlett ^= ',' then exec error
+               if      lett = '+' then nel(ns) = namv (ku) + ntmp
+               else if lett = '-' then nel(ns) = namv (ku) - ntmp
+               call readia(ntmp,lett)
+               end
+            end
+         end
+
+      /  set parity and number of electrons
+      parn=parn+nel(ns)*(mod(nrp(ns),4)-1)/2
+      elnn=elnn+nel(ns)
+
+      /  read additional specifications if any
+      /  readia (ntmp,lett) should not be called here,
+      /  because already a letter/an integer is read in
+      do while lett ^= ')' 
+         if lett ^= '#' then do
+            if lett = ',' then exec intermediate spin range
+            else exec intermediate orbital angular momentum range
+            end
+         else do
+            call readia (ntmp,lett)
+            if lett = ',' then exec shell spin range
+            else exec shell orbital angular momentum range
+            end
+         end
+      call readia (ntmp,lett)
+      %proc_end
+
+   %%proc_name intermediate spin range%   %proc
+      smin(ns)=ntmp
+      smax(ns)=ntmp
+      call readia (ntmp,lett)
+      if( lett = '-' ) then do
+         call readia (ntmp,lett)
+         // revised by msekiya at 2003/09/02
+         // if lett ^= ',' then exec error
+         smax(ns)= ntmp
+         call readia (ntmp,lett)
+         end
+      %proc_end
+
+   %%proc_name intermediate orbital angular momentum range%   %proc
+      call dcoda (lett, ntmp)
+      if ntmp = 0 then exec error 
+      rmin(ns)=ntmp
+      rmax(ns)=ntmp
+      call readia (ntmp,lett)
+      if( lett = '-' ) then do
+         call readia (ntmp,lett)
+         // revised by msekiya at 2003/09/02
+         // if lett ^= ',' then exec error
+         call dcoda (lett, ntmp)
+         if ntmp = 0 then exec error 
+         rmax(ns)= ntmp
+         call readia (ntmp,lett)
+         end
+      %proc_end
+
+   %%proc_name shell spin range%   %proc
+      ssmin(ns)=ntmp
+      ssmax(ns)=ntmp
+      call readia (ntmp,lett)
+      if( lett = '-' ) then do
+         call readia (ntmp,lett)
+         // revised by msekiya at 2003/09/02
+         // if lett ^= ',' then exec error
+         ssmax(ns)= ntmp
+         call readia (ntmp,lett)
+         end
+      %proc_end
+
+   %%proc_name shell orbital angular momentum range%   %proc
+      call dcoda (lett, ntmp)
+      if ntmp = 0 then exec error 
+      srmin(ns)=ntmp
+      srmax(ns)=ntmp
+      call readia (ntmp,lett)
+      if( lett = '-' ) then do
+         call readia (ntmp,lett)
+         // revised by msekiya at 2003/09/02
+         // if lett ^= ',' then exec error
+         call dcoda (lett, ntmp)
+         if ntmp = 0 then exec error 
+         srmax(ns)= ntmp
+         call readia (ntmp,lett)
+         end
+      %proc_end
+
+   procedure  warning
+      write(6,*) ' >> subroutine wfgens: warning   '
+      write(6,*) wrnmsg
+      warnfg = .true.
+      end
+ 
+   %%proc_name configuration generation%     %proc
+      iconf=iconf+1
+      warnfg = .false.
+      wrnmsg = ' electron occupation number is out of range'
+      j = 0
+      do until j = ns
+         = j + 1
+         if(nel(j).gt.2*nrp(j).or.nel(j).lt.0) 
+         then exec warning
+         end
+      wrnmsg = ' parity does not match'
+      if(mod(parn,2).ne.ipar) then exec warning
+      if warnfg  then exit
+     
+      smin(ns)=ispin
+      smax(ns)=ispin
+      rmin(ns)=iorb
+      rmax(ns)=iorb
+
+      k = 0
+      do while k < ns
+         = k + 1
+         jmax=nrs(k)
+         lf=nrp(k)
+         l=1
+         j = 0
+         do while j < jmax
+            = j + 1
+            kt=lf+byt*ngrs(j,k)
+            do while  nwtn(l) ^= kt
+               l=l+1
+               if(l.gt.nwt) then  do
+                  exec error
+                  nrs(k)=nrs(k)-1
+                  end
+               end
+            /     9002 write(6,9003) j,k,ngrs(j,k)
+            / (' orbital seq invalid. j,k,ngrs(j,k) =',3i4,'** error **')
+            ngrs(j,k)=l
+            end
+         end
+      if(npflg.gt.4) then do
+         format write iconf,ns,(nel(i),i=1,ns)
+            ('0iconf =',i7,7x,'ns    =',i7,7x,'nel   =',10i7)
+         write(6,*) ' smin:',(smin(i),i=1,ns),' smax:',(smax(i),i=1,ns)
+         write(6,*) ' rmin:',(rmin(i),i=1,ns),' rmax:',(rmax(i),i=1,ns)
+         write(6,*) ' ssmin:',(ssmin(i),i=1,ns),--
+                    ' ssmax:',(ssmax(i),i=1,ns)
+         write(6,*) ' srmin:',(srmin(i),i=1,ns),--
+                    ' srmax:',(srmax(i),i=1,ns)
+         do for k=1,ns
+            km=nrs(k)
+            format  write k,km,(ngrs(i,k),i=1,km)
+            (' nrs(',i2,')=',i6,7x,'ngrs  =',10i7/(29x,10i7))
+            end
+         end
+
+      m=0
+      exec  search for the next shell
+      %proc_end
+
+
+   procedure  search for the next shell; recursive
+      =m+1
+      iq(m)=iabs(nel(m)-nrp(m))-1
+      do while iq(m).le.nrp(m)-1; /  sas    94-02-11
+         =iq(m)+2
+         spin(m)=nrp(m)-iq(m)+4
+         do while spin(m).ge.3
+            =spin(m)-2
+            ik=lsqn(nrp(m),iq(m),spin(m))
+            iqsd(m)=iconnt(4,ik)
+            iqsdt(m)=0
+            do while iqsdt(m).lt.iqsd(m)
+              =iqsdt(m)+1
+              imt=byt*lsqn(nrp(m),iq(m),spin(m))+iqsdt(m)
+              nwen(m)=imt
+              ims=isp(imt)
+              imr=ior(imt)
+              if   ims >= ssmin(m) & ims <= ssmax(m)  -- 
+                 & imr >= srmin(m) & imr <= srmax(m) then do
+                 ils(m)=iabs(is(m)-ims)+1
+                 igs(m)=is(m)+ims-1
+                 if(smin(m).gt.ils(m)) 
+                 then  ils(m)=ils(m)+((smin(m)-ils(m)+1)/2)*2
+                 if(smax(m).lt.igs(m))
+                 then  igs(m)=-(-igs(m)+((igs(m)-smax(m)+1)/2)*2)
+                 ilr(m)=max0(iabs(ir(m)-imr)+1,rmin(m))
+                 igr(m)=min0(ir(m)+imr-1,rmax(m))
+                 is(m+1)=ils(m)-2
+                 do while  is(m+1).le.igs(m)-2
+                    =is(m+1)+2
+                    ir(m+1)=ilr(m)-2
+                    do while  ir(m+1).le.igr(m)-2
+                       =ir(m+1)+2
+                       nwesl(m)=byt*is(m+1)+ir(m+1)
+
+                       if  m = ns 
+                       then  exec  list up configuration state functions
+                       else  exec  search for the next shell
+
+                       end
+                    end
+                 end
+              end
+            end
+         imt=nwen(m)
+         end
+      =m-1
+      end
+
+  procedure  list up configuration state functions
+      k=0
+      krps=0
+      iadrp=0
+      elnt=elnn
+      exec  list up for the next shell
+      if krps > 0  then do
+         exec write to tape
+         if ^nrpflg  then exec  write reference
+         end
+      end
+
+   procedure  list up for the next shell;  recursive
+      =k+1
+      ingrs(k)=0
+      do while ingrs (k) < nrs (k)
+         =ingrs(k  )+1
+         kt=ingrs(k)
+         ktu=ngrs(kt,k)
+         if  ktu > ngrsp(k) 
+         then do
+            ngrsp (k+1) =ktu
+            elnta(k)=mod(nwth(ktu),byt)
+            itrps(k)=ngrs(kt,k)
+            elnt=elnt-elnta(k)
+            if k = ns 
+            then do
+               if(elnt.eq.itnel) then do
+                  do for kta=1,ns
+                     iadrp=iadrp+1
+                     irps(iadrp)=itrps(kta)
+                     end
+                  krps=krps+1
+                  if (npflg.gt.4)
+                  then  format write krps,elnt,(itrps(kta),kta=1,ns)
+                     ('  ',i5,i5,2x,20i5)
+                  end
+               end
+            else  exec  list up for the next shell
+            elnt=elnt+elnta(k)
+            end
+         end
+      k=k-1
+      end
+
+   %%proc_name write to tape%   %proc
+      tlr=(3+krps)*ns+2
+      int=int+tlr
+      itstv=itstv+krps
+      iadrp=iadrp+ns
+      write(nfta) tlr,ns,krps,(nwen(i),i=1,ns),(nweq(i),i=1,ns), --
+        (nwesl(i),i=1,ns),(irps(i),i=1,iadrp)
+      if ( tlr  .gt. mxtlr  ) then  mxtlr  = tlr
+      if ( krps .gt. mxkrps ) then  mxkrps = krps
+      if ( krps .gt. 800 ) then exec error 
+      itype = itype + 1
+      %proc_end
+
+   procedure  write reference
+      do for  i = 1, ns
+         irep (i) = nwesl(i) / byt
+         i4temp   = nwesl(i)
+         lrep (i) = lcoda ( mod (i4temp, byt) )
+         end
+      if (sdci  .eq. 1) ! (npflg .ge. 2) then do
+         format write (nwen(i),nweq(i),irep(i),lrep(i),i=1,ns)
+           (10x, 4(z8,i4,i3,a1))
+         iadrp=0
+         ktu=itstv-krps
+         do for j=1,krps
+            ktu=ktu+1
+            do for i = 1, ns
+               iono = irps(iadrp + i)
+               irep (i) = nwtn (iono) / byt
+               lrep (i) = lcoda ( mod ( nwtn (iono) , byt ) )
+               end
+            format write  ktu,( irep (i), lrep (i), i = 1, ns )
+               (1x,i7,6x,14(i3,a1))
+            iadrp=iadrp+ns
+            end
+         write(6,*) '  '
+         end
+      else if (npflg .gt. 0)then  -- 
+      format  write itstv,krps, (nwen(i),nweq(i),irep(i),lrep(i),i=1,ns)
+         (i8,i4,1x,4(z7,2i3,a1)/13x,4(z7,2i3,a1)/13x,4(z7,2i3,a1))
+      end 
+

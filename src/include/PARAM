@@ -1,0 +1,11 @@
+  %%WORKCORE 430 000 002%
+  %%CLIMIT 500%
+  %%LLIMIT 20%
+  %%BASIS 150%
+  %%MCCSFS 150%
+  %%NUMBER 1%
+  %%L 2%
+  %%SPECIAL 3%
+  %%LIJB 800%
+  %%LTRI   %
+

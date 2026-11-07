@@ -1,0 +1,7 @@
+    /*  New files 
+    /*  use line number for error message
+    integer SYSINL,NCARD(5)
+    character * 80 fsname(5)
+    common /syscm1/sysinl,ncard
+    common /syscm2/fsname
+    /* end of sysinl */

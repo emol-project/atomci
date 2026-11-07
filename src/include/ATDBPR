@@ -1,0 +1,84 @@
+  PROCEDURE DEBUG_PRINT
+     DO FORTRAN
+        WRITE(6,*) ' ==       DEBUG OUTPUT IN SUB.ATPRNT       =='
+        WRITE(6,*) ' == GIVEN PARAMETERS ARE FOLLOWING         =='
+        WRITE(6,'(2X,''MKIND,NKIND,MSCHL       = '',4I5)') --
+        MKIND,NKIND,MSCHL
+        WRITE(6,'(2X,''MCONF,NCLET,MSCH7 = '',4I5)') --
+        MCONF,NCLET,MSCH7
+        WRITE(6,'(2X,''NPRTY = '',15I4)') (NPRTY(I),I=1,NKIND)
+        WRITE(6,'(2X,''MOCCN = '',15I4)') (MOCCN(I),I=1,NKIND)
+        WRITE(6,'(2X,''NORBT = '',15I4)') (NORBT(I),I=1,NKIND)
+        WRITE(6,'(2X,''NSCHL = '',15I4)') (NSCHL(I),I=1,NKIND)
+        WRITE(6,'(2X,''ANG   =  '',15(2X,A1,1X)') (ANG  (I),I=1,NCLET)
+        WRITE(6,'(2X,''CSCHL =  '',15(1X,A2,1X)') (CSCHL(I),I=1,MSCHL)
+        WRITE(6,'(2X,''NREFN,NSCON,NDCON       = '',3I5)')  --
+        NREFN,NSCON,NDCON
+        WRITE(6,'(/2X,''-TYPE-   '',15(2X,A1,1X)')          --
+        (ANG  (I),I=1,NKIND)
+        WRITE(6,'(2X,''NORTS = '',15I4)') (NORTS(1,I),I=1,NKIND)
+        WRITE(6,'(2X,''        '',15I4)') (NORTS(2,I),I=1,NKIND)
+        WRITE(6,'(/2X,''-TYPE-   '',15(2X,A1,1X)')          --
+        (ANG  (NSTOR(I)),I=1,MSCHL)
+        WRITE(6,'(2X,''-NAME-   '',15(1X,A2,1X)')           --
+        (CSCHL(I),I=1,MSCHL)
+        WRITE(6,'(2X,''NSTOR = '',15I4)') (NSTOR(I),I=1,MSCHL)
+        WRITE(6,'(2X,''MAXOC = '',15I4)') (MAXOC(I),I=1,MSCHL)
+        WRITE(6,'(2X,''NBORB = '',15I4)') (NBORB(1,I),I=1,MSCHL)
+        WRITE(6,'(2X,''        '',15I4)') (NBORB(2,I),I=1,MSCHL)
+        J=1
+        WRITE(6,'(/1X,''== READED REFERENCE CONFIGURATION =='')')
+        WRITE(6,'(/1X,''-TYPE-      NO.    '',15(2X,A1,1X)')  --
+        (ANG  (NSTOR(I)),I=1,MSCHL)
+        WRITE(6,'(1X,''-NAME-   '',10X,15(1X,A2,1X)')         --
+        (CSCHL(I),I=1,MSCHL)
+        WRITE(6,'(/1X,''NCONF = '',I5,5X,15I4)')              --
+        J,(NCONF(I,J),I=1,MSCHL)
+        END
+     FOR J = 2, NREFN
+     FORTRAN WRITE(6,'(1X,''        '',I5,5X,15I4)')            --
+     J,(NCONF(I,J),I=1,MSCHL)
+     JTOP = NREFN + 1
+     DO FORTRAN
+        WRITE(6,'(/1X,''== SINGLE EXCITED CONFIGURATION =='')')
+        WRITE(6,'(/1X,''-TYPE-         NO. '',15(2X,A1,1X)')  --
+        (ANG  (NSTOR(I)),I=1,MSCHL)
+        WRITE(6,'(1X,''-NAME-   '',10X,15(1X,A2,1X)')         --
+        (CSCHL(I),I=1,MSCHL)
+        WRITE(6,'(1X,''NCONF = '',I10,15I4)')                 --
+        JTOP,(NCONF(I,JTOP),I=1,MSCH7)
+        END
+     JTOP = JTOP + 1
+     DO FOR J = JTOP,NSCON
+        IF MOD(J,10) =  0
+        THEN DO FORTRAN
+           WRITE(6,'(/1X,''-TYPE-         NO. '',15(2X,A1,1X)') --
+           (ANG  (NSTOR(I)),I=1,MSCHL)
+           WRITE(6,'(1X,''-NAME-   '',10X,15(1X,A2,1X)')        --
+           (CSCHL(I),I=1,MSCHL)
+           END
+        FORTRAN WRITE(6,'(1X,''        '',I10,15I4)')  --
+        J,(NCONF(I,J),I=1,MSCH7)
+        END
+     J=NSCON+1
+     DO FORTRAN
+        WRITE(6,'(/1X,''== DOUBLE EXCITED CONFIGURATION =='')')
+        WRITE(6,'(/1X,''-TYPE-         NO. '',15(2X,A1,1X)')      --
+        (ANG  (NSTOR(I)),I=1,MSCHL)
+        WRITE(6,'(1X,''-NAME-   '',10X,15(1X,A2,1X)')             --
+        (CSCHL(I),I=1,MSCHL)
+        WRITE(6,'(1X,''NCONF = '',I10,15I4)')                     --
+        J,(NCONF(I,J),I=1,MSCH7)
+        END
+     JTOP=J+1
+     DO FOR J = JTOP, NDCON
+        IF MOD(J,10) =  0
+        THEN DO FORTRAN
+           WRITE(6,'(/1X,''-TYPE-         NO. '',15(2X,A1,1X)') --
+           (ANG  (NSTOR(I)),I=1,MSCHL)
+           WRITE(6,'(1X,''-NAME-   '',10X,15(1X,A2,1X)')        --
+           (CSCHL(I),I=1,MSCHL)
+           END
+        FORTRAN  WRITE(6,'(1X,''        '',I10,15I4)')          --
+        J,(NCONF(I,J),I=1,MSCH7)
+        END

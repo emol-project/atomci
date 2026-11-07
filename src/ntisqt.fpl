@@ -1,0 +1,210 @@
+   process  file 'ntisqt.f'
+   %param
+   %%SUBNAME NTISQT %
+   PROCESS   NO LIST      MAP    HEADER  %SUBNAME
+      SUBROUTINE %SUBNAME --
+                ( --
+                 --
+                 NPFLGX,NRFLGX,NFTCX)
+      %UPDATE
+      /*
+      /               CODED    BY M. SEKIYA  ON 1987-12-12  AT HUCC
+      /               CHANGED  BY TASHI      ON 1989-10-25  AT HUCC
+      /*
+      /*   FUNCTION : STORE INTEGRAL
+      /*   CALLED   : SMAT OR EXIJ
+      /*   CALLING  : <NONE>
+      /*
+
+      IMPLICIT REAL*8(A-H,O-Z)
+      %comstr
+      %comexp
+
+      INTEGER   * 4 ERRCD,RTNCD
+      INTEGER   * 4 IZERO
+      LOGICAL    IOERR
+ /    save NPFLG,NRFLG,NFTC
+      save
+      DATA          IOSTAT/0/
+      DATA          IZERO/0/
+      BEGIN
+         NPFLG = NPFLGX
+         NRFLG = NRFLGX
+         NFTC = NFTCX
+         EXEC X_NTISQT
+         /* changed by MAS 11/20/92 at HUCC
+         /EXIT
+         RETURN
+      /  ENTRY QSISQT(IWVAD)
+        /   EXEC X_QSISQT
+        /EXIT
+        /   RETURN
+      ENTRY ISQT(KM,I1,I2,I3,I4,INOE,WTX)
+         EXEC X_ISQT
+        /EXIT
+         RETURN
+      ENTRY STORE(NOE,N1OE,ITW,JTV)
+        /write (6,*)   ' store entered:'
+         EXEC X_STORE
+        /EXIT
+         RETURN
+      ENTRY STOREH(NOE0,RTNCD)
+        /write (6,*)   ' storh entered:'
+         IF NOEX ^= NOE0 THEN EXIT RTNCD = 9612
+         EXEC X_STOREH
+         RTNCD = ERRCD
+         /EXIT
+         RETURN
+      ENTRY NOETL
+         EXEC X_NOETL
+         /EXIT
+         RETURN
+      ENTRY STORD(ITW,JTV,NOE,N1OE)
+         EXEC X_STORD
+         END
+      PROCEDURE X_NTISQT
+         LTRIXU = 0 ; LTRI = 0 ; NIJ = 0 ; IOERR = .FALSE. ;
+         ICVA=0   ;      IOUNIT = 0 
+         IF NPFLG > 1 THEN ICVA = NPFLG
+         NOEX = 0 ;
+         / new unit number for mcscf
+         IOUNIT = NRFLG 
+         format write iounit ; (' >>>> MCFLAG ',2i4 )
+         /    END
+         /    PROCEDURE X_QSISQT
+         NOEMAX=0 ; NOMEL = 0  ; LTRIXU = 0 ;
+         END
+      PROCEDURE X_ISQT
+         IF INOE > LIJB THEN EXIT ERRCD = 9611
+         WT(INOE)=WTX ;      KMT(INOE)=KM
+         I1T(INOE)=I1 ;      I2T(INOE)=I2
+         I3T(INOE)=I3 ;      I4T(INOE)=I4
+         END
+      PROCEDURE X_STORE
+         NOEX = NOE ; N1OEX = N1OE
+         IF NOE = 0 THEN EXIT
+         NOMEL = NOMEL + 1   ; NIJ = NIJ + 1
+         IF N1OE > 0 THEN EXEC CALC INDEX_1EL
+         N2OE = NOE - N1OE
+         IF N2OE > 0 THEN EXEC CALC INDEX_2EL
+         IF ITW > JTV THEN --
+         ( INDEXI (NIJ) = ITW ; INDEXJ (NIJ) = JTV )
+         ELSE --
+         ( INDEXI (NIJ) = JTV ; INDEXJ (NIJ) = ITW )
+         LTRI   = LTRI + NOE
+	 /* modifications for mcscf
+         IF IOUNIT > 0 then  --
+         do 
+             FORMAT WRITE:IOUNIT   --
+             INDEXI(NIJ), INDEXJ(NIJ), N1OE, N2OE, NOE, --
+             ( IWVAD(I1T(i)),IWVAD(I2T(i)),IZERO,IZERO,IZERO, -- 
+                     wt(i),i=1,N1OE), -- 
+             ( IWVAD(I1T(i)),IWVAD(I2T(i)),IWVAD(I3T(i)),IWVAD(I4T(i)),--
+             kmt(i),wt(i),i=N1OE+1,N2OE+N1OE) 
+            ( 5i5,/, (10x,5i5,d25.16))
+             FORMAT WRITE:91   --
+             INDEXI(NIJ), INDEXJ(NIJ), N1OE, N2OE, NOE, --
+             ( IWVAD(I1T(i)),IWVAD(I2T(i)),IZERO,IZERO,IZERO, --
+                     wt(i),i=1,N1OE), -- 
+             ( IWVAD(I1T(i)),IWVAD(I2T(i)),IWVAD(I3T(i)),IWVAD(I4T(i)),--
+             kmt(i),wt(i),i=N1OE+1,N2OE+N1OE) 
+            ( 5i5,/, (10x,5i5,d25.16))
+            end ; / for TATEWAKI 
+         if LTRI > LTRIX - LIJB ! NIJ > NIJX -1 
+         then exec X_STOREH
+         END
+      PROCEDURE X_STOREH
+      ERRCD = 0
+      do
+         IF NOEX = 0 THEN EXIT
+         LTRIXU  = MAX0(LTRIXU, LTRI)
+         NOEMAX = MAX0(NOEMAX,NOEX)
+         IF LTRI ^= NIJ * NOEX  THEN ERRCD = 9613
+         IF LTRI > LTRIX THEN ERRCD = 9614
+         IF ERRCD > 0 THEN EXIT EXEC ERROR_INFORMATION
+         ITWX = INDEXI(1) ; JTVX = INDEXJ(1)
+         IF ITWX = JTVX THEN NII = 0 ; ELSE NII = NIJ
+        /write (6,*) ' storh: nftc,noex,ltri,nij,nii=' , --
+        /    nftc,noex,ltri,nij,nii
+         BINARY WRITE : NFTC ERRFLAG = IOERR IOSTAT = IOSTAT --
+            ITWX,JTVX,NOEX,N1OEX,N2OE,NIJ,NII,LTRI,  --
+            (WT(I),I=1,NOEX),     --
+            (ISQN(I),I=1,LTRI),  --
+            (INDEXI(I),I=1,NIJ), --
+            (INDEXJ(I),I=1,NII)
+         IF IOERR THEN EXIT (ERRCD = 9620; EXEC ERROR_INFORMATION)
+         /* KGN
+         IF ICVA > 2
+         THEN DO
+            FORMAT WRITE  --
+               ITWX,JTVX,NOEX,N1OEX,N2OE,NIJ,NII,LTRI
+             (' HIJ>', 2I6, '  NWT,N1,N2 >',3I4,--
+              '  NIJ>', 2I4,'  LTRI>',I8 )
+            IF ICVA = 2 THEN EXIT
+            FORMAT WRITE  (WT(I),I=1,NOEX)   ; ((2X,10E13.4/))
+            IF NII = 0 THEN FOR I = 1, NIJ ; INDEXI(I) = INDEXJ(I)
+            FORMAT WRITE  --
+               (' ',INDEXJ(I),INDEXI(I),I=1,NIJ)
+               ((6(a,' H (',I6,',',I6,' ) ')/))
+            FOR I = 1, NIJ ;
+            FORMAT WRITE --
+               (ISQN((I-1)*NOEX+J),J=1,NOEX) ; (5X,18I7,(/4X,18I7))
+            END
+         NIJ = 0 ; LTRI = 0
+         END
+         end
+      PROCEDURE X_NOETL
+         FORMAT WRITE   NOMEL, LIJB, NOEMAX, LTRIX, LTRIXU
+          (/ '   NON-ZERO MATRIX ELEMENTS     ', I11,              --
+           //'  LIJB (RESERVED):', I10, ',      ACTUALLY USED:',I7  --
+            /'  LTRI (RESERVED):', I10, ',      ACTUALLY USED:',I7//// )
+         END
+      PROCEDURE X_STORD
+         '  * IN THIS VERSION STORD WAS NOT USED * ' ; 1L
+         '  * PLEASE REPORT TO ATOMCI ISSUES     * ' ;
+         CALL ERSTOP('%SUBNAME')
+         /* W */
+         END
+      PROCEDURE CALC INDEX_1EL
+         FOR I=1,N1OE ;
+         DO
+            I1X=I1T(I) ; I2X=I2T(I) ;
+            call INT1AD (IWVAD(I1X),IWVAD(I2X), ISQN(LTRI + I))
+             / function name ISQIJ is replaced by INT1AD
+             /   address of one electron integral as the one-dimentional
+             /   array        SAS 94-01-16 
+            END
+         END
+      PROCEDURE CALC INDEX_2EL
+         FOR I=N1OE+1,NOE ;
+         DO
+            I1X=I1T(I) ; I2X=I2T(I) ;
+            I3X=I3T(I) ; I4X=I4T(I) ; KMTXI=KMT(I)
+            call INT2AD  --
+             (KMTXI,IWVAD(I1X),IWVAD(I2X),IWVAD(I3X),IWVAD(I4X), --
+              ISQN( LTRI + I   ))
+             / function name ISQTE is replaced by INT2AD
+             /   address of two electron integral as the one-dimentional
+             /   array        SAS 94-01-16 
+            END
+         END
+      PROCEDURE ERROR_INFORMATION
+         %ERMSG
+         DO CASE OF ERRCD
+         9611: ( ' === LIJB IS TOO SMALL !! '
+                 '   RESET LIJB MORE THAN ' ;
+                 PUT NOEMAX I8  ; 1L )
+         9612: ( ' === INCONSISTENCY: EMERGENCY SYOP !! ' )
+         9613:
+         9614: ( ' === LTRIX IS TOO SMALL !! '
+                 '   RESET LTRIX MORE THAN ' ;
+                 PUT LTRIX  I8  ; 1L
+                 ' === AND/OR               '
+                 '   RESET LIJB MORE THAN ' ;
+                 PUT LIJB  I8  ; ' OR ' ;
+                 PUT NOEMAX I8  ; 1L )
+         9620: ( ' === IO ERROR OCCURED IN WRITING NFEXE !! '
+                 '   IO STATUS = ' ; PUT IOSTAT    I4  ;
+                 '   UNIT # = ' ; PUT NFTC I4 ; 1L  )
+            END
+         END

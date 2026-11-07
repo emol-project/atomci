@@ -1,0 +1,123 @@
+ process no list file 'mcci.f'
+ %%subname mcci%
+ subroutine %subname --
+	    (nfee,   ncsf,  nolf,   not,   nbf,   lmax, nwsq, --
+	     jadr,   kadr,  coff, shoff,  --
+	     c,      xint,    h1, hh,   rtncd)
+  %param
+ implicit integer ( a- z ) 
+ / input 
+ integer   nfee, -- unit number for ee tape
+           nolf(not),-- L-repr (L + 1)    
+           nbf(lmax), -- 
+	   not,       -- Total number of Basis functions
+	   jadr(lmax,lmax,lmax*2), -- 
+	   kadr(lmax,lmax,lmax*2), -- 
+           coff(not),     --
+	   shoff(lmax)
+
+ real * 8  xint(*), --
+	   h1(*),   --
+	   hh(ncsf,ncsf),   --
+	   c(*)
+  
+ /out put 
+ integer   ncsf   -- number of CSFs
+
+ real * 8  em1,wt,out1,out2,out4
+
+ / work 
+ / real * 8  work(*)
+
+ / external 
+
+ integer   iadr -- function for integral address
+
+ / local 
+ logical eof,err
+ integer   nwsq(%basis)
+ begin 
+   rtncd = 0 
+   call zero(hh,ncsf*ncsf)
+   nwsq(1)=1; 
+   exec read_exp
+   end 
+ > read_exp
+    rewind nfee ; eof = .false. ;err=.false.
+    i = 1 ;
+    do until eof 
+       format  read:nfee  errflag= err endflag = eof --
+	  l,r,n1oe,n2oe,noe
+	  ( 5i5 )
+	  em1 = 0.0d0 ; out1 =0.0d0 ; 
+	  out2 = 0.0d0 ;
+       if eof then exit
+       for i = 1, n1oe
+       do 
+	  format read:nfee errflag = err endflag = eof  --
+	  i1,i2,i3,i4,km, wt ; ( 10x, 5i5,d25.16 ) 
+	  ic = coff(i1)+1; iadr=shoff(nolf(i1))+1
+	  call slow(out1,wt,c(ic),h1(iadr),nbf(nolf(i1)))
+	  end 
+       for i = 1, n2oe
+       do
+	  format read:nfee errflag = err endflag = eof  --
+	  i1,i2,i3,i4,km, wt ; ( 10x, 5i5,d25.16 ) 
+	  km=km/2+1
+	  out4=0.d0; 
+	  if i1 = i2 then iadr = jadr(nolf(i1),nolf(i3),km) -- 
+	       + nbf(nolf(i1))*nbf(nolf(i1))*(nwsq(i3)-1)+1 ; 
+	  else  iadr = kadr(nolf(i1),nolf(i2),km) --
+	       + nbf(nolf(i1))*nbf(nolf(i1))*(nwsq(i2)-1)+1 ; 
+	  ic = coff(i1)+1
+	  call slow(out2,wt,c(ic),xint(iadr),nbf(nolf(i1)))
+          end
+       hh(l,r) = out1+out2
+       hh(r,l) = out1+out2
+       end 
+    end 
+ %%subname nncsf%
+ function %subname(nfee)
+ integer n
+ integer nfee,l,r,i1,i2
+ logical eof,err
+ begin 
+    err=.false. ; eof =.false.
+    rewind nfee
+    n=0
+    do until eof 
+       format  read:nfee  errflag= err endflag = eof --
+	  l,r,n1oe,n2oe,noe
+	  ( 5i5 )
+       if eof ! err then exit 
+       n=max0(l,r,n)
+       for i=1,noe
+       format  read:nfee  errflag= err endflag = eof --
+	 i1,i2 ; ( 2i5 ) 
+       end 
+   if err then stop 222
+   rewind nfee
+   nncsf=n
+   end 
+
+ %%subname slowD%
+ subroutine %subname --
+	    ( out, wt, c, xint, ns) 
+ implicit integer ( a- z ) 
+ real * 8 c(ns),xint(ns,ns),wt,out,xx,w
+ begin 
+    w=0.d0
+    for i = 1, ns ; for j = 1, i-1
+    do
+       xx = xint(i,j)+xint(j,i)
+       w = w + xx*c(i)*c(j)
+       end 
+    for i = 1, ns ;
+    w = w + xint(i,i)*c(i)*c(i)
+    out = out + w * wt
+    format write:88 ns,w
+    ( ' dim ', i4, ' C  ',' Integ ',f20.10 )
+    for i = 1, ns ;format write:88  c(i),(xint(i,j),j=1,ns)
+    ( f12.5, 5x, 8f10.5 )
+    end
+

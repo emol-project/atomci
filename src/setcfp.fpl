@@ -1,0 +1,16 @@
+ %%subname setcfp%
+ process  no list file '%subname.f'
+ subroutine %subname ( nftf )
+    %update 
+    implicit real * 8 ( a-h,o-z )
+    %COMCFP
+
+    begin
+       rewind nftf
+       read (nftf) INAME,IBEL,ICNN,ILFN,ICMTN,ICDX,IMMINT,ILSTAD 
+       read (nftf) ((ICONNT(I,J),I=1,9),J=1,ICNN)               
+       read (nftf)  ((ICMTDX(I,J),I=1,5),J=1,ICMTN)            
+       read (nftf)  (ILFUNC(I),I=1,ILFN)                      
+       read (nftf)  (CMTTBL(I),I=1,ICDX)                     
+       rewind nftf
+       end 

@@ -1,0 +1,295 @@
+   PROCESS FILE 'wkcore.f'
+   process no list
+   %%SUBNAME WKCORE %
+   FUNCTION  %SUBNAME --
+               ( ACTION,  NAMEX, ROUTIX,TYPE, LENGTH,    RTNCD )
+   %CPYRIGHT
+   %UPDATE
+   IMPLICIT INTEGER * 4 ( A-Z )
+   %param
+      integer*4 var(%WORKCORE)
+      common/work/var	
+   %%NSTACK  101 %
+   /*  PARAMETER LIST & TYPE */
+   INTEGER   * 4  WKCORE,   -- ALLOCATION RETURNS ADDR
+                  ACTION,   -- ACTION CODE
+                  LENGTH,   -- LENGTH OF VAR
+                  RTNCD     -- RETURN CODE
+
+   CHARACTER * 2  TYPE      -- TYPE OF ARRAY
+
+   /*
+   /* FUNCTION : VAR CONTROLLED ROUTINE IN COMMON SECTION
+   /*
+   /                  CODED  BY MAS JULY  5,1987
+   /                  CHANGED BY TASHI OCT 24,1989
+   /*
+   /*   COMMON /WORK/ VAR(MXWORK)   : INTEGER * 4
+   /*
+   /* ENTRY   : WKSET (VAR,MXWORK)
+   /*
+   /* USAGE
+   /* TYPE TABLE
+    %%C1 'C1'% ; %%L1 'L1'% ; %%L2 'L2'% ; %%L4 'L4'% ;
+    %%I2 'I2'% ; %%I4 'I4'% ; %%R4 'R4'% ; %%R8 'R8'% ;
+   /*
+   /*
+   /* ACTION TABLE         FUNCTION                 RTNVAL VAL
+    %%ALLOC      1 %  ; /* ALLOCATION              STARTING ADDR
+    %%FREE       2 %  ; /* FREE VNAME              NULL
+    %%FREEALL    3 %  ; /* ALL CLEAR               NULL
+    %%EXPAND     4 %  ; /* CONDENSE OR EXPAND      STARTING ADDR
+    %%KNOCKVAR   5 %  ; /* INOFRMATION OF VAR      STARTING ADDR
+    %%REGION     6 %  ; /* FREE REGION SIZE        FREE REGION SIZE
+    %%NVAR       7 %  ; /* NUMBER OF VAR           NUMBER OF VAR
+    %%LIST       8 %  ; /* CORE ALLOCATION LIST    NULL
+   CHARACTER * 2  CTYPE(8), --
+                  TVTYPE(%NSTACK)
+
+   CHARACTER *(*) NAMEX,    -- VAR NAME
+                  ROUTIX
+   CHARACTER * 8  NAME,     -- VAR NAME
+                  ROUTIN,   --
+		  TEMPC
+   CHARACTER *16  VNAME,    -- VAR NAME
+                  TVNAME(%NSTACK)
+   INTEGER   * 4  TVINF(3,%NSTACK)
+
+   /* DCL FOR ENTRY WKSET
+   INTEGER   * 4  WKSET,      --
+                  MXWORK,     --
+                  MXWSIZ
+   /   SAS 89-10-30                  VAR(MXWSIZ)
+
+   /* LOCAL VAR NAME DCL */
+   INTEGER   * 4            --
+                  IADDR,    -- STARTING ADDR FOR WORK ( ACTUAL )
+                  LADDR,    -- NEXT ADDR FOR WORK
+                  RTNVAL,   -- RETURN VALUE
+                  SPACE     -- REQUIRED SPACE
+
+   CHARACTER * 12 ACNAME(5)
+   SAVE
+   DATA ACNAME/'ALLOC       ','FREE        ','FREE ALL    ', --
+               'EXPAND      ','KNOCK VAR   '/
+   DATA CTYPE/'C1','I2','I4','L1','L2','L4','R4','R8'/
+   %%DEBUG  /*  %
+   BEGIN ;
+      TEMPC=NAMEX
+      do until IXS ^= 1 
+         IXS=INDEX(TEMPC,' ')     
+	 if IXS = 1 then TEMPC=TEMPC(2:)
+	 end 
+      IF IXS = 0 then IXS = 8 
+      NAME = TEMPC(1:IXS)// '         ' ; 
+      TEMPC=ROUTIX
+      do until IXS ^= 1 
+         IXS=INDEX(TEMPC,' ')     
+	 if IXS = 1 then TEMPC=TEMPC(2:)
+	 end 
+      IF IXS = 0 then IXS = 8 
+      ROUTIN = TEMPC(1:IXS) // '          '
+
+      WKCORE = 0 ; RTNVAL = 0 ; RTNCD = 0 ;
+      VNAME  = NAME // ROUTIN ;
+      %DEBUG IF ACTION < 5 & ACTION > 0 THEN EXEC DEBUG_PRINT ;
+      DO CASE OF ACTION
+        %ALLOC     : EXEC WKALLOC
+        %FREE      : EXEC WKFREE
+        %FREEALL   : EXEC WKFREE_ALL
+        %EXPAND    : EXEC WKCOND
+        %KNOCKVAR  : EXEC WKNOCK
+        %REGION    : EXEC WKREGION
+        %NVAR      : EXEC WKNVAR
+        %LIST      : EXEC WKLIST
+        OTHERWISE    EXEC ERROR_RETURN_6
+      IF ACTION > 10 THEN EXEC DEBUG_PRINT ;
+      WKCORE = RTNVAL ;
+      RETURN;
+      /  EXIT;
+   ENTRY  WKSET( MXWSIZ )
+     WKSET = 0  ; MXWORK = MXWSIZ - 2 ;
+     LIST-2 DO
+        1L ; ' == MAX CORE SIZE IS ' ;  PUT MXWORK I10 ; '  == ' ; 1L ;
+        END
+     NEST =  1 ;
+     TVNAME(NEST) = '       ' ; TVTYPE(NEST) = '  '
+     TVINF(1,NEST) = 0 ; TVINF(2,NEST) = 0 ; TVINF(3,NEST) = 1 ;
+     LADDR = TVINF(3,NEST) ; WKCORE = 0 ;
+     END  ;
+
+  > DEBUG PRINT
+     1L ; ' == DEBUG == VARIABLE INFORMATION LIST == '
+     1L ; '  VAR NAME ROUTINE  TYPE     LENGTH  ACTION ' ; 1L ;
+     FORMAT WRITE --
+     VNAME,TYPE,LENGTH,ACNAME(ACTION)
+       (T5,A,T23,A,T26,I10,T39,A12 )
+     2l ;
+     END ;
+  >  WKALLOC
+     IADDR = TVINF(3,NEST) ;
+     EXEC FIND_ADDR ;
+     IF RTNCD ^= 0 THEN EXIT ; /* WORK REGION IS TOO SMALL
+     EXEC STACK_VNAME
+     RTNVAL = IADDR
+     END  ;
+  > WKREGION
+     EXEC FREE_REGION
+     RTNVAL = WKSIZE
+     END
+  > WKNVAR
+     RTNVAL = NEST - 1
+     END
+  > WKFREE_ALL
+     NEST = 1
+     END ;
+  > WKFREE
+     EXEC FIND_VNAME ;
+     IF RTNCD = 0
+     THEN DO
+        IF KSET = NEST THEN NEST = NEST - 1
+        ELSE EXEC COND_VINF
+        END
+     ELSE  ; /* VAR NAME IS NOT FOUND
+     END
+
+  > WKNOCK
+     EXEC FIND_VNAME ;
+     IF RTNCD ^= 0 THEN EXIT ; /* VAR NAME NOT FOUND
+     RTNVAL = TVINF(1,KSET) ;
+     LENGTH = TVINF(2,KSET) ;
+     TYPE   = TVTYPE(KSET) ;
+     END
+
+  > WKCOND
+     EXEC FIND_VNAME
+     IF RTNCD ^= 0 THEN EXIT ; /* VAR NAME NOT FOUND
+     IF TYPE ^= TVTYPE(KSET)  THEN EXIT EXEC ERROR_RETURN_5
+    /* FIND  FREE REGION */
+     IADDR = TVINF(3,KSET-1) ;
+     EXEC FIND_ADDR ;
+    /* CHECK VAR SPACE
+     IF KSET = NEST
+     THEN MX = MXWORK
+     ELSE MX = TVINF(1,KSET+1) ;
+     IF LADDR > MX THEN EXEC ERROR_RETURN_3 ;
+    /* CONDDENSE */
+     IF TVINF(1,KSET) = IADDR
+     THEN -- NOT REQUIRE CONDENSE */
+     EXEC SET_VNAME ;
+     ELSE -- /* CONDESNE
+     EXEC CONDENSE
+     RTNVAL = IADDR ;
+     END
+
+  > WKLIST
+     3L ; ' == LIST == VARIABLE INFORMATION LIST == '
+     2L ; '  VAR NAME ROUTINE  TYPE     LENGTH  START ADDR' ;
+          '  LAST ADDR (WORD) ' ; 1L
+     FOR K = 2, NEST
+     FORMAT WRITE --
+     TVNAME(K),TVTYPE(K),TVINF(2,K),TVINF(1,K),TVINF(3,K) ;
+     ( (T5,A,T23,A,T26,I10,T38,I10,T50,I10) )
+     2l ;
+     END ;
+ > CONDENSE
+     IF IADDR > TVINF(1,KSET) THEN EXEC ERROR_RETURN_4
+     NSHIFT = TVINF(1,KSET) - IADDR
+     FOR K = IADDR, LADDR-1 ;
+     VAR(K) = VAR(K+NSHIFT) ;
+     EXEC SET_VNAME ;
+     END ;
+
+ > FIND_ADDR
+     K = 0 ;
+     UNTIL CTYPE(K) = TYPE ; K = K + 1 ;
+     DO CASE OF K
+        1  : LADDR = IADDR + (LENGTH-1)/4 + 1 ; / C1
+        2  : LADDR = IADDR + (LENGTH-1)/2 + 1 ; / I2
+        3  : LADDR = IADDR +  LENGTH          ; / I4
+        4  : LADDR = IADDR + (LENGTH-1)/4 + 1 ; / L1
+        5  : LADDR = IADDR + (LENGTH-1)/2 + 1 ; / L2
+        6  : LADDR = IADDR +  LENGTH          ; / L4
+        7  : LADDR = IADDR +  LENGTH          ; / R8
+        8  : DO
+           IF MOD(IADDR,2) = 0 THEN IADDR = IADDR + 1 ;
+           LADDR = IADDR + LENGTH * 2 ;
+           END ;
+        OTHERWISE EXEC ERROR_RETURN_8
+     SPACE = LADDR - IADDR ; / UNIT IS WORD
+     IF LADDR > MXWORK + 1 THEN EXEC ERROR_RETURN_9
+     END ;
+ > STACK_VNAME
+   NEST = NEST + 1 ;
+   IF NEST > %NSTACK  THEN EXEC ERROR_RETURN_2 ;
+   KSET = NEST ; EXEC SET_VNAME ;
+   END ;
+ > SET_VNAME
+   TVNAME(KSET) = VNAME   ; TVTYPE(KSET) = TYPE ;
+   TVINF(1,KSET) = IADDR ;
+   TVINF(2,KSET) = LENGTH ;
+   TVINF(3,KSET) = LADDR ;
+   END
+ > COND_VINF
+   FOR K = KSET,NEST-1;
+   DO ;
+     TVINF(1,K) = TVINF(1,K+1) ;
+     TVINF(2,K) = TVINF(2,K+1) ;
+     TVINF(3,K) = TVINF(3,K+1) ;
+     TVTYPE (K) = TVTYPE (K+1) ;
+     TVNAME (K) = TVNAME (K+1) ;
+     END;
+   NEST = NEST - 1 ;
+   END
+ > FIND_VNAME
+   K = NEST
+   WHILE  VNAME ^= TVNAME(K) & K > 1 ; K = K - 1 ;
+   IF K = 1
+   THEN DO ;
+      RTNCD = 1 ;
+      FORMAT WRITE ' == ',VNAME,' IS NOT FOUND ==' ; ( A, A, A )
+      END ;
+   ELSE KSET = K
+   END ;
+ > FREE_REGION
+   WKSIZE = MXWORK - TVINF(3,NEST) + 1 ;
+   END ;
+ > ERROR_RETURN_2
+    1L ; ' == NUMBER OF VAR IS OUT OF RANGE == ' ; 1L ;
+         ' == VAR ALLOCATION IS FAILED      == ' ; 1L ;
+   RTNCD = 2 ; RETURN ;
+   END ;
+ > ERROR_RETURN_3
+    1L ; ' == EXPAND REGION IS TOO SMALL    == ' ; 1L ;
+         ' == VAR ALLOCATION IS FAILED      == ' ; 1L ;
+   RTNCD = 3 ; RETURN ;
+   END ;
+ > ERROR_RETURN_4
+    1L ; ' == EXPAND   IS FAILED            == ' ; 1L ;
+         ' == BECAUSE VAR INF IS UNKNOWN    == ' ; 1L ;
+   RTNCD = 4 ; RETURN ;
+   END ;
+ > ERROR_RETURN_5
+    1L ; ' == TYPE IS MISMATCH ' ; PUT TYPE C2 ; ' ( ' ;
+         PUT TVTYPE(KSET) C2 ; ' ) ==' ; 1L
+     RTNCD = 5 ; RETURN ;
+     END ;
+ > ERROR_RETURN_6
+    1L ; ' == MISSING ACTION CODE ' ; PUT ACTION I4 ; '   == ' ; 1L
+     RTNCD = 5 ; RETURN ;
+     END ;
+ > ERROR_RETURN_8
+     1L ; ' == VAR TYPE IS NOT SUPPORTED    == '
+           PUT  TYPE C2 ; 1L ;
+     RTNCD = 8  ; RETURN
+     END ;
+ > ERROR_RETURN_9
+     EXEC FREE_REGION ;
+     1L ; ' == WORK REGION IS TOO SMALL     == ' ; 1L ;
+          ' == FREE REGION SIZE ' ; PUT WKSIZE I10 ; '  == ' ; 1L
+          ' == REQUESTED   SIZE ' ; PUT SPACE  I10 ; '  == ' ; 1L
+          ' == NAME             ' ; PUT NAME   C8  ; '    == ' ; 1L
+          ' == TYPE             ' ; PUT TYPE   C2  ;10X ; '==' ; 2L
+     EXEC WKLIST
+     RTNCD = 9
+     END

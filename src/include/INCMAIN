@@ -1,0 +1,12 @@
+  /* DCL FOR INPUT PARAMETER & USING PARM
+      /*          VAR(*)   ,  WORK REGION SIZE IS RETURNS BY WKCORE
+      /*           moved to common/work/  SAS 94-01-22
+  INTEGER   * 4   TITLE(18), -- TITLE
+                  FILES    , -- SUMMARY FILE UNIT
+                  USCPU    , -- RETURNS USING CPU ( M SEC )
+                  METHOD(80), -- RUN FLAG
+                  ERRCD      -- ERROR CODE
+
+  INTEGER   * 4   START     ,--
+                  FINISH    ,--
+                  RTNCD

@@ -1,0 +1,67 @@
+     /*
+     /*  FILE STRUCTURE NFTF(CFP TAPE) WAS USED IN WF,PT,EX,CI, AND RS  S
+     /*
+     /*     &WF --> <WF>     RULE = 0 ( GENERAL )  NFWFB0-> to EX
+     /*         NFWFB1 <---> RULE = 1 ( SD-CI )    NFWFE -> to CI
+     /*         NFWFW     +- RULE = 2 ( PT-CI )
+     /*         NFTBL     |      |
+     /*                 NFWFW   NFWFB2
+     /*                   |      |
+     /*       NFTBL  <--> SEC 2 PTEE  --- NFWFP  -------------+
+     /*                                                       |
+     /*                                                       |
+     /*     &AI --> <AI>  -- RULE = 1 ( STF )                 |
+     /*               |      RULE = 2 ( GTF )                 |
+     /*               +--->--- NFAIO                          |
+     /*               |        ( TO CI RESULTS )              |
+     /*             NFAII                                     |
+     /*               |                                       |
+     /*     &TR --> <TR> --->-- NFTRC2---> TO CI              |
+     /*             |  |                                      |
+     /*  NFTRC1 -->-+  |                                      |
+     /*             |  +-->---- NFTRI----> TO CI AND PT       |
+     /*  +-------->-+  |                                      |
+     /*  |             |                                      |
+     /*  |         NFTD(DA WORK)           +---<--------------+
+     /*  |                                 |
+     /*  |  &PT --> <PT> --- SEC 1 HMAT<---+-<---- NFTRI
+     /*  |                    |      |           ( FROM TR )
+     /*  |              +---NFPTH1  NFPTH2
+     /*  |              |     |      |
+     /*  |              |    SEC 2 DIAG
+     /*  |              |        |
+     /*  |              |      NFPTV
+     /*  |              |        |
+     /*  |              +--> SEC 3 SELECTION --NFPTL
+     /*  |       (RETRY=1)       |
+     /*  |         NFEXW       NFPTB
+     /*  |            ||         |
+     /*  |   &EX --> <EX> <------+----<----- NFPTB0 from WF
+     /*  |            |
+     /*  |           NFEXE----+------->--------->-------------+
+     /*  |                    |                               |
+     /*  |                    +----<----- NFWFE from WF --->--+
+     /*  |                    |                               |
+     /*  |   &CI --> <CI> -- SEC 1 HMAT----NFCID              |
+     /*  |                    |      |       |                |
+     /*  |                  NFCIH1--NFCIH2-) | (--->>---------+
+     /*  |                    |      |       |                |
+     /*  |      NFCII -----> SEC 2 DIAG ---) | (---> NFCIV    |
+     /*  |                                   |         |      |
+     /*  |      NFCIH <<---- SEC 3 DENSITY --+-----<---+-->---+
+     /*  |      NFCIW                                         |
+     /*  |                                                    |
+     /*  +------NFCIC--<---- SEC 5 NO  <--- NFTRC1            |
+     /*                                   ( FROM TR )         |
+     /*                      NFAIO            |               |
+     /*                       ( FROM AI )     |               |
+     /*                         |             |               |
+     /*                      SEC 6 RESULT <---+--<<<<--+---+--+
+     /*                         |
+     /*                        NFCIS
+     /*                         |
+     /*      &RS --> <RS> <-----+ <----- NFPTB  From PT
+     /*                                  NFPTH1
+     /*                                  NFPTh2
+     /*
+     /*

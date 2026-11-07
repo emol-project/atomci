@@ -1,0 +1,153 @@
+   process no list file 'ciptrs.f' 
+   %%SUBNAME MBPTRS%
+   SUBROUTINE %SUBNAME --
+                   ( ENERGY,         --*I*
+                     HDIG,           --*W*
+                     HBUFF, HOFF,    --*W*
+                     IROW,  ICOL,    --*W*
+                     LEMBF,          --*I* length of Hoff buffer
+                     NWFSG,          --*W* buffer for WF 
+                     ITSTV,       --*I*  DIMENSION OF CSF
+                     NREF,        --*I*  NUMBER OF REFERENCE
+                     NSTATE,      --*I*  OBTAINED NUMBER OF STATE
+                     LWREF,       --*I*  NUMBER OF READ BUFFER FOR CSF
+                     NFPTB,         --*I*  file for WF
+                     NFPTD,NFPTO,   --*I*  file for Enegry Matrix
+                     c,u,w,         --*W* using jacobi
+                     RTNCD )
+
+      %UPDATE
+      /*        CODED    BY M. SEKIYA ON 1993- 2-12 AT QC
+      /*   FUNCTION : PT 
+      /*
+      /*   CALLED   : PTMAIN
+      /*   CALLING  : <NONE>
+      /*
+      /*
+
+
+      INTEGER   * 2 NWFSG(LWREF)
+
+      INTEGER   * 4  --
+                     ICOL   (LEMBF), --*W*
+                     IROW   (LEMBF), --*W*
+                     ITSTV,          --*I*
+                     NSTATE,         --*I*
+                     NREF,           --*I*
+                     LWREF,          --*I*
+                     NFPTB,NFPTD,NFPTO,--*I*
+                     RTNCD
+
+      REAL      * 8  HDIG(ITSTV),       --*O*  H MAT
+                     HOFF(LEMBF),       --*O*  H OFF
+                     HBUFF(NREF,LEMBF), --*O*  H OFF
+                     ENERGY(NSTATE)     --*O*  ESTIMATED ENERGY BY METHO
+
+      real      * 8  c(nref,nref),      -- eigen vectors
+                     u(nref,nref),      -- work 
+                     w(nref)            -- eigen values
+ 
+      /* DCL LOCAL VAR
+      /   EXTERNAL ISP,IOR
+
+      INTEGER   * 4  ERRCD
+      LOGICAL    IOERR,IOEND
+
+      REAL      * 8 E2,Eref  -- DEBUG
+ 
+      DATA    IOSTAT/0/
+   / macro 
+   %%CHECK  IF ERRCD > 0 THEN EXIT EXEC ERROR_INFORMATION %
+   %%IO     ENDFLAG = IOEND ERRFLAG = IOERR IOSTAT = IOSTAT %
+   %%IOCHECK  IF IOERR ! IOEND THEN EXIT ERRCD = %ERRCD ; %
+   / macro end 
+      BEGIN
+         ERRCD = 0 ; IOEND = .FALSE. ; IOERR = .FALSE. ;
+         IOSTAT = 0 ;
+         format write nref, itstv; 
+         (/ ' >> Number of Ref ', i8 --
+          / ' >> Number of CSF ', i8 )
+         EXEC CALC_RSPT ; %CHECK
+         REWIND NFPTD
+         REWIND NFPTO
+         END
+
+      %%IF FORTRAN IF % ; %%ENDIF FORTRAN ENDIF %
+
+     > READ_EMAT1  
+     /* READ H MATRIX
+         BINARY READ : NFPTD %IO --
+                NCSF,NCSF,HDIG
+         %%ERRCD 5430 % ; %IOCHECK
+         IF NCSF ^= ITSTV THEN EXIT ERRCD = 5403
+     /* READ REF E=MATRIX
+         BINARY READ : NFPTO %IO NOCSF
+         %%ERRCD 5431 % ; %IOCHECK
+         IF NOCSF ^= ITSTV THEN EXIT ERRCD = 5422
+         END
+      PROCEDURE CALC_RSPT
+         EXEC READ_EMAT1  ; %CHECK
+         IF NREF = 1 THEN EXEC SINGLE_REF
+         ELSE EXEC MULTI_REF
+         END
+      > SINGLE_REF
+         E2 = 0 ; Eref = hdig(1) ; ncalc = 0 
+         DO UNTIL IROW(LEMBF) = 0
+            BINARY READ : NFPTO %IO HOFF,IROW,ICOL
+            %%ERRCD 5432 % ; %IOCHECK
+            FOR J = 1, ICOL(LEMBF) ;
+            E2 = E2 + Hoff(j) * Hoff(j) / (Eref - HDIG(IROW(j))) 
+            ncalc = ncalc + icol(lembf) 
+            END
+         format write Eref,e2,Eref+e2, ncalc ; 
+         ( '  Eref     ', f20.10 /  --
+           '  Second E ', f20.10 /  --
+           '  Total  E ', f20.10 /  --
+           '  Non zero Matrix ', i10 ) 
+         
+         END
+
+      > E0
+        call zero(c,nref*nref)
+        for j = 1, nref ; u(j,j) = hdig(j) 
+        j = 0; 
+        BINARY READ : NFPTO %IO HOFF,IROW,ICOL
+        do while IROW(j+1) <= nref  
+           j = j + 1 ; 
+           u(irow(j),icol(j))=hoff(j) 
+           u(icol(j),irow(j))=hoff(j) 
+           if j = icol(lembf)  then do
+              BINARY READ : NFPTO %IO HOFF,IROW,ICOL
+              j = 0 
+              end 
+           if IOERR ! IOEND then exit 
+           end 
+         %%ERRCD 5433 % ; %IOCHECK
+         jkeep = j + 1 
+         call jacobi(nref,u,c,w)
+         end 
+         
+      > MULTI_REF
+         EXEC E0
+         E2 = 0 ; Eref=u(1,1)
+         FOR j= jkeep, icol(lembf)
+         E2 = E2 + c(icol(j),1)*c(icol(j),1)  --
+              * hoff(j) * hoff(j) / ( Eref - hdig(irow(j)) )
+         ncalc = icol(lembf)           
+         DO WHILE IROW(LEMBF) > 0
+            BINARY READ : NFPTO %IO HOFF,IROW,ICOL
+            %%ERRCD 5432 % ; %IOCHECK
+            FOR J = 1, ICOL(LEMBF) ;
+            E2 = E2 + c(icol(j),1)*c(icol(j),1)  --
+              * hoff(j) * hoff(j) / ( Eref - hdig(irow(j)) )
+            ncalc = ncalc + icol(lembf) 
+            END
+         format write Eref,e2,Eref+e2, ncalc ; 
+         ( '  Eref     ', f20.10 /  --
+           '  Second E ', f20.10 /  --
+           '  Total  E ', f20.10 /  --
+           '  Non zero Matrix ', i10 ) 
+         
+         END
+
+      %RSERINF

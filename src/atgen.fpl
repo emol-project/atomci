@@ -1,0 +1,268 @@
+  PROCESS   FILE      'atgen.f' NO LIST
+      PROGRAM ATMAIN
+      PARAMETER(MCORE= 16 000 000/4 )
+  %CPYRIGHT
+  %UPDATE
+      DIMENSION     NCORE(MCORE)
+      COMMON /WKDS/NCORE
+      DATA  MKIND/10/,LPOUT/0/
+      DATA  MBORB/10/
+  BEGIN
+      /* open */   
+      call fdopen(5) 
+      REWIND 7
+      CALL ATTIME
+      IF LPOUT >  0 THEN CALL ATBIGN('ATMAIN')
+      MXREF = MCORE / 2000 / 10
+      CALL ATDRV(NCORE,MCORE,MKIND,MBORB,MXREF,LPOUT)
+      IF LPOUT >  0 THEN CALL ATENDS('ATMAIN')
+      END
+      SUBROUTINE ATDRV(N,MCORE,MKIND,MBORB,MXREF, --
+                        LPOUT)
+ /*============*/
+ /*= ATDRV    =*/ REVISED BY MAS  APR. 15  1987 -> FPL
+ /*============*/
+      DIMENSION N(MCORE)
+   /* Typed views of the ATMAIN heap.  N is a dummy (= COMMON /WKDS/ NCORE
+   /* in ATMAIN), so a typed alias cannot be EQUIVALENCEd onto N directly;
+   /* instead re-declare /WKDS/ here with CHARACTER/INTEGER*2 views that
+   /* overlay the same storage.  Byte layout (heap word j is INTEGER*4):
+   /*   CHARACTER*1 datum at word k -> WKC1(4k-3)  (1 byte, 4 bytes/word)
+   /*   CHARACTER*2 datum at word k -> WKC2(2k-1)  (2 bytes = INTEGER*2)
+   /*   INTEGER*2   datum at word k -> WKI2(2k-1)
+      PARAMETER (MWKDS = 16 000 000/4)
+      COMMON /WKDS/ NWK(MWKDS)
+      CHARACTER * 1 WKC1(MWKDS*4)
+      CHARACTER * 2 WKC2(MWKDS*2)
+      INTEGER   * 2 WKI2(MWKDS*2)
+      EQUIVALENCE (NWK(1),WKC1(1)),(NWK(1),WKC2(1)),(NWK(1),WKI2(1))
+      DATA NFT05/5/
+ /*===============================================================
+ /*  MEMORY PARTITION
+ /*N1-------N2-------N3-------N4-------N5-------N6-------N7
+ /*  NPRTY     MOCCN    NORBT    NSCHL    CORBT   CSCHL
+ /* MKIND*I4  MKIND*I4 MKIND*I4 MKIND*I4 4*I4(12C1)MBORB*NBORB(C2)
+ /*N7-------N8-------NA-------NB-------NC-------ND-------NE
+ /*  NTOPN    NORTS    NBORB   NSTOR     MAXO /*   NCONF
+ /*  NKIND   2*NKIND   2*MSCHL MSCHL     MSCHL    XXXXX
+ /*===============================================================
+  BEGIN ;
+      IF  LPOUT >  0  THEN CALL ATBIGN('ATGDRV')
+      NCLET=MKIND+4
+      N1=1
+      N2=N1+MKIND
+      N3=N2+MKIND
+      N4=N3+MKIND
+      N5=N4+MKIND
+      N6=N5+4
+      N7=N6+(MBORB*MKIND-1)/2 + 1
+      NWORK=N7+(MBORB*MKIND-1)/2 + 1
+      CALL ATREAD(NFT05,N(N1),N(N2),N(N3),N(N4),             --
+                  N(N5),N(N6),N(N7),N(NWORK),N(NWORK),NKIND, --
+                  MKIND,MSCHL,NCLET,MBORB,                   --
+                                          LPOUT)
+      N8=N7+NKIND
+      NA=N8+2*NKIND
+      NB=NA+2*MSCHL
+      NC=NB+MSCHL
+      ND=NC+MSCHL
+      MSDUMY = MSCHL + MXREF*4 + 1
+ /* Fix -- MCONF was left
+ /* uncomputed here until below (needs NREFN, an OUTPUT of the ATRGEN call
+ /* two lines down) so under -fno-automatic it was reliably zero, and
+ /* NCONF's dimension-2 bound computed to 0 -- every ATRGEN call's first
+ /* reference write went out of bounds, unconditionally. Compute a safe
+ /* upper bound here from MXREF (already used one line above for MSDUMY)
+ /* instead. MCONF is recomputed below from the ACTUAL NREFN once ATRGEN
+ /* returns it, for the tighter bound ATSGEN/ATDGEN need -- this covers
+ /* only the ATRGEN call itself.
+      MCONF=(MCORE-ND)/MSDUMY
+      CALL ATRGEN(NFT05,N(N1),N(N2),N(N3),N(N4),             --
+                  N(N5),N(N6),NKIND,MKIND,                   --
+                  MSCHL,NCLET,MCONF,MSDUMY,                  --
+                  N(N7),N(N8),N(NA),N(NB),N(NC),             --
+                  N(ND),NREFN,LPOUT)
+      /* ERROR STOP *
+      IF MXREF < NREFN  THEN EXIT DO
+         1L ; ' ** YOUR INPUT REFFERANCE EXCEEDS LIMITS ** '
+         1L ; ' ** EMERGENCY STOP                       ** '
+         1L ; ' ** LIMIT =' ; PUT MXREF I8 ;
+         1L ; ' ** INPUT =' ; PUT NREFN I8 ; 1L ;
+         END
+      MSCH1=MSCHL+NREFN*4 + 1
+      MCONF=(MCORE-ND)/MSCH1
+      NE=ND+MCONF*MSCH1
+      CALL ATSGEN(N(N1),N(N2),N(N3),N(N4),                   --
+                  N(N5),N(N6),NKIND,MKIND,                   --
+                  MSCHL,NCLET,MCONF,MSCH1,MSDUMY,            --
+                  N(N7),N(N8),N(NA),N(NB),N(NC),             --
+                  N(ND),N(ND),NREFN,NSCON,LPOUT)
+      CALL ATDGEN(N(N1),N(N2),N(N3),N(N4),                   --
+                  N(N5),N(N6),N(N7),N(N8),N(NA),             --
+                  N(NB),N(NC),N(ND),                         --
+                  NKIND,MSCHL,NCLET,                         --
+                  MCONF,MSCH1,NREFN,NSCON,NDCON,             --
+                                          LPOUT)
+      CALL ATCHCK(N(N1),N(N2),N(N3),N(N4),                   --
+                  WKC1(4*N5-3),WKC2(2*N6-1),N(N7),N(N8),     --
+                  N(NA),N(NB),N(NC),WKI2(2*ND-1),            --
+                  NKIND,MKIND,MSCHL,NCLET,                   --
+                  MCONF,MSCH1,NREFN,NSCON,NDCON,             --
+                                          LPOUT)
+      CALL ATPRNT(N(N1),N(N2),N(N3),N(N4),                   --
+                  WKC1(4*N5-3),WKC2(2*N6-1),N(N7),N(N8),     --
+                  N(NA),N(NB),N(NC),WKI2(2*ND-1),            --
+                  NKIND,MKIND,MSCHL,NCLET,                   --
+                  MCONF,MSCH1,NREFN,NSCON,NDCON,             --
+                                          LPOUT)
+      IF LPOUT >  0  THEN  CALL ATENDS('ATGDRV')
+      END
+  PROCESS HEADDER NO LIST MAP ATCHCK
+  SUBROUTINE ATCHCK(NPRTY,MOCCN,NORBT,NSCHL,  --
+                    ANG  ,CSCHL,NTOPN,NORTS,NBORB,  --
+                    NSTOR,MAXOC,NCONF,        --
+                    NKIND,MKIND,MSCHL,NCLET,  --
+                    MCONF,MSCH7,NREFN,NSCON,NDCON,  --
+                    LPOUT)
+  /*================================================================
+  /*  ATCHCK
+  /*    CHECK     CONFIGURATIONS
+  /*                       CODED BY M SEKIYA  06/11/86
+  /*================================================================
+  /*     CALLED  SUBROUTINE
+  /*     ATGDRV
+  /*================================================================
+  /*     CALLING SUBROUTINE
+  /*================================================================
+  /*================================================================
+  /*
+  /*   ---- ARREY ---- RETURN  NONE
+  /*
+  /*================================================================
+  /*   ----- ARREY (GIVEN) -----
+  IMPLICIT INTEGER * 4 (A-Z)
+  INTEGER  * 4 --
+  --  NACTE                  ,-- # OF ACTIVE ELECTRON
+  MKIND                  ,-- MAX NUMBER OF ORBITAL KIND
+  NKIND                  ,-- ACTUAL NUMBERS OF ORBITAL KINDS
+  MSCHL                  ,-- TOTAL  NUMBERS OF SCHELL
+  MCONF                  ,-- MAXIMUM NUMBER OF CONFIGURATION
+  NCLET                  ,-- MKIND+2
+  MSCH7                  ,-- MSCHL+5
+  LPOUT                  ,-- DEBUG FLAG
+  NREFN                  ,-- ACTUAL REFERENCE NUMBER
+  NSCON                  ,-- ACTUAL SINGLE CONFIGURATION NUMBER
+  NDCON                  ,-- ACTUAL DOUBLE CONFIGURATION NUMBER
+  NSCHL (NKIND)          ,-- NUMBERS OF S,P,D,F..SCHELLS
+  NPRTY (NKIND)          ,-- PARITY OF  S,P,D,F..ORBITALS
+  MOCCN (NKIND)          ,-- MAXIMUM NUMBERS OF S,P,D,F..SCHELLS
+  NORBT (NKIND)          ,-- NUMBERS OF ORBITALS IN S,P,D,F..SCHELLS
+  NTOPN (NKIND)          ,-- INDEXING TABLE FIRST ORBITAL NO. OF SCHEL
+  NORTS (2,NKIND)        ,-- INDEXING TABLE ORBITAL NO. TO SCHELL NO.
+  NBORB (2,MSCHL)        ,-- TOP AND END ORBITAL NO. IN EACH SHELLS
+  NSTOR (MSCHL)          ,-- INDEXING TABLE SCHELL NO.TO ORBITAL NO.
+  MAXOC (MSCHL)           -- MAX OCCUPATION NUMBER OF EACH SCHELL
+
+  INTEGER * 4 BIT(400)
+  INTEGER*2               --
+  NCONF (MSCH7,MCONF)    ;-- CONFIGURATION TABLE
+  CHARACTER                  --
+  ANG   (NCLET)  * 1     ,-- CHARACTER OF  'S','P','D',
+  CSCHL (MSCHL)  * 2     ; /*NAME OF EACH SCHELL
+  INTEGER   * 2 N1,N2
+  // LOGICAL  CASE1, CASE2
+  DATA N1,N2/1,2/ ;
+  BEGIN
+     IF LPOUT >  0   THEN CALL ATBIGN('ATCHCK')
+     EXEC CSF_CHECK
+     IF LPOUT >  0   THEN CALL ATENDS('ATCHCK')
+     END
+  PROCEDURE CSF_CHECK
+    LIST-3 DO
+     FOR KREF = 1, NREFN
+     DO ;
+        KR = MSCHL + 1 + ( KREF  - 1 ) * 4
+        FOR J = KREF + 1, NDCON
+        DO ;
+           IF NCONF(MSCHL+1,J) = -1 THEN EXIT
+           HOLE1 = NCONF(KR + 1,J) ; HOLE2 = NCONF(KR + 3,J) ;
+           ELEC1 = NCONF(KR + 2,J) ; ELEC2 = NCONF(KR + 4,J) ;
+           NDIF = 0
+           FOR KSHL = 1, MSCHL
+           DO ;
+              BIT(KSHL) = NCONF(KSHL,J) - NCONF(KSHL,KREF) ;
+              NDIF = NDIF + ABS(BIT(KSHL))
+              END
+           DO CASE OF NDIF
+              2 : DO ;
+                  IF HOLE1 ^=  0 & HOLE2 = 0
+                  THEN DO
+                     BIT(HOLE1) =  BIT(HOLE1) + 1
+                     BIT(ELEC1) =  BIT(ELEC1) - 1
+                     FOR KSHL =1, MSCHL
+                     IF BIT(KSHL) ^= 0  THEN DO
+                        ' ** ERROR **    KREF,J,SHELL-ID'
+                        PUT KREF I4 ; PUT J I4 ; PUT KSHL I4 ;            L) I4;
+                        PUT BIT(KSHL) I4 ; 1L
+                        END
+                     END
+                  ELSE DO
+                     ' ** ERROR !!    KREF,J, EXCITATION IS INVALID '
+                     PUT KREF I4 ; PUT J I4 ; PUT NDIF  I4 ; 1L ;
+                     '    HOLE1 & HOLE2  '; PUT HOLE1 I3 ; PUT HOLE2 I3
+                     '    ELEC1 & ELEC2  '; PUT ELEC1 I3 ; PUT ELEC2 I3
+                     NCF4 = NCONF(MSCHL+1,J) ; PUT NCF4 I6  ;  1L ;
+                     FORMAT WRITE:6 'KREF',KREF,--
+                      (NCONF(III,KREF),III=1,MSCHL+1) ; ( A,I6,40I3 )
+                     FORMAT WRITE:6 ' J  ',   J,--
+                      (NCONF(III, J  ),III=1,MSCHL+1) ; ( A,I6,40I3 )
+                     END
+                  END ;
+              4 : DO ;
+                  IF HOLE1 ^=  0 & HOLE2 ^= 0
+                  THEN DO
+                     BIT(HOLE1) =  BIT(HOLE1) + 1
+                     BIT(ELEC1) =  BIT(ELEC1) - 1
+                     BIT(HOLE2) =  BIT(HOLE2) + 1
+                     BIT(ELEC2) =  BIT(ELEC2) - 1
+                     FOR KSHL =1, MSCHL
+                     IF BIT(KSHL) ^= 0  THEN DO
+                        ' ** ERROR **    KREF,J,SHELL-ID'
+                        PUT KREF I4 ; PUT J I4 ; PUT KSHL I4 ;            L) I4;
+                        PUT BIT(KSHL) I4 ; 1L
+                        END
+                     END
+     /            ELSE IF HOLE1 = 0 & HOLE2 = 0 & ELEC1 = 0 & ELEC2 = 0
+     /            THEN NDY   = 0
+                  ELSE DO
+                     ' ** ERROR !!    KREF,J, EXCITATION IS INVALID '
+                     PUT KREF I6 ; PUT J I6 ; PUT NDIF  I6 ; 1L ;
+                     '    HOLE1 & HOLE2  '; PUT HOLE1 I3 ; PUT HOLE2 I3
+                     '    ELEC1 & ELEC2  '; PUT ELEC1 I3 ; PUT ELEC2 I3
+                     NCF4 = NCONF(MSCHL+1,J) ; PUT NCF4 I6  ;  1L ;
+                     FORMAT WRITE:6 'KREF',KREF,--
+                      (NCONF(III,KREF),III=1,MSCHL+1) ; ( A,I6,40I3 )
+                     FORMAT WRITE:6 ' J  ',   J,--
+                      (NCONF(III, J  ),III=1,MSCHL+1) ; ( A,I6,40I3 )
+                     END
+                  END ;
+                OTHERWISE DO
+                  IF HOLE1 = 0 & HOLE2 = 0 & ELEC1 = 0 & ELEC2 = 0
+                  THEN NDY   = 0
+                  ELSE DO
+                     ' ** ERROR !!    KREF,J, EXCITATION IS INVALID '
+                     PUT KREF I4 ; PUT J I4 ; PUT NDIF  I4 ; 1L ;
+                     '    HOLE1 & HOLE2  '; PUT HOLE1 I3 ; PUT HOLE2 I3
+                     '    ELEC1 & ELEC2  '; PUT ELEC1 I3 ; PUT ELEC2 I3
+                     1L ;
+                     FORMAT WRITE:6 'KREF',KREF,--
+                      (NCONF(III,KREF),III=1,MSCHL+1); ( A,I6,40I3 )
+                     FORMAT WRITE:6 ' J  ',   J,--
+                      (NCONF(III, J  ),III=1,MSCHL+1) ; ( A,I6,40I3 )
+                     END
+                  END
+               END
+            END
+         END
+      END
+      %ATPRNT

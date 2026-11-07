@@ -1,0 +1,36 @@
+# C 2s2 2p2 3P -- multi-reference SD-CI: cc-pVTZ, MCSCF of the two
+# configurations 2s2 2p2 and 2p4 (3P), then SD-CI from both, with 1s
+# frozen. Needs c.bas (next to this file) in the work directory.
+# Answer: MCSCF -37.70402270, SD-CI = -37.779409
+
+title:  " C TRIPLET P, MRSDCI "
+deck:   c.deck
+csf:    c.csf
+
+atom:
+  z:     6
+  ang:   P
+  spin:  3
+
+files:
+  cfptable:  ./CFPTBL
+  basis:     c.bas
+  open:
+    - unit: 27, file: c.NO, format: binary, status: unknown
+
+orbital:
+  frozen_core:  1S
+  active:       2S, 2P
+  outer:        2S, 2P, 2D, 1F
+
+reference:
+  - scf: true, occ: 2S*2 2P*2
+  - scf: true, occ: 2S*0 2P*4
+
+ctrl:
+  ai:  type: 2, idprnt: 0
+  mc:  itmax: 30
+  wf:  rule: 1, npflg: 0
+  tr:  from_record: 1
+  ci:  ips: 7, maxit: 100, nsdim: 100, nstate: 1
+  rs:  print: -0.001

@@ -1,0 +1,839 @@
+ OPEN >> UNIT=10 FILE=./CFPTBL STATUS=OLD             UNFORMATTED     
+ OPEN >> UNIT=27 FILE=be.NO STATUS=UNKNOWN         UNFORMATTED     
+ OPEN >> UNIT= 2 FILE=be.csf STATUS=OLD             FORMATTED       
+ OPEN >> UNIT= 3 FILE=be.bas STATUS=OLD             FORMATTED       
+ OPEN >> UNIT= 7 FILE=be.time STATUS=UNKNOWN         FORMATTED       
+1*********************************************   BASIS INTEGRAL( AIMAIN  )
+
+ TITLE:   BE SINGLET S, MRSDCI                                                   
+
+ NAME :   BE SINGLET S, MRSDCI                                                   
+
+  NFAII:  AO INTEGRAL          ( 18) =    18
+  LOEI :  LENGTH OF WRITE BUF  (448) =   448
+  BASIS TYPE IS GTF 
+  SUMMARY FILES UNIT =   7      DEBUG FLAG =   0
+
+
+
+ INPUT BASORB       NAME
+0 BE SINGLET S, MRSDCI                                                                                   Nov 3 2615:49:00            
+0NWT   =   10      NFTD  =   18      LOEI  =  448      LMAXX =    3      Z   =     4.0000000000
+ 
+          I L   SCALE FACTOR          I L   SCALE FACTOR          I L   SCALE FACTOR          I L   SCALE FACTOR
+          1 S       1.000000          2 S       1.000000          3 S       1.000000          4 S       1.000000
+         ORB EXP     COEF            ORB EXP     COEF            ORB EXP     COEF            ORB EXP     COEF    
+     6863.000000    0.000236     6863.000000   -0.000043        0.257700    1.000000        0.044090    1.000000
+     1030.000000    0.001826     1030.000000   -0.000333
+      234.700000    0.009452      234.700000   -0.001736
+       66.560000    0.037957       66.560000   -0.007012
+       21.690000    0.119965       21.690000   -0.023126
+        7.734000    0.282162        7.734000   -0.058138
+        2.916000    0.427404        2.916000   -0.114556
+        1.130000    0.266278        1.130000   -0.135908
+        0.110100   -0.007275        0.110100    0.577441
+ 
+          I L   SCALE FACTOR          I L   SCALE FACTOR          I L   SCALE FACTOR          I L   SCALE FACTOR
+          5 P       1.000000          6 P       1.000000          7 P       1.000000          8 D       1.000000
+         ORB EXP     COEF            ORB EXP     COEF            ORB EXP     COEF            ORB EXP     COEF    
+        7.436000    0.010736        0.143800    1.000000        0.049940    1.000000        0.348000    1.000000
+        1.577000    0.062854
+        0.435200    0.248180
+ 
+          I L   SCALE FACTOR          I L   SCALE FACTOR
+
+          9 D       1.000000         10 F       1.000000
+         ORB EXP     COEF            ORB EXP     COEF    
+
+        0.180300    1.000000        0.325000    1.000000
+0MPOB  =     1     2     3     4     1     2     3     1     2     1
+0MOB   =     0     0     0     0     1     1     1     2     2     3
+0GENERATED INTEGRAL =       781
+0PROGRAM  INTEGRAL LIST      USED TIME =   0.00 SEC
+
+ ****************************************    END OF  AIMAIN   == RETURN CODE IS    0
+
+
+
+
+
+ ===============    END OF  AIMAIN    == RETURN CODE IS    0 ====     USED TIME IS          0 M SEC 
+
+
+
+
+1*********************************************   SCF         ( MCMAIN )
+
+ TITLE:   BE SINGLET S, MRSDCI                                                   
+
+ NAME :                                                                          
+
+  NFTF  : CFP TABLE            ( 10) =    10
+  NFWFB1: CSF TAPE FOR MCSCF   ( 11) =    11
+  NFWFX : EE  TAPE FOR MCSCF   ( 14) =     8
+  NFWFW : WORK FILE 1          (  9) =     9
+  NFTBL : STORE CFP ETC        ( 88) =    88
+
+     PARAMETER LIST                        
+
+      RULE           =     0      LWFL  (  2000) =  2000
+      LRPS  ( 10000) = 10000
+
+  SUMMARY FILES UNIT =   7     PRINT  FLAG =   0
+
+
+ coupling sequence of shells
+   1s  2s  3s  4s  2p  3p  4p  1d  2d  1f
+
+ default closed shells
+   1s
+
+ orbital sequence is default, i. e. the same as the coupling sequence
+
+ cfp table is taken from 
+  coefficient of fractional parentage. s-f: complete, up to l=9          
+
+
+ csf summary:
+  number of configurations:                    2
+  number of configuration types:               2
+  core storage for csf (i*2):                 20
+
+ --------------------------------- stgen  used time =      0.00 sec
+  
+  
+
+  > SPIN       MULTIPLICITY :   1
+  > ORBITAL    MULTIPLICITY :   1
+  > PARITY                  :   0
+  > NUMBER OF ELECTRONS     :   4
+
+
+ >>>> MCFLAG    8
+  
+  
+  > EXPRESSION USED CPU TIMES    0 SEC    0 M SEC
+  
+
+
+
+
+      GENERATED CSF                        :        2
+      NUMBER OF CSF TYPE                   :        2
+      USING READ BUFFER FOR WAVE FUNCTIONS :        0 K BYTE
+
+
+    ENERGY EXPRESSION         SUMMARY:
+
+   COEFFICIENTS ( TOTAL )             14,      CALC      14
+   COEFFICIENTS ( ONE ELECTRON )       4,      CALC       4
+
+   NON-ZERO MATRIX ELEMENTS               3
+
+  LIJB (RESERVED):      2048,      ACTUALLY USED:      7
+  LTRI (RESERVED):     32768,      ACTUALLY USED:      7
+
+
+
+
+ SCF flag =    1
+  
+  
+  VECTOR HISTORY
+      0     0     1     4
+      0     1     1     3
+      0     2     1     2
+      0     3     1     1
+                   NBF     NORB
+ Symmetry    1       4       4
+ Symmetry    2       3       3
+ Symmetry    3       2       2
+ Symmetry    4       1       1
+  
+  
+ Read from   27 set    0       1S to   4S
+ Read from   27 set    0       1P to   3P
+ Read from   27 set    0       1D to   2D
+ Read from   27 set    0       1F to   1F
+  
+  
+  
+  
+   1 iterations    Total Energy        -14.6164304403 a.u.   Elow  -->       0.626E+00 a.u.       0.117E-02
+  
+  
+   2 iterations    Total Energy        -14.6164382805 a.u.   Elow  -->       0.784E-05 a.u.       0.173E-03
+  
+  
+   3 iterations    Total Energy        -14.6164382636 a.u.   Elow  -->       0.168E-07 a.u.       0.119E-04
+  
+  
+   4 iterations    Total Energy        -14.6164382636 a.u.   Elow  -->       0.476E-11 a.u.       0.663E-06
+  
+  
+   5 iterations    Total Energy        -14.6164382636 a.u.   Elow  -->       0.891E-11 a.u.       0.386E-07
+  
+  
+   6 iterations    Total Energy        -14.6164382636 a.u.   Elow  -->       0.938E-12 a.u.       0.197E-08
+  
+  
+  
+   >>>>>>  CI  Vector
+
+         1
+                         
+      0.94986547
+      0.31265890
+  
+  
+  Symmetry    1
+  
+   OCC Numbers
+
+         1            2
+                         
+      2.00000000     1.80448882
+  
+   Eigen Values
+
+         1            2
+                         
+     -4.71192809    -0.34971901
+  
+   Eigen Vectors
+
+         1            2
+                         
+      0.99130094    -0.02383693
+     -0.00780039    -0.60120976
+      0.01578768    -0.24101774
+     -0.00142680    -0.26559952
+  
+  
+  Symmetry    2
+  
+   OCC Numbers
+
+         1
+                         
+      0.19551118
+  
+   Eigen Values
+
+         1
+                         
+     -0.49160004
+  
+   Eigen Vectors
+
+         1
+                         
+      0.31800609
+      0.68433021
+      0.12127780
+
+
+ Output vectors stored in file 27  at record    1
+  
+  
+  >>> SCF converged after    6    iterations !
+  
+   Total Energy =       -14.61643826 a.u.  
+
+                      Used CPU time          0 M sec      Total CPU time          0 Sec
+  
+
+ ****************************************    END OF  MCMAIN  == RETURN CODE IS    0
+
+
+
+
+
+ ===============    END OF  MCMAIN    == RETURN CODE IS    0 ====     USED TIME IS          0 M SEC 
+
+
+
+
+1*********************************************   WAVE FUNCTION( WFMAIN )
+
+ TITLE:   BE SINGLET S, MRSDCI                                                   
+
+ NAME :   BE SINGLET S, MRSDCI                                                   
+
+  NFTF  : CFP TABLE            ( 10) =    10
+  NFWFB0: CSF TAPE FOR GENERAL ( 11) =    11
+  NFWFB1: CSF TAPE FOR SD-CI   ( 12) =    12
+  NFWFE : EE  TAPE FOR SD-CI   ( 15) =    15
+  NFWFP : EE  TAPE FOR PT-EE   ( 14) =    14
+  NFWFW : WORK FILE 1          (  9) =     9
+  NFTBL : STORE CFP ETC        ( 88) =    88
+
+     PARAMETER LIST                        
+
+      RULE           =     1      LWFL  (  2000) =  2000
+      LRPS  ( 10000) = 10000
+
+  SUMMARY FILES UNIT =   7     PRINT  FLAG =   0
+
+
+ coupling sequence of shells
+  12s 11s 12p 11p 12d 11d 11f  2s  2p  1s
+
+ default closed shells
+   1s
+
+ orbital sequence is default, i. e. the same as the coupling sequence
+
+ cfp table is taken from 
+  coefficient of fractional parentage. s-f: complete, up to l=9          
+
+               101   2  1s
+       1        2s
+   
+               301   2  1s
+       2        2p
+   
+
+ csf summary:
+  number of configurations:                   16
+  number of configuration types:              11
+  core storage for csf (i*2):                 93
+
+ --------------------------------- stgen  used time =      0.00 sec
+  
+  
+  > RESERVED LTRI  IS        0
+  > RESERVED LRPSX IS860000000
+  
+ >>>> MCFLAG    0
+
+  TO        1      101- 1s > 
+            1>    2s* 2( 1s)
+
+  TO        2      301- 1s > 
+            2>    2p* 2( 1s)
+  
+  
+  > EXPRESSION USED    0 SEC    0 M SEC OF CPU TIME
+  
+ >>>> MCFLAG    0
+  
+  
+  > EXPRESSION USED    0 SEC    0 M SEC OF CPU TIME
+  
+
+
+
+
+      GENERATED CSF                        :       16
+      NUMBER OF CSF TYPE                   :       11
+      USING READ BUFFER FOR WAVE FUNCTIONS :        1 K BYTE
+
+
+    ENERGY EXPRESSION      SUMMARY:
+   COEFFICIENTS ( TOTAL )            402,      CALC     271
+   COEFFICIENTS ( ONE ELECTRON )      59,      CALC      43
+
+   NON-ZERO MATRIX ELEMENTS             105
+
+  LIJB (RESERVED):      2048,      ACTUALLY USED:     14
+  LTRI (RESERVED):     32768,      ACTUALLY USED:     24
+
+
+
+
+
+ ****************************************    END OF  WFMAIN  == RETURN CODE IS    0
+
+
+
+
+
+ ===============    END OF  WFMAIN    == RETURN CODE IS    0 ====     USED TIME IS          0 M SEC 
+
+
+
+
+1*********************************************   TRANSFORMATION( TRMAIN)
+
+ TITLE :   BE SINGLET S, MRSDCI                                                   
+
+ NAME  :   BE SINGLET S, MRSDCI                                                   
+
+  NFAII :  AO BASIS INTEGRAL       ( 18) =    18
+  NFTRI :  TRANSFORMED INTEGRAL    ( 16) =    16
+  NFTRN : PERMANENT TR COEFFICIENTS( 27) =    27
+  NFTRC : TEMPORARY TR COEFFICIENTS( 21) =    21
+  NFTRD :  WORK FILE ( DIRECT )    ( 20) =    20
+
+
+  ITRNS :  TRANSFORMATION RUN FLAG       =     2
+  LDSK  :  NUMBER OF BLOCKS IN DA FILE   =  2000
+  SUMMARY FILES UNIT =   7      PRINT FLAG =   0
+
+0VECTOR HISTORY
+   1   0   1   4
+   1   1   1   3
+   1   2   1   2
+   1   3   1   1
+1 BE SINGLET S, MRSDCI                                                                                   Nov 3 2615:49:00            
+0NMVL =        4        NFTRN =       27        LTRA1B =     7200
+ MAXM =        0        NFTA2 =       21        LTRB1  =      448
+ NBFT =       10        NFAII =       18        NCORGD =430000000
+ NNUC =        1        NFTRI =       16
+ NSYM =        4        NFTRD =       20        LPRDI  =     1798
+ NOBT =       10        MXNBX =      200
+0NBF =    4    3    2    1
+0MOB =    4    3    2    1
+1 INPUT VECTORS
+
+
+ SYM=  1
+
+
+                        1              2              3              4
+
+         1     0.99130094    -0.02383693     1.52593147     1.64248195
+         2    -0.00780039    -0.60120976     2.98976289     2.24161345
+         3     0.01578768    -0.24101774    -0.96126373    -2.28953958
+         4    -0.00142680    -0.26559952    -2.36121329    -0.38303050
+
+
+ SYM=  2
+
+
+                        1              2              3
+
+         1     0.31800609     0.13736494    -1.34964907
+         2     0.68433021     0.86416550     1.58115866
+         3     0.12127780    -1.36895721    -0.69209270
+
+
+ SYM=  3
+
+
+                        1              2
+
+         1     0.46225801     1.73416314
+         2     0.58240895    -1.69758772
+
+
+ SYM=  4
+
+
+                        1
+
+         1     1.00000000
+
+ ORTHONORMALIZED VECTORS
+
+
+ SYM=  1
+
+
+                        1              2              3              4
+
+         1     1.64248195     1.52593147    -0.02383693     0.99130094
+         2     2.24161345     2.98976289    -0.60120976    -0.00780039
+         3    -2.28953958    -0.96126373    -0.24101774     0.01578768
+         4    -0.38303050    -2.36121329    -0.26559952    -0.00142680
+
+
+ SYM=  2
+
+
+                        1              2              3
+
+         1    -1.34964907     0.13736494     0.31800609
+         2     1.58115866     0.86416550     0.68433021
+         3    -0.69209270    -1.36895721     0.12127780
+
+
+ SYM=  3
+
+
+                        1              2
+
+         1     1.73416314     0.46225801
+         2    -1.69758772     0.58240895
+
+
+ SYM=  4
+
+
+                        1
+
+         1     1.00000000
+
+
+ SYM=  1
+
+
+                                  1                        2                        3                        4
+
+         1    0.164248195278276E+01    0.152593147340333E+01   -0.238369312425373E-01    0.991300941550415E+00
+         2    0.224161344508470E+01    0.298976289156429E+01   -0.601209763085648E+00   -0.780039441240842E-02
+         3   -0.228953957620196E+01   -0.961263732577629E+00   -0.241017737279361E+00    0.157876849637256E-01
+         4   -0.383030497956740E+00   -0.236121329154331E+01   -0.265599515198233E+00   -0.142679780222552E-02
+
+
+ SYM=  2
+
+
+                                  1                        2                        3
+
+         1   -0.134964907167533E+01    0.137364937677975E+00    0.318006087481052E+00
+         2    0.158115865917282E+01    0.864165500040851E+00    0.684330212123327E+00
+         3   -0.692092698922063E+00   -0.136895721395503E+01    0.121277796425924E+00
+
+
+ SYM=  3
+
+
+                                  1                        2
+
+         1    0.173416313939080E+01    0.462258005112248E+00
+         2   -0.169758772125454E+01    0.582408950787949E+00
+
+
+ SYM=  4
+
+
+                                  1
+
+         1    0.100000000000000E+01
+
+ ****************************************    END OF  TRMAIN == RETURN CODE IS    0
+
+
+
+
+
+ ===============    END OF  TRMAIN    == RETURN CODE IS    0 ====     USED TIME IS          0 M SEC 
+
+
+
+
+1*********************************************   STEP CI      ( CIMAIN  )
+
+ TITLE:   BE SINGLET S, MRSDCI                                                   
+
+ NAME :   BE SINGLET S, MRSDCI                                                   
+
+  SUMMARY FILES UNIT =   7
+
+  DATA SET FILE NUMBERS AND LENGTH SPECIFICATION
+
+      NFCIS=71      NFTD= 24      NCOR = 429999918
+      NFTE= 15      NFTV= 27      LNIX =   449     LCIV =     2000
+      NFTA= 16      NFTW= 28      LMTA =  2000     LTRI =   500000
+      NFTT= 21      NFCV= 37      NFHO =    39     NFIV =        0
+      NFTH= 22      NFHD= 38      NFDW1=    34     NFOW1=       35
+      RUN DIRECTORY           NRNFG     INFLG     IOFLG     NPFLG     DEBUG
+
+      1 ENERGY MATRIX             1         0         0         0         0
+      2 DIAGONALIZATION           1         0        -1         0         0
+      3 DENSITY MATRIX            1         0        -1         0         0
+      4 ENERGY LOWERING           0         0         0         0         0
+      5 NATURAL ORBITAL           1         0         0         0         0
+
+
+           -- NEW VERSION OF ATOMCI -- 
+
+ NSTATE=    1     IDTYP =    0  0  NPCVC =    1     NPOVC =    1
+ IPS   =    7     MAXIT =  100     IOBVC =    1
+0MOTYP =    1     NIND  =    0
+1SECTION 1  ENERGY MATRIX          ************************************************************************************************
+0(RUN)      BE SINGLET S, MRSDCI                                                                                   Nov 3 2615:49:00
+0(EXP)      BE SINGLET S, MRSDCI                                                                                                   
+0(INT)      BE SINGLET S, MRSDCI                                                                                   Nov 3 2615:49:00
+0NOCSF=             16   IDIAG=         1
+0NSYM =  4   NOB  =    4    3    2    1
+
+
+ -- FILES -- 
+  > AO INTEGRAL         FILE IS      16    > ENERGY EXPRESSION   FILE IS      15
+  > H-DIAG MATRIX       FILE IS      38    > H-OFF  MATRIX       FILE IS      39
+  > DENSITY MATRIX      FILE IS      24
+  
+
+ - CORE INFORMATION - 
+  > RESERVED CORE                          IS 429999918 WORD <<
+  >  READ  BUFFER   FOR FACTOR             IS      4096 WORD <<
+  >  READ  BUFFER   FOR INDEXES            IS         8 WORD <<
+  >  READ  BUFFER   FOR INTEGRAL           IS      1602 WORD <<
+  >  WRITE BUFFER   FOR ENERGY MATRIX      IS        32 WORD <<
+  >  WRITE BUFFER   FOR DENSITY EXPRESSION IS      2245 WORD <<
+  >  READ  BUFFER   FOR INTEGRAL ADDRESS   IS 429991933 WORD <<
+  
+  
+  > NKEEP                               16
+  > # OF NON ZERO ELEMENTS  >          136
+  > # OF DENSITY MATRIX IS  >           59
+  
+  
+     ENERGY DIAG MATRIX (  1,  1 ) =    -0.1457225034E+02
+     ENERGY DIAG MATRIX (  2,  2 ) =    -0.1420860162E+02
+
+
+
+     ENERGY MATRIX (  1,  1 ) =    -0.1457225034E+02
+  
+1SECTION 2  DIAGONALIZATION        ************************************************************************************************
+0(RUN)      BE SINGLET S, MRSDCI                                                                                   Nov 3 2615:49:00
+              NONZERO ELEMENT      100.000000     %
+  
+                          GUESS CONSTRUCTION TIME=   0.00000 SEC
+
+
+
+1RUN      1         NOCSF=    16        IDTYP=    0    0
+ STATE    1         NKEEP=    16(   10) JDFLG=    7  100     THRES=  0.00D+00
+0       E (TOTAL)           E (REFERENCE)       E (H MATRIX)        E (TOTAL-REF)       E (TOTAL-H MAT)
+0       -14.61854387          0.00000000        -14.57225034        -14.61854387         -0.04629353
+
+        1     -0.95325
+        2     -0.29881
+        7      0.02703
+        9      0.02481
+        8      0.01744
+       14      0.01693
+       16     -0.00621
+       13      0.00401
+        4      0.00369
+       11     -0.00367
+1SECTION 3 DENSITY MATRIX         ************************************************************************************************
+0(RUN)      BE SINGLET S, MRSDCI                                                                                   Nov 3 2615:49:00
+0 1ST ORDER DENSITY MATRIX 
+0 STATE       1
+0    SYMMETRY    1
+
+     1  0.00207763
+     2 -0.00156336  0.00123756
+     3 -0.00091010  0.00486876  1.81739331
+     4  0.00000000  0.00000000  0.00000000  2.00000000
+0    SYMMETRY    2
+
+     1  0.00000052
+     2  0.00000065  0.00002690
+     3  0.00027471 -0.00003501  0.17858021
+0    SYMMETRY    3
+
+     1  0.00003280
+     2 -0.00002313  0.00057387
+0    SYMMETRY    4
+
+     1  0.00007719
+1SECTION 5  ORBITAL TRANSFORMATION ************************************************************************************************
+0(RUN)      BE SINGLET S, MRSDCI                                                                                   Nov 3 2615:49:00
+  
+  STATE NO.    1
+  
+ 0 OUTPUT VECTORS IN TERMS OF BF
+
+
+ SYM=  1
+
+
+                        1              2              3              4
+
+               2.00000000     1.81740682     0.00326893     0.00003275
+
+         1     0.99130094     0.02057274     0.37942864     2.20961370
+         2    -0.00780039     0.59432034    -0.03385540     3.73772702
+         3     0.01578768     0.24244107    -1.23692401    -2.15298637
+         4    -0.00142680     0.27173652     1.12790568    -2.10868957
+
+
+ SYM=  2
+
+
+                        1              2              3
+
+               0.17858064     0.00002691     0.00000008
+
+         1     0.31590261    -0.10197066    -1.35327644
+         2     0.68659226    -0.90544295     1.55689329
+         3     0.12048140     1.38661858    -0.65613841
+
+
+ SYM=  3
+
+
+                        1              2
+
+               0.00057486     0.00003182
+
+         1    -0.38789667     1.75229576
+         2    -0.65426076    -1.67121127
+
+
+ SYM=  4
+
+
+                        1
+
+               0.00007719
+
+         1     1.00000000
+1         
+ VECTOR SET   1                                                                                   
+
+                  NBF   4   3   2   1
+                  NOB   4   3   2   1
+
+
+
+0                  
+ VECTOR SET   2    BE SINGLET S, MRSDCI                                                           
+
+                  NBF   4   3   2   1
+                  NOB   4   3   2   1
+
+
+
+0                  
+
+1
+
+      RUN DIRECTORY           NRNFG        USED CPU TIME 
+
+      1 ENERGY MATRIX             1           0 SEC   0 M SEC 
+      2 DIAGONALIZATION           1           0 SEC   0 M SEC 
+      3 DENSITY MATRIX            1           0 SEC   0 M SEC 
+      4 ENERGY LOWERING           0           0 SEC   0 M SEC 
+      5 NATURAL ORBITAL           1           0 SEC   0 M SEC 
+
+        TOTAL USED CPU                        0 SEC   0 M SEC 
+  
+  
+  > HMAT & COEF & CSF WERE WRITTEN IN   71 <
+  
+
+ ****************************************    END OF  CIMAIN   == RETURN CODE IS    0
+
+
+
+
+
+ ===============    END OF  CIMAIN    == RETURN CODE IS    0 ====     USED TIME IS          0 M SEC 
+
+
+
+
+1*********************************************   RESULTS & SUMMARY( RSMAIN )
+
+ TITLE:   BE SINGLET S, MRSDCI                                                   
+
+ NAME :   BE SINGLET S, MRSDCI                                                   
+
+  NFCIS :  CI RESULTS           ( 71) =    71
+  RULE  :  FORMULA FOR CONTRIBUTION   =     2
+  PTHR :  PRINT THRESHOLD            =-0.100E-02
+  SUMMARY FILES UNIT =   7      PRINT FLAG =   0
+
+
+  >  BE SINGLET S, MRSDCI                                                                                   Nov 3 2615:49:00
+
+  > STATES INFORMATION : 
+     ISPIN:  SPIN MULTIPLICITY         =       1
+     IORB :  ORBITAL MULTIPLICITY      =       1
+     IPAR :  PARITY (EVEN: 0, ODD: 1)  =       0
+     ITNEL:  TOTAL NUMBER OF ELECTRONS =       4
+
+     # REF:  NUMBER OF REFERENCES      =       2
+     DIM  :  CI VECTOR SIZE            =      16
+1
+
+      1 STATE INFORMATION 
+           REFERENCE ENERGY (WEIGHT)  =       -14.61634681  (  0.99797943 )
+           SD-CI ENERGY (CORRELATION) =       -14.61854387  ( -0.00219706 )
+           ESTIMATE SD ENERGY (THROWN)=       -14.61854387  (  0.00000000 )
+           MAX CONTRIBUTION FROM CSF  =           0.000E+00
+           E(Dav1) [E * (1-C)]        =       -14.61854831  ( -0.00000444 )
+           E(Dav2) [E * (1-C)/C]      =       -14.61854832  ( -0.00000445 )
+           E(Dav3) [E * (1-C)/(2*C-1)]=       -14.61854832  ( -0.00000446 )
+
+
+  
+  
+  
+  >> BROWN'S FORMULA  WAS USED FOR ESTIMATION OF CSF CONTRIBUTION
+  
+  
+
+                          101- 1s> 
+     1     -0.95325      2s* 2( 1s)
+
+                          301- 1s> 
+     2     -0.29881      2p* 2( 1s)
+  
+  
+  
+  
+  
+1
+
+      1 STATE INFORMATION 
+           REFERENCE ENERGY   =         -14.616347  (  0.997979 )
+           SD-CI ENERGY       =         -14.618544
+           ESTIMATE ENERGY    =         -14.618544
+
+
+  
+  
+  
+    ORBITAL CONTRIBUTION ( TOTLAL # OF ORB  10 )
+  
+     ORB ID        ORBITAL          E (CONTRIBUTION)   E (TWO PARTICLE)
+  
+       1             12s             -0.00281119        -0.00170032
+       2             11s             -0.00156613        -0.00044620
+       3             12p             -0.00000065        -0.00000008
+       4             11p             -0.00001075        -0.00001072
+       5             12d             -0.00004237        -0.00004112
+       6             11d             -0.00041519        -0.00041394
+       7             11f             -0.00010593        -0.00010593
+       8              2s             -0.46070740        -0.46069693
+       9              2p             -0.04019303        -0.04019248
+      10              1s              0.00000000         0.00000000
+  
+  
+  
+    ORBITAL CONTRIBUTION -- CORRELATED --
+  
+    ORB ID       1           2           3           4           5           6           7           8           9          10
+  
+    1 -0.00170032 -0.00111017  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000 -0.00000070  0.00000000  0.00000000
+    2 -0.00111017 -0.00044620  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000 -0.00000976  0.00000000  0.00000000
+    3  0.00000000  0.00000000 -0.00000008 -0.00000002  0.00000000  0.00000000  0.00000000  0.00000000 -0.00000055  0.00000000
+    4  0.00000000  0.00000000 -0.00000002 -0.00001072  0.00000000  0.00000000  0.00000000  0.00000000 -0.00000000  0.00000000
+    5  0.00000000  0.00000000  0.00000000  0.00000000 -0.00004112 -0.00000125  0.00000000  0.00000000  0.00000000  0.00000000
+    6  0.00000000  0.00000000  0.00000000  0.00000000 -0.00000125 -0.00041394  0.00000000  0.00000000  0.00000000  0.00000000
+    7  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000 -0.00010593  0.00000000  0.00000000  0.00000000
+    8 -0.00000070 -0.00000976  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000 -0.46069693  0.00000000  0.00000000
+    9  0.00000000  0.00000000 -0.00000055 -0.00000000  0.00000000  0.00000000  0.00000000  0.00000000 -0.04019248  0.00000000
+   10  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+  
+  
+  
+
+       7   TO       8     -0.0021465     (   -0.002158 ) 
+                                          101- 1s> 
+       7>  0.02703020     -0.0017003    12s* 2( 1s)
+
+       9   TO       9     -0.0011102     (   -0.003268 ) 
+                                          201- 2s>     201- 2s> 
+       9>  0.02481498     -0.0011102    12s* 1( 2s)  11s* 1( 1s)
+
+ ****************************************    END OF  RSMAIN  == RETURN CODE IS    0
+
+
+
+
+
+ ===============    END OF  RSMAIN    == RETURN CODE IS    0 ====     USED TIME IS          0 M SEC 
+
+
+
+

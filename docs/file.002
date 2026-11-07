@@ -1,0 +1,183 @@
+\xspace
+\section*{I/O File description}
+\xsp
+The list of units used within ATOMCI  follows. For each unit a
+brief description and the default value for the unit number are given.
+The names assigned in the control routine (\cntlnamelist NAMELIST) are employed
+to organize the list. Alternative unit names, assigned within the seven
+steps of ATOMCI, are also reported. The user will find this list of
+essential help in restart procedures.
+\xsp
+\mtab{ FILES }{default:  7}
+\begin{indention}{12mm}%%
+Summary file, containing informations on the return codes of the run and
+on the consumed CPU time.
+\xsp
+\end{indention}%%
+\mtab{ NFAII    }{default: 18}
+\begin{indention}{12mm}%%
+Atomic orbital integrals file. Generated in AIMAIN and used in TRMAIN.
+\xsp
+\end{indention}%%
+\mtab{ NFCIC }{default: 27}
+\begin{indention}{12mm}%%
+Natural orbitals file. Generated and modified
+in section 5 of CIMAIN (unit NFTV).
+\xsp
+\end{indention}%%
+\mtab{ NFCID }{default: 24}
+\begin{indention}{12mm}%%
+One electron expression. Generated in section 1 of CIMAIN and used
+in section 3 (unit NFTD).
+\xsp
+\end{indention}%%
+\mtab{ NFCIH }{default: 22}
+\begin{indention}{12mm}%%
+Density matrices. Temporary file (unit NFTH) in CIMAIN, is then
+copied to unit NFCIW. Used within section 3 of CIMAIN.
+\xsp
+\end{indention}%%
+\mtab{ NFCIH1 }{default: 38}
+\begin{indention}{12mm}%%
+Diagonal Hamiltonian matrix elements. Generated in section 1 of CIMAIN
+(unit NFHD) and used in section 2.
+\xsp
+\end{indention}%%
+\mtab{ NFCIH2 }{default: 39}
+\begin{indention}{12mm}%%
+Off-diagonal Hamiltonian
+matrix elements. Generated in section 1 of CIMAIN
+(unit NFHO) and used in sections 2 and 6.
+\xsp
+\end{indention}%%
+\mtab{ NFCII }{default:  0}
+\begin{indention}{12mm}%%
+Initial CI vector, unit NFIV in CIMAIN. Supplied by the user
+in section 2.
+\xsp
+\end{indention}%%
+\mtab{ NFCIS }{default: 71}
+\begin{indention}{12mm}%%
+File containing CI summary informations
+passed from CIMAIN, section 6 (unit NFCI), to RSMAIN.
+\xsp
+\end{indention}%%
+\mtab{ NFCIV }{default: 37}
+\begin{indention}{12mm}%%
+CI vectors. Generated within section 2 of
+CIMAIN (unit NFCV) and used in sections 3 and 6.
+\xsp
+\end{indention}%%
+\mtab{ NFCIW }{default: 28}
+\begin{indention}{12mm}%%
+Density matrices and CI vectors. Generated and modified
+within section 3 of CIMAIN (unit NFTW).
+\xsp
+\end{indention}%%
+\mtab{ NFEXE }{default: 15}
+\begin{indention}{12mm}%%
+Energy expression file. Generated in EXMAIN (see NFWFP, NFWFE) and
+used in CIMAIN, sections 1 and 6, (unit NFTE).
+\xsp
+\end{indention}%%
+\mtab{ NFEXW }{default:  0}
+\begin{indention}{12mm}%%
+Incomplete energy expression file.
+Generated in EXMAIN and supplied when restarting with RETRY=1 (see
+\exnamelist NAMELIST). Defaulted at 14 in EXMAIN (unit NFEXW).
+\xsp
+\end{indention}%%
+\mtab{ NFPTB }{default: 11}
+\begin{indention}{12mm}%%
+Selected CSF. Generated within PTMAIN and used in EXMAIN and RSMAIN.
+\xsp
+\end{indention}%%
+\mtab{ NFPTH1 }{default: 32}
+\begin{indention}{12mm}%%
+Diagonal effective Hamiltonian Matrix elements. Generated and used
+within PTMAIN, section 2 (unit NFPTD).
+\xsp
+\end{indention}%%
+\mtab{ NFPTH2 }{default: 33}
+\begin{indention}{12mm}%%
+Off-diagonal effective Hamiltonian Matrix elements. Generated and used
+within PTMAIN, section 2 (unit NFPTO).
+\xsp
+\end{indention}%%
+\mtab{ NFPTL }{default: 35}
+\begin{indention}{12mm}%%
+Work file generated and used sometimes within PTMAIN.
+\xsp
+\end{indention}%%
+\mtab{ NFPTV  }{default: 31}
+\begin{indention}{12mm}%%
+CI vectors in Perturbative CI. Generated and used in PTMAIN (section 3).
+\xsp
+\end{indention}%%
+\mtab{ NFTBL    }{default: 88}
+\begin{indention}{12mm}%%
+Work file. Used sometimes in WFMAIN and EXMAIN.
+Contains temporary data on the CFP.
+\xsp
+\end{indention}%%
+\mtab{ NFTF }{default: 10}
+\begin{indention}{12mm}%%
+Coefficients of Fraction Parentage, CFP, tables. Used in WFMAIN, PTMAIN,
+EXMAIN and RSMAIN.
+\xsp
+\end{indention}%%
+\mtab{ NFTD   }{default: 20}
+\begin{indention}{12mm}%%
+Direct access work file. Unit NFTRD in TRMAIN. Usually not used,
+will be necessary only if the programs finds impossible to
+perform the transformation wholly in core.
+\xsp
+\end{indention}%%
+\mtab{ NFTRC1   }{default: 27}
+\begin{indention}{12mm}%%
+Transformation coefficients (NO's or original). Permanent file
+generated in CIMAIN, section 5 (unit NFTV), and used in TRMAIN (unit
+NFTRN).
+\xsp
+\end{indention}%%
+\mtab{ NFTRC2   }{default: 21}
+\begin{indention}{12mm}%%
+Transformation coefficients (NO's or original). Temporary file
+generated in TRMAIN as a copy of NFTRC1 (and named NFTRC) and used
+in CIMAIN, sections 3 and 6 (unit NFTT).
+\xsp
+\end{indention}%%
+\mtab{ NFTRI    }{default: 16}
+\begin{indention}{12mm}%%
+Transformed integrals file. Generated in TRMAIN and used in CIMAIN
+(unit NFTA) and PTMAIN.
+\xsp
+\end{indention}%%
+\mtab{ NFWFB0    }{default: 11}
+\begin{indention}{12mm}%%
+CSF list for general CI. Generated in WFMAIN (unit NFWFA) and used in
+EXMAIN.
+\xsp
+\end{indention}%%
+\mtab{ NFWFB1    }{default: 12}
+\begin{indention}{12mm}%%
+CSF list for SD-CI. Generated and used in WFMAIN (unit NFWFB).
+\xsp
+\end{indention}%%
+\mtab{ NFWFE    }{default: 15}
+\begin{indention}{12mm}%%
+Energy expression in the CI calculation. Generated in WFMAIN,
+used in CIMAIN and in EXMAIN (units NFEXE for the complete and
+NFEXW for the uncompleted EE files).
+\xsp
+\end{indention}%%
+\mtab{ NFWFP    }{default: 14}
+\begin{indention}{12mm}%%
+Energy expression in the perturbative selection. Generated in WFMAIN,
+and used in PTMAIN.
+\xsp
+\end{indention}%%
+\mtab{ NFWFW    }{default:  9}
+\begin{indention}{12mm}%%
+Work file.
+\end{indention}%%

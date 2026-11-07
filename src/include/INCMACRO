@@ -1,0 +1,6 @@
+  %%DEBUG     %   ;   %%ERROR     %
+  %%START  USCPU = JOB('%SUBNAME',FILES,METHOD,START, ERRCD) ; %
+  %%FINISH ( RTNCD = ERRCD ; --
+      FORMAT WRITE 'END OF %SUBNAME == RETURN CODE IS ',ERRCD ; --
+       (/' ',40('*'),4X,A,I4////) ; EXEC WK_FREE ; --
+    USCPU = JOB('%SUBNAME',FILES,METHOD,FINISH,ERRCD) ) %

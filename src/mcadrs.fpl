@@ -1,0 +1,85 @@
+process file 'mcadrs.f'
+process no list 
+%%subname lnoffs%
+function %subname -- offset 
+	   (lmax,nbf,off)  
+  integer   nbf(lmax),off(lmax+1)
+  integer   %subname
+begin 
+   jj = 1 ; off(1) = 0 ; 
+   for i = 1, lmax
+   do 
+      jj = jj + 1 
+      off(jj) = off(jj-1) + nbf(i)
+      end 
+   %subname = off(jj)
+   end 
+%%subname sqoffs%
+function %subname -- offset 
+	   (lmax,nbf,nob,off)  
+  integer   nbf(lmax),nob(lmax),off(lmax+1)
+  integer   %subname
+begin 
+   off(1) = 0 ; 
+   for i = 1, lmax
+   do 
+      off(i+1) = off(i) + nbf(i)*nob(i)
+      end 
+   %subname = off(lmax+1)
+   end 
+%%subname cofset%
+subroutine %subname -- offset 
+	   (lmax,nwt, nbf,nob,off,nolf,nwsq)  
+  integer   nbf(lmax),nob(lmax),off(*),nolf(*),nwsq(*)
+begin 
+   jj = 0 ; off(1) = 0 ; 
+   for i = 1, lmax
+   for j = 1, nob(i)
+   do 
+      jj = jj + 1 
+      nwsq(jj) = j ;
+      nolf(jj) = i ;
+      off(jj+1) = off(jj) + nbf(i)
+      end 
+   nwt = jj 
+   end 
+%%subname jkadrs%
+function %subname --
+	   (lmax, nbf,nob,joffs,koffs)  
+  integer   nbf(lmax),nob(lmax)
+  integer   joffs(lmax,lmax,lmax*2)
+  integer   koffs(lmax,lmax,lmax*2)
+  integer   debug
+  integer   %subname
+  data debug /0/
+begin
+   iused = 0 
+   kmax= 2* lmax - 1
+   for ia = 1, lmax ; for ib = 1, lmax ; for km= 1, lmax* 2
+   ( joffs(ia,ib,km) =-1 ; koffs(ia,ib,km) = -1 )
+   for ia = 0, lmax -1 
+   for ib = 0, lmax - 1 
+   do   
+      for km =  1 ,  min0(ia,ib)*2  + 1, 2
+      do 
+        joffs(ia+1,ib+1,km) = iused
+	iused = iused + nbf(ia+1)*nbf(ia+1)*nob(ib+1)
+	end 
+      end 
+   for ia = 0, lmax -1 
+   for ib = 0, lmax - 1 
+   do 
+      for km = abs(ia - ib ) + 1 , ( ia + ib ) + 1, 2
+      do 
+        koffs(ia+1,ib+1,km) = iused
+	iused = iused + nbf(ia+1)*nbf(ia+1)*nob(ib+1)
+	end 
+      end 
+   %subname = iused
+   if debug = 0 then exit
+   for ia = 1, lmax ; 
+   for ib = 1, lmax ; 
+   for km= 1, lmax* 2
+   format write ia,ib,km,joffs(ia,ib,km), koffs(ia,ib,km)
+   ( ' J and K int > ',3i5,2i10 )
+   end 

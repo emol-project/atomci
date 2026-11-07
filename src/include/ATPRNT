@@ -1,0 +1,422 @@
+  SUBROUTINE ATPRNT(NPRTY,MOCCN,NORBT,NSCHL,  --
+                    ANG  ,CSCHL,NTOPN,NORTS,NBORB,  --
+                    NSTOR,MAXOC,NCONF,        --
+                    NKIND,MKIND,MSCHL,NCLET,  --
+                    MCONF,MSCH7,NREFN,NSCON,NDCON,  --
+                    LPOUT)
+  /*================================================================
+  /*  ATPRINT
+  /*    PRINT OUT CONFIGURATIONS
+  /*                       CODED BY M SEKIYA  06/11/86
+  /*================================================================
+  /*     CALLED  SUBROUTINE
+  /*     ATGDRV
+  /*================================================================
+  /*     CALLING SUBROUTINE
+  /*================================================================
+  /*================================================================
+  /*
+  /*   ---- ARREY ---- RETURN  NONE
+  /*
+  /*================================================================
+  /*   ----- ARREY (GIVEN) -----
+  IMPLICIT INTEGER * 4 (A-Z)
+  INTEGER  * 4 --
+  NACTE                  ,-- # OF ACTIVE ELECTRON
+  MKIND                  ,-- MAX NUMBER OF ORBITAL KIND
+  NKIND                  ,-- ACTUAL NUMBERS OF ORBITAL KINDS
+  MSCHL                  ,-- TOTAL  NUMBERS OF SCHELL
+  MCONF                  ,-- MAXIMUM NUMBER OF CONFIGURATION
+  NCLET                  ,-- MKIND+2
+  MSCH7                  ,-- ROW SIZE OF NCONF
+  LPOUT                  ,-- DEBUG FLAG
+  NREFN                  ,-- ACTUAL REFERENCE NUMBER
+  NSCON                  ,-- ACTUAL SINGLE CONFIGURATION NUMBER
+  NDCON                  ,-- ACTUAL DOUBLE CONFIGURATION NUMBER
+  NSCHL (NKIND)          ,-- NUMBERS OF S,P,D,F..SCHELLS
+  NPRTY (NKIND)          ,-- PARITY OF  S,P,D,F..ORBITALS
+  MOCCN (NKIND)          ,-- MAXIMUM NUMBERS OF S,P,D,F..SCHELLS
+  NORBT (NKIND)          ,-- NUMBERS OF ORBITALS IN S,P,D,F..SCHELLS
+  NTOPN (NKIND)          ,-- INDEXING TABLE FIRST ORBITAL NO. OF SCHEL
+  NORTS (2,NKIND)        ,-- INDEXING TABLE ORBITAL NO. TO SCHELL NO.
+  NBORB (2,MSCH7)        ,-- TOP AND END ORBITAL NO. IN EACH SHELLS
+  NSTOR (MSCHL)          ,-- INDEXING TABLE SCHELL NO.TO ORBITAL NO.
+  MAXOC (MSCHL)          ;-- MAX OCCUPATION NUMBER OF EACH SCHELL
+
+  INTEGER * 2 --
+  NCONF (MSCH7,MCONF)    ;-- CONFIGURATION TABLE
+
+  INTEGER * 4 --
+  KSHL                   ,-- PRINT CONTROL FLAG FOR INNER PART
+  TNCONF                 ;-- TOTAL CONFIGURATION TYPE
+
+  INTEGER * 4 --
+  LASTEX                 ,-- LAST ADDR FOR COUPLING SCHEME
+  NEXT(0:200)            ,-- POINTER FOR COUPLING SCHEME
+  NOUTER(12)             ,-- # OF OUTER ORBITAL IN SYMM I
+  NCARD (12)             ;/* CONTINUATION
+
+  LOGICAL    --
+  OUTFLG(200)            ;-- POINTER FOR COUPLING SCHEME
+
+  CHARACTER                  --
+  ANG   (NCLET)  * 1     ,-- CHARACTER OF  'S','P','D',
+  CSCHL (MSCHL)  * 2     ,-- NAME OF EACH SCHELL
+  CLOSHL         * 80    ,--
+  CARDIN         * 80    ,--
+  CARDX(12)      * 80    ,--
+  CARDY          * 80    ,--
+  CSCHLX         *140    ,--
+  BLNK           *  2    ,--
+  CHARX(40)      * 2
+  DATA CHARX/'11','12','13','14','15','16','17','18','19','20',--
+             '21','22','23','24','25','26','27','28','29','30',--
+             '31','32','33','34','35','36','37','38','39','40',--
+             '41','42','43','44','45','46','47','48','49','50'/
+  DATA BLNK/'  '/
+  %%DEBUG_LEVEL  1 %
+  %%ERROR EXIT ( 3L ; ' ** ERROR OCCUER IN INNER PRINT ' ; --
+     '  ACTIVE ELECTRON IS OUT OF RANGE *** ' ; 1L ;--
+     '  # OF ACTIVE ELECTRON > ' ; PUT NACTE  I5 ; --
+     '  OCCUPIED ELECTRON    > ' ; PUT TACTEL I5 ; 2L ; ) %
+  %%ERROR_1 EXIT ( 3L ; ' ** ERROR OCCUER IN OUTER PRINT ' ; --
+     '  OUTER ELECTRON IS OUT OF RANGE *** ' ; 1L ;--
+     '  # OF ACTIVE ELECTRON > ' ; PUT NEXORB I5 ; --
+     '  OCCUPIED ELECTRON    > ' ; PUT TACTEL I5 ; 2L ; ) %
+  BEGIN
+     IF LPOUT >  0   THEN CALL ATBIGN('ATPRNT')
+     IF LPOUT >  %DEBUG_LEVEL THEN EXEC DEBUG_PRINT
+     EXEC PRESET
+     EXEC PRINT_CSF_INPUT-DATA
+     IF LPOUT > %DEBUG_LEVEL
+     THEN ( 1L ; ' NUMBER OF CONFIGURATION TYPE IS'; PUT TNCONF I6; 1L)
+     IF LPOUT >  0   THEN CALL ATENDS('ATPRNT')
+     END
+  PROCEDURE PRESET
+     LIST-3 DO ;
+        NACTE = 0 ; TNCONF = 0 ;
+        /* SET UP CARD X  &  Y
+        FORTRAN WRITE(CARDY,'(2X,20A3)') (CHARX(II),II=20,1,-1)
+        DO FOR I = 1, NKIND ;
+           NOUTER(I) = NORBT(I) ;
+           NX0  = NORBT(I) ;
+           IF NX0 > 20
+           THEN DO
+             NCARD(I) = NX0 ; NB0 = 40 - NX0 ;
+             FORTRAN WRITE(CARDX(I),'(2X,20A3)') --
+             ( BLNK,II=1,NB0 ),(CHARX(II),II=NX0,21,-1 )
+             END
+           ELSE DO
+             NCARD(I) = 0   ; NB0 = 20 - NX0 ;
+             FORTRAN WRITE(CARDX(I),'(2X,20A3)') --
+             ( BLNK,II=1,NB0 ),( CHARX(II),II=NX0, 1,-1 )
+             END
+           END
+        FOR I = 1, MSCHL ;
+        NACTE = NACTE + NCONF(I,1) ;
+        /* Validation:
+        /* NACTE=1 leaves no room for a double excitation, which runs
+        /* ATPRNT's "SECOND ORDER SPACE" printer below into a runaway loop
+        /* (I.EQ.NDCON exit skipped on first entry when NSCON=NDCON going
+        /* in). Reject narrowly on NACTE=1 itself -- NOT on "row-1 shell at
+        /* occupation 1", which was tried before and was wrong (the real
+        /* cause was non-consecutive shell numbering instead).
+        IF NACTE = 1 THEN DO ;
+           FORTRAN WRITE(6,*) ' **************************************************'
+           FORTRAN WRITE(6,*) ' ** ERROR STOP IN SUB.ATPRNT                     **'
+           FORTRAN WRITE(6,*) ' **************************************************'
+           FORTRAN WRITE(6,*) ' - REFERENCE HAS NACTE=1 (ONE ACTIVE ELECTRON).  -'
+           FORTRAN WRITE(6,*) ' - NO ROOM FOR A DOUBLE EXCITATION.              -'
+           FORTRAN WRITE(6,*) ' - PROCESS IS ABEND.                             -'
+           FORTRAN STOP 923
+           END ;
+        NVAL = 0 ;
+        FOR I = 1, MSCHL ;
+        IF I = NORTS(2,NSTOR(I))
+        THEN OUTFLG(I) = .TRUE.
+        ELSE ( OUTFLG(I) = .FALSE. ; NVAL = NVAL + 1 )
+        J = 0
+        FOR I = 1, MSCHL ;
+        IF OUTFLG(I) THEN ( NEXT(J) = I ; J = I )
+        LASTEX = J ;  INX = 0
+        FOR I = 1, MSCHL ;
+        IF ^ OUTFLG(I) THEN ( NEXT(J) = I ; J = I ; INX = INX + 1 )
+  /* INPUT COUPLING SCHEME
+        NEXT(J) = 0 ;
+        2L ; '  > COUPLING SCHEME FOR VALENCE ORBITAL > ' ; 1L
+        J = NEXT(LASTEX) ;
+        UNTIL J = 0 ; ( 3X ; PUT  CSCHL(J) C2 ; J = NEXT(J) ) ; 1L
+        J = NEXT(LASTEX) ;
+        FOR J = 1, MSCHL ;  (3X ; PUT  CSCHL(J) C2  )  ; 1L
+        CSCHLX=' '
+        FOR J = 1, MSCHL ;  CSCHLX(2*J-1:2*J)=CSCHL(J)   ;
+        ' INPUT NEW COUPLING SCHEME ' ; 1L
+        II = 0
+        DO UNTIL ANS > 0
+           UNTIL INDEX(CLOSHL(1:1),'"') = 0 ;
+           FORMAT READ  CLOSHL ;  ( A72 )
+           IEND = INDEX ( CLOSHL, ')' )
+           ANS = IEND
+           J = 1
+           IF IEND = 0 THEN  IEND =  72
+           UNTIL J >= IEND
+           DO
+              WHILE INDEX(CLOSHL(J:J),' ') = 1 --
+              !     INDEX(CLOSHL(J:J),',') = 1 ; J = J + 1
+              IF J >= IEND THEN EXIT
+              II = II + 1 ; CHARX(II) = CLOSHL(J:J+1) ; J = J + 2
+              END
+           END
+        IF II = INX THEN DO
+           JX = LASTEX ;
+           DO FOR J = 1, II ;
+              K = INDEX(CSCHLX,CHARX(J))/2 + 1 ; NEXT(JX) = K ;
+              JX = K
+              END
+           NEXT (JX) = 0
+           END
+        2L ; '  > COUPLING SCHEME FOR VALENCE ORBITAL > ' ; 1L
+        J = NEXT(LASTEX) ;
+        UNTIL J = 0 ; ( 3X ; PUT  CSCHL(J) C2 ; J = NEXT(J) ) ; 1L
+        ' == DEFAULT CLOSED SHELLS    == ' ; 1L
+        UNTIL INDEX(CLOSHL(1:1),'"') = 0 ;
+        FORMAT READ  CLOSHL ;  ( A72 )
+        IEND = INDEX ( CLOSHL, ')' )
+        IF IEND > 0 THEN CLOSHL = CLOSHL(1:IEND-1)
+        FORMAT  WRITE CARDIN  ; ( A72 )
+        UNTIL INDEX(CARDIN(1:1),'"') = 0 ;
+        FORMAT READ  CARDIN ;  ( A72 )
+        FORTRAN READ(CARDIN,*) SGSHL
+        IF ABS(SGSHL) >9  THEN ( ' == OPTION == ' ; PUT SGSHL I4 ; 1L )
+        TACTEL = 0 ; J = NEXT(LASTEX) ;
+        IF SGSHL > 0 THEN --
+        DO UNTIL J = NEXT(SGSHL) ;
+           IF NCONF(J,1) = 2*(2*( NSTOR(J) - 1 ) + 1 )
+           THEN TACTEL = TACTEL + NCONF(J,1) ;
+           ELSE EXIT --
+           ( SGSHL = 0 ; ' == SINGLET CPL OPTION IS IGNORED == ' ; 1L )
+           J = NEXT(J)
+           END
+        IF SGSHL > 0 THEN SGNEL = TACTEL
+        DO FOR IREF = 2, NREFN ;
+           TACTEL = 0 ; J = NEXT(LASTEX) ;
+           UNTIL J = 0 ;
+           DO ;
+              TACTEL = TACTEL + NCONF(J,IREF) ;
+              IF  J = SGSHL & SGNEL ^= TACTEL
+              THEN DO ;
+                 SGSHL =  0 ;
+                 ' == SINGLET CPL OPTION IS IGNORED == ' ; 1L ;
+                 END ;
+              J = NEXT(J)
+              END ;
+           IF  NACTE ^= TACTEL THEN %ERROR ;
+           END
+        END
+     IF LPOUT > %DEBUG_LEVEL
+     THEN DO
+        1L ;  ' == DEBUG PRINT IN PRESET ==   ' ;
+        1L ;  ' == NUMBER OF ACTIVE ELECTRONS> ' ; PUT NACTE I4 ;
+        1L ;  ' == LAST EXTERNAL ADDR        > ' ; PUT LASTEX I4
+        1L ;  ' ==           COUPLING SCHEME > ' ; 1L ;
+        J = NEXT(0)
+        UNTIL J = 0  ; (  3X ; PUT CSCHL(J) C2 ; J = NEXT(J) )
+        1L ;  ' == NUMBER OF OUTER ORBITALS  > ' ; 1L ;
+        FORMAT WRITE ( ANG(I),   I=1,NKIND ) ; ( 20( 4X, A1 ) ) ;
+        FORMAT WRITE ( NOUTER(I),I=1,NKIND ) ; ( 20( 2X, I3 )/) ;
+        1L ;  ' == SHELL SCHEME              > ' ; 1L ;
+        FORMAT WRITE ( CSCHL (I),I=1,MSCHL ) ; ( 5X,20( 3X, A2 ) ) ;
+        FORMAT WRITE ( NEXT  (I),I=0,MSCHL ) ; (    21( 3X, I2 ) ) ;
+        FORMAT WRITE ( OUTFLG(I),I=1,MSCHL ) ; ( 5X,20( 4X, L1 ) ) ;
+        END
+     END
+  > INNER_PRINT ;
+     EXEL   = TACTEL
+     TNCONF = TNCONF + 1   ; KSHL = 0  ; J = NEXT(LASTEX) ;  7X ;
+     UNTIL TACTEL >= NACTE ! J = 0  ;
+     DO ;
+        IF NCONF(J,I)  = 0  THEN EXIT J = NEXT(J) ;
+        TACTEL = TACTEL + NCONF(J,I) ; KSHL = KSHL + 1 ;
+        IF KSHL > 5 THEN ( 1L ; 7X ;  KSHL = 0 ) ;
+        NEL = NCONF(J,I) ;
+        3X ; PUT CSCHL(J) C2  ; '*' ; PUT NEL I2 ;/'   )'   ;
+        IF J = SGSHL & EXEL = 2 & TACTEL = SGNEL
+        THEN ' 1S)' ; ELSE '   )' ;
+        J = NEXT(J) ;
+        END ;
+     IF TACTEL ^= NACTE THEN %ERROR ; --
+     ') ' ; 2L
+     END ;
+  > PRINT_DATA_HEADDER
+     /* COUPLING SEQ OUTER
+     FOR ISYM = 1, NKIND
+     DO ;
+     /* FIXED MSEKIYA AT ARC  JUNE 7 90 */
+       IF  NOUTER(ISYM) <= 0 THEN EXIT
+       LPAD= 9 - MOD(NOUTER(ISYM)-1,10)
+       FOR ID = 1, LPAD ;  '     ' ;
+       FOR ID = NOUTER(ISYM) + 10, 11, -1 ;
+       DO ;
+          PUT ID I3 ; PUT ANG(ISYM) C1 ; ' ' ;
+          IF ( MOD(ID,10) = 1 ) THEN 1L ;
+          END ;
+       END ;
+     /* COUPLING SEQ VAL
+     J = NEXT(LASTEX) ; 2X ;
+     UNTIL J = 0 ; (  PUT  CSCHL(J) C2 ; J = NEXT(J) ; 3X ) ; 1L
+     /* DEFAULT CLOSED SHELL
+     PUT CLOSHL C60 ; ')' ; 1L
+     PUT CLOSHL C60 ; ')' ; 1L
+     ' )) ' ; 1L ;
+     END
+  PROCEDURE PRINT_CSF_INPUT-DATA
+     LIST-2 DO
+        NACC = MSCHL + 1
+        EXEC PRINT_DATA_HEADDER
+        1L ;
+        I = 0
+        UNTIL I = NREFN ;
+        DO
+           I = I + 1
+           TACTEL = 0
+           EXEC INNER_PRINT
+           END
+        I = NREFN
+        IF SGSHL < 0 THEN ' ) ' ; 1L ;
+        '" SINGLE AND DOUBLE EXCITATION  WITHIN GROUP 1  ' ; 1L ;
+        NEXORB = 0 ;
+        UNTIL I = NDCON ;/+ NREFN
+        DO ;
+           TACTEL = 0 ;
+           I = I + 1 ;
+           IF NCONF(NACC,I) < 0 THEN EXIT
+           J = NEXT(LASTEX) ; NE0=0 ; /* INNER ELECTRON */
+           UNTIL J = 0 ;
+           DO
+              NE0  = NE0 + NCONF(J,I)     ; J = NEXT(J)
+              END ;
+           IF NE0 = NACTE THEN EXEC INNER_PRINT
+           END
+        /* END OF GROUP 1 CONFIGURATIONS
+        IF SGSHL < -99 THEN EXIT
+        I = NREFN
+        '" FIRST ORDER SPACE   ' ; 1L ;
+        NEXORB = 1 ;
+        UNTIL I = NDCON ;
+        DO ;
+           TACTEL = 0 ;
+           I = I + 1 ;
+           IF NCONF(NACC,I) < 0 THEN EXIT
+           J = NEXT(LASTEX) ; NE0=0 ; /* INNER ELECTRON */
+           UNTIL J = 0 ;
+           DO
+              NE0  = NE0 + NCONF(J,I)  ; J = NEXT(J)
+              END ;
+           IF NE0 = NACTE -1 THEN --
+           DO
+              NEXORB = 1 ;
+              J = NEXT(0)  ; /* OUTER ELECTRON */
+              UNTIL J = NEXT(LASTEX)  ! TACTEL >= 1 ;
+              DO
+                 IF NCONF(J,I) = 0 THEN J = NEXT(J)
+                 ELSE IF NCONF(J,I) = 1 THEN DO
+                    TACTEL =  NCONF(J,I) + TACTEL ;
+                    ISYM  =  NSTOR(J) ;
+                    PUT CARDX(ISYM) C62 ;
+                    IF NCARD(ISYM) > 0 THEN ( 1L ; PUT CARDY C62 )
+                    PUT ANG(ISYM) C1  ; '* 1' ; 68C ; ' )' ; 1L ;
+                    END ;
+                 END ;
+              EXEC INNER_PRINT
+              END
+           END
+        /* MODIFIED BY MAS JULY 1 90
+        IF SGSHL < -9 THEN EXIT
+        /* Validation:
+        /* the loop below is an FPL UNTIL...DO...END (post-test), so its
+        /* I=NDCON exit check is skipped on first entry -- when NSCON
+        /* already equals NDCON coming in (no room for a second
+        /* excitation), I runs straight past NDCON and never stops on
+        /* its own. Both known routes here (non-consecutive shell
+        /* numbering, NACTE=1) are now rejected earlier by
+        /* input validation (Sec.3.3) -- this guard is defense-in-depth
+        /* for a route not yet found, not a route currently reachable.
+        IF NSCON < NDCON THEN DO
+        1L ; '" SECOND ORDER SPACE  ' ; 1L ;
+        NEXORB = 2 ; I = NSCON ;
+        UNTIL I = NDCON ;
+        DO ;
+           TACTEL = 0 ;
+           I = I + 1  ;
+           IF NCONF(NACC,I) < 0 THEN EXIT  ' == WARNIG == PRO MISS '
+           J = NEXT(LASTEX) ; NE0=0 ; /* INNER ELECTRON */
+           NX0 = 0
+           UNTIL J = 0 ;
+           DO
+              NE0  = NE0 + NCONF(J,I)  ; J = NEXT(J)
+              END ;
+           IF NE0 = NACTE - 2 THEN DO
+              J = NEXT(0)  ; /* OUTER ELECTRON */
+              UNTIL J = NEXT(LASTEX) ! TACTEL >= 2 ;
+              DO
+                 IF NCONF(J,I) = 0 THEN J = NEXT(J)
+                 ELSE IF NCONF(J,I) = 1 THEN DO
+                    TACTEL =  NCONF(J,I) + TACTEL ;
+                    ISYM  =  NSTOR(J) ;
+                    IF TACTEL = 1
+                    THEN DO
+                       PUT CARDX(ISYM) C62 ;
+                       IF NCARD(ISYM) > 0 THEN --
+                       ( 1L ; PUT CARDY C62 ;
+                         NX0 = NOUTER(ISYM) ; NB0 = ISYM)
+                       PUT ANG(ISYM) C1  ; '* 1' ; 68C ; ' )' ; 1L ;
+                       END
+                    ELSE DO
+                       IF NCARD(ISYM)*NX0 > 800
+                       THEN DO
+                          PUT CARDX(ISYM) C62 ;
+                          PUT ANG(ISYM) C1  ; '* 1' ; 68C ; ' )' ; 1L ;
+                          EXEC INNER_PRINT
+                          TACTEL = 2
+                          PUT CARDX(NB0) C62 ; 1L ; PUT CARDY C62
+                          PUT ANG(NB0)  C1  ; '* 1' ; 68C ; ' )' ; 1L ;
+                          PUT CARDY       C62 ;
+                          PUT ANG(ISYM) C1  ; '* 1' ; 68C ; ' )' ; 1L ;
+                          END
+                       ELSE DO
+                          PUT CARDX(ISYM) C62 ;
+                          IF NCARD(ISYM) > 0 THEN ( 1L ; PUT CARDY C62 )
+                          PUT ANG(ISYM) C1  ; '* 1' ; 68C ; ' )' ; 1L ;
+                          END
+                       END
+                    J = NEXT(J) ;
+                    END ;
+                 ELSE IF NCONF(J,I) = 2 THEN DO
+                    TACTEL = NCONF(J,I) + TACTEL ;
+                    IF TACTEL > 2 THEN EXIT
+                    ISYM  =  NSTOR(J) ;
+                    PUT CARDX(ISYM) C62 ;
+                    IF NCARD(ISYM) > 0 THEN ( 1L ; PUT CARDY C62 )
+                    PUT ANG(ISYM) C1  ; '* 2' ; 68C ; ' )' ; 1L ;
+                    EXEC INNER_PRINT ;
+                    TACTEL = 2 ;
+                    PUT CARDX(ISYM) C62 ;
+                    IF NCARD(ISYM) > 0 THEN ( 1L ; PUT CARDY C62 )
+                    PUT ANG(ISYM) C1  ; '* 1' ; 68C ; ' )' ; 1L ;
+                    PUT CARDX(ISYM) C62 ;
+                    IF NCARD(ISYM) > 0 THEN ( 1L ; PUT CARDY C62 )
+                    PUT ANG(ISYM) C1  ; '* 1' ; 68C ; ' )' ; 1L ;
+                    END ;
+                 END
+              IF TACTEL > 2 THEN %ERROR_1
+              EXEC INNER_PRINT ;
+              END ;
+           END
+        END
+        END
+     /* MODIFIED BY MAS JULY 1 90
+     LIST-2 ( 1L ; '   )))) ' ; 1L ; )
+     END
+  PROCEDURE DEBUG_PRINT
+     WRITE(6,*) '  === REMOVE DEBUG PRINT BY MAS === '
+     END

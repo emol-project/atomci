@@ -1,0 +1,62 @@
+cff-version: 1.2.0
+message: >-
+  Any publication based upon results obtained with ATOMCI must include the
+  attribution "This work is based, in part, on results from the ATOMCI
+  package." and refer to the two works listed under references
+  (LEGENDS.txt, Section 4).
+title: "ATOMCI: a non-relativistic configuration interaction program for many-electron atoms"
+type: software
+authors:
+  - family-names: Sasaki
+    given-names: Fukashi
+  - family-names: Sekiya
+    given-names: Masahiro
+  - family-names: Noro
+    given-names: Takeshi
+  - family-names: Ohtsuki
+    given-names: Kazumasa
+  - family-names: Osanai
+    given-names: You
+repository-code: "https://github.com/emol-project/atomci"
+license-url: "https://github.com/emol-project/atomci/blob/main/LEGENDS.txt"
+abstract: >-
+  ATOMCI computes non-relativistic configuration interaction wave functions
+  and energies of many-electron atoms in the Russell-Saunders (LS) coupling
+  scheme. Non-commercial research and educational use only.
+keywords:
+  - configuration interaction
+  - atomic structure
+  - LS coupling
+  - tensor operators
+  - coefficients of fractional parentage
+  - MCSCF
+references:
+  - type: article
+    authors:
+      - family-names: Sasaki
+        given-names: Fukashi
+    title: Matrix Elements in Configuration Interaction Calculations
+    journal: International Journal of Quantum Chemistry
+    volume: 8
+    start: 605
+    year: 1974
+  - type: generic
+    authors:
+      - family-names: Sasaki
+        given-names: Fukashi
+      - family-names: Sekiya
+        given-names: Masahiro
+      - family-names: Noro
+        given-names: Takeshi
+      - family-names: Ohtsuki
+        given-names: Kazumasa
+      - family-names: Osanai
+        given-names: You
+    title: "Non-Relativistic Configuration Interaction Calculations for Many-Electron Atoms: ATOMCI"
+    collection-title: "Methods and Techniques in Computational Chemistry: METECC-94"
+    editors:
+      - family-names: Clementi
+        given-names: E.
+    start: 163
+    end: 219
+    year: 1993

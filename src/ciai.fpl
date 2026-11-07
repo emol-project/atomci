@@ -1,0 +1,192 @@
+   PROCESS       FILE      'ciai.f'
+   %%SUBNAME  AIMAIN  %   ;
+   PROCESS  NO  LIST      MAP    HEADER  %SUBNAME
+      SUBROUTINE %SUBNAME (TITLE, FILES, METHOD, USCPU,  RTNCD)
+  %CPYRIGHT
+  %UPDATE
+  /*
+  /*     FUNCTION :  INTEGRAL DRIVER
+  /*
+  /*     CALLED   : ATOMCI
+  /*
+  /*     CALLING  : INTEG ( FOR STF )
+  /*                GINTEG( FOR GTF )
+  /*
+  /*     INPUT    : NAMELIST  AI
+  /*     RETURNS  : FILE NFAII ( UNIT = 18 AS NORMALLY ) > INTEGRAL
+  /*
+  IMPLICIT INTEGER   * 4 (A-Z)
+  %INCMAIN
+  %INCMACRO
+  %INCWORK
+  %param
+      INTEGER   * 4 VAR(%WORKCORE)
+      common/work/var
+   /* 
+   /* DCF FOR mp     
+   /* 
+   /*----- start of modification for MCP version on 2001.2.2
+     REAL * 8 SSVM,ZETAC,COEFC,PA,SA,PC,SB,PB
+     COMMON /MPOT1/ SSVM(150,15),ZETAC(40,15),COEFC(40,15), --
+                    PA(6),SA(6),PC(6),SB(6),PB(15),-- 
+                    NQNC(15),NBC(15),IIFMCP,NNFMCP,--
+                    NA,NSTYP,NCBC,NSIM0xd,IWIT,IFLV,--
+                    IV(40),IPxd1,IPxd2,IPxd3
+
+   /*
+   /* DCL FOR LOCAL VAR
+   /*
+   %%NSYM 20%
+   INTEGER   * 4  WKSIZE,      -- REGION SIZE FOR WORK
+                  NAME(33),    -- COMMENT ON NFAII
+   --             LOEI0  /448/,   TASHI
+                  LOEI0       ,--*I*
+                  IDPRNT      ,--*I*
+                  IIPRNT      ,--*I*
+                  IUNIT       ,--*I*
+                  NFAII       ,--*I*
+                  LOEI        ,--*I*
+                  NPFLG       ,--*I*
+                  BASIS(4)    ,--*I* changed by msekiya for Rel
+                  NWLF(%BASIS),   --*I*
+                  NPQN(%BASIS),   --*I*
+                  INXT(%BASIS),   --*I*
+                  ISSH( %NSYM),   --*I*
+                  IFST( %NSYM),   --*I*
+   --             IBLNK/'   '/    TASHI
+                  IBLNK
+
+   REAL      * 8  DEL(%BASIS), --
+                  Z
+ LOGICAL ifdk3, ifnucl				  
+  / change for MP
+  /  DATA           BASIS/'STF ','GTF ', 'MP  ','REL'/
+   DATA IFMCP,NFMCP/0,44/
+   DATA           LOEI0/448/
+   / DATA           IBLNK/'    '/
+  
+  %INCDATA
+  %%NAMELIST AI %
+  /* NAMELIST ITEM
+  NAMELIST /%NAMELIST/ --                   STATUS  DEFAULT DIM TYPE
+            NFAII,   -- OUTPUT INTEGRAL      OUTPUT      18       I4
+            NAME,    -- COMMENT ON NFTB                NONE    33*I4
+            LOEI,    -- LENGTH OF WRITE BUFFER          448       I4
+            NWT,     -- NUMBER OF BASIS FUNCTION       NONE       I4
+            Z,       -- CHARGE                         NONE       I4
+            NTYPE,   -- 1: STF 2: GTF 3:MCP 4:DK3                     1       I4
+            NPFLG,   -- PRINT FLAG                        0       I4
+            IUNIT,   -- FREE FORMAT READ UNIT             4       I4
+            IIPRNT,  -- PRINT FLAG (DUMMY)                0       I4
+            IDPRNT,  -- PRINT FLAG (DUMMY)                0       I4
+            NFMCP,    -- Model potential input file unit  44       I4
+			ifdk3,   -- flag for dk3    .true. logical
+			ifnucl  --  flag for finite nuclei  .true. 
+
+   BEGIN
+      ERRCD =0 ; RTNCD = 0 ;
+      call ctoi4 ('STF ', basis(1))
+      call ctoi4 ('GTF ', basis(2))
+      call ctoi4('MP', basis(3))
+      call ctoi4('REL',basis(4))
+      call ctoi4 ('    ', iblnk)
+	  ifdk3 = .TRUE. 
+	  ifnucl = .TRUE.
+      %START
+      EXEC WORK_REGION
+      IF ERRCD > 0 THEN EXIT %FINISH
+
+      NRDFG = METHOD(30)
+      IF NRDFG > 0 THEN DO
+         EXEC SETUP
+
+         FORTRAN READ(5,%NAMELIST,END=900)
+         CALL IRISET(IUNIT)   ; /* SET FREE FORMAT UNIT #
+         CALL IRDSET(IDPRNT)
+      /* ENTER
+         END
+      / set unit number for model potential 
+      IIFMCP=IFMCP
+      NNFMCP=NFMCP
+      / end set
+      EXEC PRINT_HEADER
+    / FOR  I=1,12 ;/ NAME(I+18) = METHOD(I)
+      FOR  I=9,12 ; NAME(I+18) = METHOD(I)
+      EXEC DATA_CHECK
+      IF NTYPE = 2 THEN                          --
+         CALL AIIGTF (NRDFG,NMODFG,  --
+                      NFAII,LOEI,NWT,NAME,Z,NPFLG,--
+                      NPFLG,NWLF,DEL,NPQN,LMAX,  --
+                      INXT,ISSH,IFST,ERRCD)
+      ELSE IF NTYPE = 4 THEN                          --
+         CALL AIIGR4 (NRDFG,NMODFG,  --
+                      NFAII,LOEI,NWT,NAME,Z,NPFLG,--
+                      NPFLG,NWLF,DEL,NPQN,LMAX,  --
+                      INXT,ISSH,IFST, ifdk3, ifnucl, ERRCD)
+      ELSE IF NTYPE = 3 THEN --
+         CALL AIIMCP(NRDFG,NMODFG,NFAII,LOEI,NWT, -- 
+                      NAME,Z,NPFLG, NPFLG,NWLF, --
+                      DEL,NPQN,LMAX,INXT,ISSH,IFST,ERRCD)
+      ELSE --
+         CALL AIISTF (NRDFG,NMODFG,  --
+                      NFAII,LOEI,NWT,NAME,Z,NPFLG,--
+                      NPFLG,NWLF,DEL,NPQN,LMAX,  --
+                      INXT,ISSH,IFST,ERRCD)
+      IF NWT > %BASIS  --
+      THEN DO
+         ERRCD = 3999
+         ' == ERROR ERROR ERROR == ' ; 1L ;
+         ' == BASIS SET IS TOO LARGE ' ; PUT NWT I4 ; 1L;
+         ' == BASIS SET LIMIT IS %BASIS   ' ; 1L
+         END
+
+
+      EXIT %FINISH
+
+      FORTRAN 900 CONTINUE
+      FORMAT WRITE --
+       '    NAMELIST - &%NAMELIST - IS NOT FOUND IN INPUT DATA  '
+      (/' ',A,20('*')////)
+      ERRCD= 3000
+      %FINISH
+      END
+
+
+  > PRINT_HEADER
+     FORMAT WRITE (TITLE(I),I=1,18),(NAME(I), I=1,18),  --
+                   METHOD(41),NFAII, --
+                   LOEI0,LOEI,               --
+                   BASIS(NTYPE),FILES,NPFLG
+     ('1',45('*'),3X,'BASIS INTEGRAL(%SUBNAME)'/      --
+        /' TITLE:  ',18A4 /                                   --
+        /' NAME :  ',18A4 /                                   --
+        /'  NFAII:  AO INTEGRAL          (',I3,') =',I6,       --
+        /'  LOEI :  LENGTH OF WRITE BUF  (',I3,') =',I6,       --
+        /'  BASIS TYPE IS ',A4                                --
+        /'  SUMMARY FILES UNIT = ',I3,'      DEBUG FLAG = ',I3 )
+     END
+
+
+      PROCEDURE WORK_REGION
+         ACTION = %REGION
+         %%VNAME WKSIZE% ; TYPE = %I4 ; %WKCORE
+         // 
+         //ACTION = %ALLOC
+         //  R8 work-region alloc (VNAME=WKADR, TYPE=R8, LENGTH=WKSIZE/2, WKCORE call):
+         //  intentionally left commented out.  Keep it as plain text with NO semicolons
+         //  and NO live WKCORE macro, or it leaks as live Fortran into ciai.f
+         //  (an FPL slash comment ends at the first semicolon.  See docs/FPL_LANGUAGE_SPEC.md Sec 4.)
+         
+         END
+      PROCEDURE DATA_CHECK
+         METHOD(41) = NFAII
+         END
+      PROCEDURE SETUP
+         NFAII = METHOD(41) ;
+         LOEI = LOEI0 ; NTYPE = 1 ; NMODFG = 0 ;
+         IUNIT = 5
+         NPFLG = 0 ; NWT = 0  ; Z = 1.0  ;
+         FOR  I= 1,18 ; NAME(I) = TITLE(I)
+         FOR  I=19,33 ; NAME(I) = IBLNK
+         END
+     %INCWKEXC

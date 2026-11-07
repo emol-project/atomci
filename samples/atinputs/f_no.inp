@@ -1,0 +1,49 @@
+# F 2P -- the three passes of samples/native/f.stdin in short form:
+#   1. integrals, SCF, SD-CI on the SCF orbitals (natural orbitals -> record 2)
+#   2. SD-CI on the natural orbitals of pass 1
+#   3. RS only, with Bunge's estimate (&RS RULE=1)
+# golden: SD-CI = -99.641223, then -99.641037 (passes 2 and 3), as f.stdin
+
+title:  " F DOUBLET P "
+deck:   f_no.deck
+csf:    f_no.csf
+
+atom:
+  z:     9
+  ang:   P
+  spin:  2
+
+files:
+  cfptable:  ./CFPTBL
+  basis:     f.bas
+  open:
+    - unit: 27, file: f.NO, format: binary, status: unknown
+
+orbital:
+  frozen_core:  1S
+  active:       2S, 2P
+  outer:        11S, 10P, 6D, 5F
+
+reference:
+  - scf: true, occ: 2S*2 2P*5
+
+passes:
+  -
+    title: " F DOUBLET P "
+    ctrl:
+      ai:  type: 2, idprnt: 0
+      mc:  itmax: 20
+      wf:  rule: 1, npflg: 0
+      tr:  from_record: 1       # the SCF orbitals (&MC NSET=1)
+      ci:  ips: 7, maxit: 100, nsdim: 100, nstate: 1
+      rs:  print: -0.001
+  -
+    title: " F DOUBLET P (NO 1) "
+    ctrl:
+      tr:  from_record: 2       # the natural orbitals of pass 1
+      ci:  ips: 7, maxit: 100, nsdim: 100, nstate: 1
+      rs:  print: -0.001
+  -
+    title: " F DOUBLET P (NO 1) "
+    ctrl:
+      rs:  print: -0.001, rule: 1

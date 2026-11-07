@@ -1,0 +1,33 @@
+    PROCEDURE TABLE_SERCH  ;
+      FIN = 0 ; IFLG = 0 ;
+      LADDR = RANDOM( LK          ) * ( NTBL - (NCOUNT+1)*NSKIP - 2) ;
+    / IF DEBUG > 3 THEN DO ;
+    /    FORMAT  WRITE                                   --
+    /         ' RANDOM> ' , LADDR,' LAB1 ',LAB4(1),LAB4(2) ;
+    /         ( A,I8,3X,A,I12,I12 ) ;
+    /    END ;
+      VALUE( NTBL ) = VALUE( NTBL ) + 1 ;
+      DO UNTIL CLEAR = LABEL( LADDR ) ! IFLG > NCOUNT ;
+         IFLG = IFLG + 1 ;
+         LADDR = LADDR +  NSKIP ;
+         LABEL( NTBL ) = LABEL( NTBL ) + 1 ;
+         IF LAB8  = LABEL( LADDR ) THEN  EXIT --
+         ( RVALUE = VALUE( LADDR ) ; FIN = 1  ) ;
+         END ;
+      END ;
+   PROCEDURE STORE ;
+      IF IFLG >  NCOUNT THEN DO ;
+         VALUE( NTBL - 1 ) = VALUE( NTBL - 1 ) + 1 ;
+      /  IF DEBUG > 2 THEN --
+      /     FORMAT WRITE:7  --
+      /     ' >> MODE>',MODE,--
+      /     '   >>DENSITY>',LABEL(NTBL-1)/NTBL,--
+      /     '   >>CALLING>',VALUE( NTBL )      ;
+      /     ( A,I3,A,F10.4,A,F14.0 ) ;
+         END ;
+      ELSE DO ;
+         VALUE( LADDR ) = RVALUE ;
+         LABEL( LADDR ) = LAB8   ;
+         LABEL( NTBL - 1 ) = LABEL( NTBL - 1 ) + 1 ;
+         END ;
+      end

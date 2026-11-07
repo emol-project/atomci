@@ -1,0 +1,46 @@
+ > ERROR_INFORMATION
+      %ERMSG
+      DO CASE OF ERRCD
+       2010 :
+       2011 : ( ' == IO ERROR IN  READING FROM NFWFB0 == ' ;
+                  PUT NFWFA I4  ; 1L )
+       2012 : ( ' == ERROR ! PLEASE CHECK YOUR CSF INPUT!' ; 1L )
+       2021 :
+       2022 : ( ' == IO ERROR IN WRITING NFWFB1 == ' ;
+                  PUT NFWFB I4  ; 1L )
+       2071 :
+       2072 : ( ' == IO ERROR IN  READING FROM NFTF   == ' ;
+                  PUT NFTF  I4  ; 1L )
+       2100 : ( ' == IO ERROR IN  READING FROM NFWFB0 == ' ;
+                  PUT NFWFA I4  ; 1L )
+       2101 : ( ' == INPUT ERROR OF REFERENCE CSF == '
+                ' YOU CANNOT ENTER MULTIPLE CSF INPUT == ' ; 1L )
+       2102 : ( ' == INPUT ERROR ! PLEASE CHECK YOUR CSF INPUT!' ; 1L )
+       2110 : ( ' == EOF DETECTED IN  READING FROM NFWFB0 == ' ;
+                  PUT NFWFA I4  ; 1L )
+       2112 : ( ' == INPUT ERROR OF REFERENCE CSF == '
+                ' YOU CAN NOT ENTER MULTIPLE CSF INPUT == ' ; 1L )
+       2210 : ( ' == INPUT ERROR ! PLEASE CHECK YOUR CSF INPUT!' ; 1L )
+       2211 : DO
+          ' === NEED MORE CORE !!! ==== ' ;                         1L
+          ' === CSF READ BUFFER ( LRPS I*2 ) IS ' ; PUT LRPS  I8 ;  1L
+          ' === USING CORE           ( I*2 ) IS ' ; PUT INT   I8 ;  1L
+          ' === CALCULATE ITSTV (DIM OF CSF) IS ' ; PUT ITSTV I8 ;  1L
+          END
+       2212 : ( ' == EOF DETECTED IN  READING FROM NFWFB0 == ' ;
+                  PUT NFWFA I4  ; 1L )
+       2215 : ( ' == EMERGENCY STOP == PLEASE CONTACT US !' ; 1L )
+       2321 :
+       2322 :
+       2323 : ( ' == IO ERROR IN WRITING ON NFWFE   == ' ;
+                  PUT NFWFE I4  ; 1L )
+       2325 : ( ' == IO ERROR IN  READING FROM NFWFW  == ' ;
+                  PUT NFWFW I4  ; 1L )
+       2330 : ( ' == INPUT ERROR ! PLEASE CHECK YOUR CSF INPUT!' ; 1L )
+       9611 : ' ==== READ BUFFER LIJB IS TOO SMALL '
+       9613 :
+       9614 : ' ==== READ BUFFER LTRI IS TOO SMALL '
+       9620 : ( ' ==== IO ERROR IN WRITING NFWFE OR NFWFP '
+                PUT NFWFE I4 ; PUT NFWFP I4 ; 1L )
+        OTHERWISE ' === PLEASE CHECK YOUR INPUT DATA === ' ; 1L ;
+        END ;

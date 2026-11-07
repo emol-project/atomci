@@ -1,0 +1,2544 @@
+\xspace
+\section*{ \cntlnamelist NAMELIST}
+\xsp
+{\bf Function}
+\xsp
+This NAMELIST sets the input for the control of the execution of the
+different steps in ATOMCI.
+\xspace
+{\bf Parameters}
+\xsp
+\mtab{NRNFG(8)  }{Integer*4. Run flags ( default: 0,0,0,0,0,0,0,0 ).}
+\begin{indention}{12mm}%%
+Each element of the vector controls the execution of a step in ATOMCI.
+Enter 1 to execute the corresponding step and 0 to skip.
+\end{indention}%%
+\begin{indention}{15mm}%%
+{\sf
+ NRNFG(1)  $\cdots$  Module AIMAIN. Atomic orbitals integrals. \\%%
+ NRNFG(2)  $\cdots$  Module MCMAIN. MCSCF calculation.\\%%
+ NRNFG(3)  $\cdots$  Module WFMAIN. Definition of CSF and Energy Expression (EE).\\%%
+ NRNFG(4)  $\cdots$  Module TRMAIN. Integral transformation.\\%%
+ NRNFG(5)  $\cdots$  Module PTMAIN. Perturbative selection of the CSF.\\%%
+ NRNFG(6)  $\cdots$  Module EXMAIN. Construction of the EE file.\\%%
+ NRNFG(7)  $\cdots$  Module CIMAIN. Diagonalization, NO's, density matrices.\\%%
+ NRNFG(8)  $\cdots$  Module RSMAIN. Analysis of the CI vector and summary.\\%%
+}
+\end{indention}%%
+\xsp
+\begin{indention}{12mm}%%
+Note that in the present version the routines for the SCF calculation
+(Module MCMAIN) was included and  the order of modules was rearranged.
+\end{indention}%%
+\xsp
+\mtab{TITLE  }{Character*72. A title for the run (default: none).}
+\begin{indention}{12mm}%%
+Up to 72 characters.
+\end{indention}%%
+\xsp
+\mtab{METHOD }{Character*8. A short run label (default: 'ATOM CI').}
+\begin{indention}{12mm}%%
+This is a plain scalar, distinct from the JNAME(80) status array that
+the individual xxMAIN routines' argument lists happen to also call
+METHOD(80) -- that is a separate variable, passed by ci.f under the
+name JNAME. The NAMELIST's METHOD is only ever assigned its default
+in ci.f; it is never otherwise read or written, so setting it in
+\cntlnamelist currently has no observable effect on execution.
+\end{indention}%%
+\xsp
+\mtab{NCPU }{Integer*4. Requested CPU-time budget for the run, in seconds (default: reset to 7200 if zero or negative on entry).}
+\begin{indention}{12mm}%%
+Despite the name this is not a processor count. The value is
+multiplied by 1000 and combined with a CLOCKM elapsed-CPU-time
+reading to derive a remaining-time value, but that value is not read
+again anywhere else in ci.f, so the budget has no enforced effect in
+the current single-threaded build -- most likely a vestigial
+batch-watchdog field from a multi-processor predecessor system.
+\end{indention}%%
+\xsp
+\mtab{FILES }{Integer*4. Fortran unit number for the per-module completion log written after each stage (default: 7).}
+\begin{indention}{12mm}%%
+Each step (AIMAIN, MCMAIN, WFMAIN, TRMAIN, PTMAIN, EXMAIN, CIMAIN,
+RSMAIN) writes a one-line "RETURN CODE" record to this unit, and the
+unit number is also echoed into the summary text. The top-level
+header and final summary blocks are written to unit 6 directly
+regardless of this setting, so overriding FILES away from 7 causes
+the two to diverge.
+\end{indention}%%
+\xsp
+\mtab{NFWFB0 }{Integer*4. Alternate I/O unit for the WFMAIN rule-0 (general) CSF file, read by EXMAIN (default: 11).}
+\xsp
+\mtab{NFWFB1 }{Integer*4. Alternate I/O unit for the WFMAIN rule-1 (SD-CI) CSF file, read by EXMAIN (default: 12).}
+\xsp
+\mtab{NFWFB2 }{Integer*4. Alternate I/O unit for the WFMAIN rule-2 (PT-CI) CSF file (default: 0).}
+\xsp
+\mtab{NFWFE }{Integer*4. Alternate I/O unit for the WFMAIN CSF file passed to CIMAIN section 1 (default: 15).}
+\xsp
+\mtab{NFWFP }{Integer*4. Alternate I/O unit for the WFMAIN CSF file passed to PTMAIN section 1 (default: 14).}
+\xsp
+\mtab{NFWFW }{Integer*4. Alternate I/O unit for a WFMAIN work file (default: 9).}
+\xsp
+\mtab{NFTBL }{Integer*4. Alternate I/O unit for a WFMAIN work table file (default: 88).}
+\xsp
+\mtab{NFAII }{Integer*4. Alternate I/O unit for the AIMAIN AO-integral file, read by TRMAIN (default: 18).}
+\xsp
+\mtab{NFAII2 }{Integer*4. Alternate I/O unit for a secondary AO-integral file; not used by the current code (default: 19).}
+\xsp
+\mtab{NFAIO }{Integer*4. Alternate I/O unit for the AIMAIN orbital-exponent file, read by CIMAIN section 6 (default: 55).}
+\xsp
+\mtab{NFTRI }{Integer*4. Alternate I/O unit for the TRMAIN transformed-integral file, read by CIMAIN sections 1-5 and PTMAIN section 1 (default: 16).}
+\xsp
+\mtab{NFTRI2 }{Integer*4. Alternate I/O unit for a secondary transformed-integral file; not used by the current code (default: 17).}
+\xsp
+\mtab{NFTRC1 }{Integer*4. Alternate I/O unit for the TRMAIN coefficients file (permanent copy), read by CIMAIN section 5 (default: 27).}
+\xsp
+\mtab{NFTRC2 }{Integer*4. Alternate I/O unit for the TRMAIN coefficients file (temporary copy), read by CIMAIN sections 3-6 (default: 21).}
+\xsp
+\mtab{NFTD }{Integer*4. Alternate I/O unit for a TRMAIN direct-access work file (default: 20).}
+\xsp
+\mtab{NFPTV }{Integer*4. Alternate I/O unit for the PTMAIN CI-vector file from section 3 (default: 31).}
+\xsp
+\mtab{NFPTH1 }{Integer*4. Alternate I/O unit for the PTMAIN diagonal H-matrix file from section 2 (default: 32).}
+\xsp
+\mtab{NFPTH2 }{Integer*4. Alternate I/O unit for the PTMAIN off-diagonal H-matrix file, used by section 2 and RSMAIN section 1 (default: 33).}
+\xsp
+\mtab{NFPTL }{Integer*4. Alternate I/O unit for the PTMAIN label file from section 3 (default: 35).}
+\xsp
+\mtab{NFPTB }{Integer*4. Alternate I/O unit for the PTMAIN selected-CSF file, passed to EXMAIN (default: 11).}
+\xsp
+\mtab{NFEXE }{Integer*4. Alternate I/O unit for the EXMAIN energy-expression file, read by CIMAIN sections 1 and 6 (default: 15).}
+\xsp
+\mtab{NFEXW }{Integer*4. Alternate I/O unit for the EXMAIN uncompleted energy-expression tape (default: 0).}
+\xsp
+\mtab{NFCIH }{Integer*4. Alternate I/O unit for a CIMAIN temporary density-matrix file (default: 22).}
+\xsp
+\mtab{NFCID }{Integer*4. Alternate I/O unit for the CIMAIN one-electron expression file from section 3 (default: 24).}
+\xsp
+\mtab{NFCIC }{Integer*4. Alternate I/O unit for the CIMAIN natural-orbitals file (default: 27).}
+\xsp
+\mtab{NFCIW }{Integer*4. Alternate I/O unit for the CIMAIN density-and-CI-vector file (default: 28).}
+\xsp
+\mtab{NFCIV }{Integer*4. Alternate I/O unit for the CIMAIN CI-vector file, used by sections 3 and 6 (default: 37).}
+\xsp
+\mtab{NFCIH1 }{Integer*4. Alternate I/O unit for the CIMAIN diagonal H-matrix file from section 2 (default: 38).}
+\xsp
+\mtab{NFCIH2 }{Integer*4. Alternate I/O unit for the CIMAIN off-diagonal H-matrix file, used by sections 2 and 6 (default: 39).}
+\xsp
+\mtab{NFCII }{Integer*4. Alternate I/O unit for the CIMAIN initial CI-vector file from section 2 (default: 0).}
+\xsp
+\mtab{NFCIS }{Integer*4. Alternate I/O unit for the RSMAIN summary file (default: 71).}
+\xsp
+\mtab{NFTF }{Integer*4. Alternate I/O unit for the CFP (coefficients of fractional parentage) table file, shared by WFMAIN, PTMAIN, EXMAIN, CIMAIN, and RSMAIN (default: 10).}
+\xsp
+{\bf Example}
+\xsp
+ {\sf \cntlnamelist TITLE='CARBON TRIPLET EVEN', NPFLG= 0,1,1,1,0,0,1,1, \namelistend }
+\xsp
+instructs the program to proceed through the WFMAIN, AIMAIN, TRMAIN,
+CIMAIN and RSMAIN steps for a calculation on
+the \xsup{3}P\xsub{e} state of C.
+\xspace
+\section*{ \ainamelist NAMELIST}
+\xsp
+{\bf Function}
+This NAMELIST sets the input for the control of the execution of the
+AIMAIN step in ATOMCI (atomic integrals generation).
+\xspace
+{\bf Parameters}
+\xsp
+\mtab{NAME(33)  }{Integer*4. A title for the AIMAIN step (default: copy of TITLE, see \cntlnamelist NAMELIST).}
+\begin{indention}{12mm}%%
+Up to 132 characters.
+\end{indention}%%
+\xsp
+\mtab{NWT }{Integer*4. Number of basis functions (default: none).}
+\begin{indention}{12mm}%%
+The program checks only if NWT is greater than the maximum allowed (150
+in the present version). If the actual number of functions entered is
+different from the value assigned to NWT a warning message is printed
+and the execution continues.
+\end{indention}%%
+\xsp
+\mtab{Z }{Real*8. Nuclear charge (default: none).}
+\xsp
+\mtab{NTYPE }{Integer*4. Type of basis set (default: 1).}
+\begin{indention}{15mm}%%
+{\sf
+ 1 ... Slater type orbitals. \\
+ 2 ... Spherical Gaussian type orbitals. \\
+ 3 ... Model core potential (MCP) basis (routine AIIMCP). \\
+ 4 ... Douglas-Kroll relativistic basis, DK2 or DK3 selected by
+       IFDK3 below (routine AIIGR4).
+}
+\end{indention}%%
+\begin{indention}{12mm}%%
+NTYPE=3 and NTYPE=4 were not documented in the original manual; confirmed against the AO-integral driver
+dispatch in {\sf src/ciai.f}, not merely inferred from routine names.
+\end{indention}%%
+\xsp
+\mtab{NPFLG }{Integer*4. Debug print flag (default: 0).}
+\begin{indention}{12mm}%%
+Any value $>$ 0 is intended for debug purposes.
+\end{indention}%%
+\xsp
+\mtab{IDPRNT }{Integer*4. Print flag (default: 0).}
+\begin{indention}{15mm}%%
+{\sf 
+ 0 ... No echo of input.\\
+ 1 ... Echo of input.
+}
+\end{indention}%%
+\xsp
+\mtab{IUNIT }{Integer*4. Unit number for the list of basis functions (default: 5).}
+\begin{indention}{12mm}%%
+By default the input data for the basis set should go in a file
+assigned to unit 5. In this case the basis should
+follow the \ainamelist NAMELIST.
+ It may be convenient to assign the file
+to another unit. In the sample 2 supplied with the package,
+for instance, the basis input data are supposed to be included in a
+file associated with unit number 3
+(i.e., IUNIT=3 in the \ainamelist NAMELIST should be used).
+\xsp
+\end{indention}%%
+\xsp
+\mtab{LOEI }{Integer*4. Length of write buffer. (default: 448).}
+\begin{indention}{12mm}%%
+The user will probably never need to modify the default value.
+\end{indention}%%
+\xsp
+\mtab{IFDK3 }{Logical. Selects the Douglas-Kroll relativistic Hamiltonian order used by the NTYPE=4 (DK3) one-electron integral driver (default: .TRUE.).}
+\begin{indention}{12mm}%%
+Passed to AIIGR4 and on to H1INIT; .TRUE. selects the third-order
+Douglas-Kroll (DK3) Hamiltonian, .FALSE. selects DK2. Only meaningful
+when NTYPE=4.
+\end{indention}%%
+\xsp
+\mtab{IFNUCL }{Logical. Selects a finite-nucleus vs. point-charge nuclear model for the NTYPE=4 (DK3) one-electron integrals (default: .TRUE.).}
+\begin{indention}{12mm}%%
+Passed to AIIGR4 and on to H1INIT; .TRUE. uses a finite-size nuclear
+charge distribution, .FALSE. uses a point charge. Only meaningful
+when NTYPE=4.
+\end{indention}%%
+\xsp
+\mtab{IIPRNT }{Integer*4. Debug print flag for the AO-integral driver routines (default: 0).}
+\begin{indention}{12mm}%%
+Read by AIISTF, AIIGTF, AIIGT4, AIIGR4 and AIIMCP; a value $>$ 4
+triggers an extra WRITE of the raw integral buffer. The {\sf ciai.fpl}
+source labels this "PRINT FLAG (DUMMY)", but it is genuinely read and
+branched on in every AO-integral driver, so it is not actually inert.
+It is not set by any DATA statement or PROCEDURE SETUP block in
+{\sf ciai.f}; like other uninitialized NAMELIST locals in this
+codebase, its default relies on {\sf -fno-automatic} implicit
+zero-initialization.
+\end{indention}%%
+\xsp
+\mtab{NFAII }{Integer*4. Unit number of the output AO-integral file written by the AIMAIN step (default: 18).}
+\begin{indention}{12mm}%%
+Whichever integral driver runs for the given NTYPE (AIISTF, AIIGTF,
+AIIGR4 or AIIMCP) writes its AO integrals to this unit. The default of
+18 is inherited from {\sf ci.f}'s {\sf DATA NFAII/18/} through
+METHOD(41)/JNAME(41); NFAII can also be set directly in the
+\cntlnamelist NAMELIST, which is read earlier and whose value takes
+effect unless \ainamelist overrides it again.
+\end{indention}%%
+\xsp
+\mtab{NFMCP }{Integer*4. Unit number of the model-core-potential (MCP) library file read for NTYPE=3 (MCP) AO-integral runs (default: 44).}
+\begin{indention}{12mm}%%
+Copied into COMMON /MPOT1/ and read back inside AIIMCP's SHIFT
+routine, which calls READMP ({\sf src/mcp.f}) to read the MCP
+basis-shift data from this unit.
+\end{indention}%%
+\xspace
+{\bf Example}
+\xsp
+\begin{verbatim}
+ &AI IUNIT=5, NWT=47, Z=5.D0, NTYPE=2, &END
+\end{verbatim}
+\xsp
+indicates that a set of 47 GTO's (NWT=47, NTYPE=2) follows in
+input (IUNIT=5). The nuclear charge for the system is 5 (Z=5.D0).
+\xspace
+\section*{Input data for the Basis set}
+\xsp
+The basis set is entered in free format from unit IUNIT specified
+in the \ainamelist NAMELIST.
+\xsp
+{\bf For STO's:}
+\begin{indention}{12mm}%%
+Enter orbital type (4P, 5F, etc.) and orbital exponent in sequence.
+End with {\sf '))'}. Example
+\xsp
+{\sf
+ 1S 15.3745   1S 8.3863   2S 10.6875 \\
+ 2S  7.1933   2P 9.6868 \\
+ ... \\
+ )) \\
+}
+\xsp
+\end{indention}%%
+{\bf For GTO's:}
+\begin{indention}{12mm}%%
+Enter orbital type (P, F, etc.), number of terms in the contraction,
+scaling factor, list of orbital exponents and list of contraction
+coefficients in sequence.
+End with {\sf '))'}. Example
+\xsp
+ {\sf
+  S 3 1.0 \\
+    10.0 5.0 2.5 \\
+    0.20 0.50 0.30 \\
+ S 1 1.0 
+ 1.5 1.0 \\
+ S 1 1.0
+ 0.5 1.0 \\
+ ... \\
+ )) \\
+}
+\end{indention}%%
+\xspace
+\section*{ \mcnamelist NAMELIST}
+\xsp
+{\bf Function}
+\xsp
+This NAMELIST sets the input 
+for the control of the execution of the
+MCMAIN step (definition of the CSF and of the EE).
+\xspace
+{\bf Parameters}
+\xsp
+\mtab{NAME(30)  }{Integer*4. A title for the MCMAIN step (default: copy of TITLE, see \cntlnamelist NAMELIST).}
+\begin{indention}{12mm}%%
+Up to 120 characters.
+\end{indention}%%
+\xsp
+\mtab{RULE }{Integer*4. Should set to 0  (default: 0).}
+\xsp
+\mtab{ITNEL }{Integer*4. Number of electrons in the system (default: none).}
+\xsp
+\mtab{ISPIN }{Integer*4. Spin multiplicity (default: none).}
+\begin{indention}{12mm}%%
+Spin multiplicity 2S+1 (1 for singlet, 2 for doublet, ... ).
+\end{indention}%%
+\xsp
+\mtab{IORB }{Integer*4. Orbital angular momentum (default: none).}
+\begin{indention}{12mm}%%
+Spatial angular momentum 2L+1 (1 for S, 3 for P, 5 for D, ... ).
+\end{indention}%%
+\xsp
+\mtab{IPAR }{Integer*4. Parity of the system.}
+\begin{indention}{15mm}%%
+{\sf  0 ... even \htabsp  1 ... odd }
+\end{indention}%%
+\xsp
+\mtab{NPFLG }{Integer*4. Debug print flag (default: 0).}
+\begin{indention}{12mm}%%
+Any value $>$ 2 is intended for debug purposes, and should
+not be used. NPFLG $>$ 3 in particular will cause an I/O error.
+\end{indention}%%
+\xsp
+\mtab{IVCS  }{Integer*4. The unit number of the coefficients save file (default: 27).}
+\begin{indention}{12mm}%%
+ The coefficient save file (see I/O File
+Description) is structured in subsequent records.
+The records are
+written according to the directives given by the user via the
+NSET variable within the \mcnamelist NAMELIST. The user is referred to the
+discussion of the \getnamelist NAMELIST for a description of the use of the
+initial vectors of transformation coefficients. 
+In general each record after the first in unit
+IVCS contains a set of NO's, obtained at a given time
+by running ATOMCI with the appropriate save directives.
+\end{indention}%%
+\mtab{NSET }{Integer*4. Flag controlling write operation for converged SCF orbitals on unit IVCS (default: 0).}
+\begin{indention}{12mm}%%
+NSET controls the write operations by enabling or
+disabling the write option and by establishing where to write.
+Values given to NSET have are interpreted as follows:
+\begin{indention}{15mm}%%
+{\sf
+ -1 ... Do not write on the save file. \\%%
+  0 ... Write in append mode (after the last existing record). \\%%
+  n ... Write on record n (all records following record n 
+will be destroyed). \\%%
+}
+\end{indention}%%
+\end{indention}%%
+\xsp
+\mtab{IND(4,100) }{Criteria of selection for inital orbitals (default: 4*0).}
+\begin{indention}{12mm}%%
+A series of NIND quartets (columns) \\
+{\sf 
+ a\xsub{1}, l\xsub{1}, c\xsub{1}, d\xsub{1}, \\%%
+ a\xsub{2}, l\xsub{2}, c\xsub{2}, d\xsub{2}, \\%%
+ ... \\%%
+}
+specifying that the next c\xsub{j} through d\xsub{j}
+orbital coefficients of symmetry type l\xsub{j}
+should be taken from the record number a\xsub{j}
+of the save file. The data in this array should be such that all
+the needed orbital coefficient are accounted for.
+\xsp
+If you don't specify this entry or set to 0, program automaticaly generate 
+initial orbitals. 
+\xsp
+\end{indention}%%
+\mtab{CLOSED }{Character*80 Closed shells.}
+\begin{indention}{12mm}%%
+The orbitals which are treated as closed shells
+in SCF configurations should be listed here. 
+\xsp
+Following the same example \\ 
+\xsp
+{\sf  1S 2S)}\\ 
+\xsp
+indicating a doubly occupancy for the 1s and 2s shell in SCF
+configurations.
+\end{indention}%%
+\xsp
+\mtab{CSFS(20) }{Character*80. List of SCF configurations.}
+\begin{indention}{12mm}%%
+A general format for the configuration specification is: \\
+The reference configurations are input
+using the following conventions
+\xsp
+{\sf
+1. The orbitals must be arranged in the coupling sequence: in ascending
+order of angular momentum (S, P, D, ...), and of principal quantum
+number within each angular momentum, so 4S comes before 3D. MCMCSF stops
+with an error otherwise (since 2026-11-03; before that, the MCSCF read no
+configuration and ran on the closed shells alone).\\
+2. The occupation of each orbital (say n) is indicated by
+typing '*n' after the orbital label.\\
+3. Each shell is separated from the other by a {\sf ')'} character.\\
+4. An extra {\sf ')'} separates two configurations.\\
+5. Each SCF configuration must be put on just one card (each Array).\\
+6. A {\sf ')))'} sequence ends the list of configurations.
+}
+\xsp
+ Example: \\
+{\sf 
+  CSFS= ' 2S*2) 2P*3) 3P*1)) ',\\
+        ' )))',\\
+}
+\end{indention}%%
+\xsp
+\mtab{C2THR }{Real*8. MCSCF macro-iteration convergence threshold on the CI-vector coefficient change (default: 1.0D-6).}
+\begin{indention}{12mm}%%
+Compared, together with ETHR, against the CI-vector difference
+CTDIFF computed by C2TEST in {\sf src/mcdriv.f}; the MCSCF loop is
+considered converged only when both ETDIFF $\le$ ETHR and
+CTDIFF $\le$ C2THR (and a further internal ICONV flag is satisfied).
+Listed alongside FLAG as a previously undocumented \mcnamelist
+member, not originally documented here.
+\end{indention}%%
+\xsp
+\mtab{ETHR }{Real*8. MCSCF macro-iteration convergence threshold on the total energy change (default: 1.0D-7).}
+\begin{indention}{12mm}%%
+The MCSCF loop in {\sf src/mcdriv.f} stops iterating once the energy
+change between successive macro-iterations,
+ETDIFF = $|$ETOLD - ET(NSOL)$|$, is $\le$ ETHR (jointly with the
+C2THR test above) or the iteration count exceeds ITMAX.
+\end{indention}%%
+\xsp
+\mtab{FILE }{Integer*4. Read from \mcnamelist but not referenced anywhere in mcmain.f; not a Character/OPEN-statement string despite the name (default: none found in mcmain.f -- verify).}
+\begin{indention}{12mm}%%
+Explicitly declared Integer*4 (not Character) at {\sf src/mcmain.f:97}.
+The identical, equally unused Integer*4 FILE appears in the sibling
+\wfnamelist ({\sf src/ciwf.f}) and \exnamelist ({\sf src/ciex.f})
+NAMELIST declarations, suggesting a vestigial member of a shared code
+template rather than an MCMAIN-specific oversight.
+\end{indention}%%
+\xsp
+\mtab{FLAG }{Integer*4. Selects the SCF orbital-improvement variant used by MCFOCK (default: 1).}
+\begin{indention}{12mm}%%
+FLAG=1 selects MCSCF1 (the standard path); FLAG=2 selects MCSCF2, a
+restricted, no-projection-operator variant that remains deprecated
+after a fixed defect, and carries a "use with caution" status.
+\end{indention}%%
+\xsp
+\mtab{IRMAX }{Integer*4. Maximum spatial multiplicity of the intermediate state allowed when generating the MCSCF CSF list (default: 31).}
+\begin{indention}{12mm}%%
+Passed to WFGENS exactly as in the \wfnamelist NAMELIST's IRMAX (see
+above): configurations arising from intermediate coupling states with
+orbital angular momentum multiplicity greater than IRMAX are excluded
+from the CSF list built for MCMAIN.
+\end{indention}%%
+\xsp
+\mtab{ISMAX }{Integer*4. Maximum spin multiplicity of the intermediate state allowed when generating the MCSCF CSF list (default: 21).}
+\begin{indention}{12mm}%%
+Passed to WFGENS exactly as in the \wfnamelist NAMELIST's ISMAX (see
+above): configurations arising from a coupling sequence with
+intermediate spin multiplicity greater than ISMAX are excluded. Not
+to be confused with the unrelated, same-named ISMAX local to the
+\dscfnamelist NAMELIST read inside {\sf src/mcfock.f} (default 2
+there), which controls something else in the SCF micro-iteration
+step; see NRDSCF below.
+\end{indention}%%
+\xsp
+\mtab{ITMAX }{Integer*4. Maximum number of MCSCF macro-iterations (default: 99).}
+\begin{indention}{12mm}%%
+Checked in the convergence loop of {\sf src/mcdriv.f} (iteration
+count ITT $>$ ITMAX stops the loop even if ETHR/C2THR have not been
+satisfied). Not to be confused with the unrelated, same-named ITMAX
+local to the \dscfnamelist NAMELIST read inside {\sf src/mcfock.f}
+(default 2 there), which bounds the inner SCF micro-iteration count
+for a single Fock build; see NRDSCF below. Listed alongside FLAG as a
+previously undocumented \mcnamelist member, not originally documented
+here.
+\end{indention}%%
+\xsp
+\mtab{IUNIT }{Integer*4. Defaulted to 5 in the PROCEDURE SETUP section but not referenced anywhere else in mcmain.f (default: 5).}
+\begin{indention}{12mm}%%
+In the sibling \wfnamelist NAMELIST, IUNIT genuinely selects the
+CSF-input unit (via {\sf CALL IRISET(IUNIT)} in {\sf src/ciwf.f}). In
+\mcnamelist, MCMAIN instead performs the equivalent I/O through a
+different local variable, IOUNIT (set from NFEE, see below); IUNIT
+itself appears to be an unused holdover from the shared
+\wfnamelist/\mcnamelist declaration template.
+\end{indention}%%
+\xsp
+\mtab{LRPS }{Integer*4. Length of the CSF-generation work buffer (default: 10000).}
+\begin{indention}{12mm}%%
+Sets the size of the WKCORE-allocated NWFSG buffer and is passed to
+WFGENS, exactly as for the \wfnamelist NAMELIST's LRPS (default there
+is likewise 10000, from the same LRPS0 constant convention).
+\end{indention}%%
+\xsp
+\mtab{LTRI }{Integer*4. Defaulted but not referenced anywhere in mcmain.f (default: 500000).}
+\begin{indention}{12mm}%%
+In the sibling \wfnamelist NAMELIST, LTRI actively bounds a
+selection-buffer size (LTRIX) inside WFMAIN's own CSF-selection code
+({\sf src/ciwf.f}); the shared subroutine WFGENS itself does not
+reference LTRI. Because MCMAIN calls WFGENS but has no equivalent
+selection-buffer code of its own, LTRI is read from \mcnamelist and
+defaulted to 500000 with no observable effect there.
+\end{indention}%%
+\xsp
+\mtab{LWFL }{Integer*4. Length of a wavefunction-extrapolation work buffer (default: 2000).}
+\begin{indention}{12mm}%%
+Passed to EXTAP1 in the PROCEDURE MC\_EXP section of
+{\sf src/mcmain.f}, analogous in role to the \wfnamelist NAMELIST's
+LWFL (also defaulted to 2000, from the shared LWFL0 constant).
+\end{indention}%%
+\xsp
+\mtab{NCOUNT }{Integer*4. Read from \mcnamelist but not referenced anywhere in mcmain.f (default: none found in mcmain.f -- verify).}
+\begin{indention}{12mm}%%
+The identical, equally unused NCOUNT appears in the sibling
+\wfnamelist ({\sf src/ciwf.f}) and \exnamelist ({\sf src/ciex.f})
+NAMELIST declarations, suggesting a vestigial member of a shared code
+template rather than an MCMAIN-specific oversight.
+\end{indention}%%
+\xsp
+\mtab{NFEE }{Integer*4. Unit number of the CSF/energy-expression scratch file used internally by MCMAIN (default: 8).}
+\begin{indention}{12mm}%%
+MCMAIN writes the parsed CSF list (built from CSFS and CLOSED by
+MCMCSF) to this unit via the local variable IOUNIT=NFEE, then rewinds
+and re-reads it while building the energy expression and CI machinery
+in MCDRIV (NNCSF, MCCI, MCJSKS). Also reused as the MCFLAG argument to
+EXTAP1 in the PROCEDURE MC\_EXP section.
+\end{indention}%%
+\xsp
+\mtab{NFTA }{Integer*4. Unit number of the atomic-orbital integral file produced by AIMAIN (default: 18).}
+\begin{indention}{12mm}%%
+Rewound and read at the start of MCMAIN ({\sf src/mcmain.f:131-132})
+to recover NAMEAI, LMAX, NWT, LOEI and the per-symmetry basis counts
+NBF; the same unit and default (18) are used for the AO integral file
+throughout the package's other steps.
+\end{indention}%%
+\xsp
+\mtab{NFTBL }{Integer*4. Unit number of the CFP (coefficient of fractional parentage) table storage file (default: inherited from the run's file-unit table, METHOD(37), not a literal constant in mcmain.f).}
+\begin{indention}{12mm}%%
+Labelled "STORE CFP ETC" in MCMAIN's own header printout
+({\sf src/mcmain.f:304}). Copied to and from the driver's METHOD
+array (METHOD(37)) in the PROCEDURE SETUP/DATA\_CHECK sections; the
+CIMAIN driver ({\sf src/ci.f}) defaults the same slot to unit 88.
+\end{indention}%%
+\xsp
+\mtab{NFTF }{Integer*4. Unit number of the CFP table file (default: inherited from the run's file-unit table, METHOD(80), not a literal constant in mcmain.f).}
+\begin{indention}{12mm}%%
+Labelled "CFP TABLE" in MCMAIN's own header printout
+({\sf src/mcmain.f:300}) and passed to WFGENS for CSF generation.
+\end{indention}%%
+\xsp
+\mtab{NFWFA }{Integer*4. Unit number of the CSF tape used for the MCSCF step (default: inherited from the run's file-unit table, METHOD(31), not a literal constant in mcmain.f).}
+\begin{indention}{12mm}%%
+Printed as "NFWFB1: CSF TAPE FOR MCSCF" in MCMAIN's own header
+printout ({\sf src/mcmain.f:301}) -- the format label text does not
+match the variable name, but the value printed alongside it is
+NFWFA's. Passed to WFGENS for CSF generation and to EXTAP1 for the
+extrapolation step.
+\end{indention}%%
+\xsp
+\mtab{NFWFW }{Integer*4. Unit number of MCMAIN's first work file (default: inherited from the run's file-unit table, METHOD(36), not a literal constant in mcmain.f).}
+\begin{indention}{12mm}%%
+Labelled "WORK FILE 1" in MCMAIN's own header printout
+({\sf src/mcmain.f:303}); rewound and passed to EXTAP1 in the
+PROCEDURE MC\_EXP section.
+\end{indention}%%
+\xsp
+\mtab{NFWFX }{Integer*4. Unit number of the two-electron (EE) integral tape for the MCSCF step (default: 8).}
+\begin{indention}{12mm}%%
+Labelled "EE TAPE FOR MCSCF" in MCMAIN's own header printout
+({\sf src/mcmain.f:302}); the literal default of 8 is assigned
+directly in the PROCEDURE SETUP section, unlike NFTF/NFWFA/NFWFW/
+NFTBL, which are inherited from the driver's METHOD table.
+\end{indention}%%
+\xsp
+\mtab{NIND }{Integer*4. Number of quartets actually specified in the IND array (default: 0).}
+\begin{indention}{12mm}%%
+See IND above. If IND is left entirely at its default (all zero) and
+NIND=0, MCMAIN auto-generates both: NIND is set to LMAX and IND is
+populated with one column per symmetry, spanning all of that
+symmetry's basis functions (NBF). If IND is given explicitly but NIND
+is left at 0, NIND is instead inferred by scanning IND for the first
+all-zero column.
+\end{indention}%%
+\xsp
+\mtab{NOPT(150) }{Integer*4. Per-orbital option array controlling which orbitals are optimized in the SCF orbital-improvement step (default: 150*1, i.e. all orbitals optimized).}
+\begin{indention}{12mm}%%
+Passed down through MCDRIV/MCFOCK into MCSCF1/MCSCF2/MCSCF3/MCSCF4.
+For orbital index IN, NOPT(IN) $\le$ 0 excludes that orbital from
+optimization in a given macro-iteration; a positive NOPT(IN) is used
+as an index (IPICK) selecting the orbital's slot among those being
+optimized. Listed alongside FLAG as a previously undocumented
+\mcnamelist member, not originally documented here.
+\end{indention}%%
+\xsp
+\mtab{NRDSCF }{Integer*4. Flag requesting that an extra \dscfnamelist NAMELIST record be read to override the SCF micro-iteration controls (default: 0).}
+\begin{indention}{12mm}%%
+If NRDSCF $>$ 0, {\sf src/mcfock.f} reads one \dscfnamelist record
+from unit 5 (CTHR, WT, ITMAX, DFC, ISCF, ISMAX -- distinct variables
+from \mcnamelist's own ITMAX/ISMAX, see above) before starting the
+SCF work, then immediately resets NRDSCF to 0, so the extra read
+happens at most once per run regardless of the value given. With the
+default NRDSCF=0, the \dscfnamelist defaults compiled into mcfock.f
+(CTHR=5.0D-7, WT=5.0D4, ITMAX=2, DFC=0.8D0, ISCF=20, ISMAX=2) are
+used unchanged.
+\end{indention}%%
+\xsp
+\mtab{NSKIP }{Integer*4. Read from \mcnamelist but not referenced anywhere in mcmain.f (default: none found in mcmain.f -- verify).}
+\begin{indention}{12mm}%%
+The identical, equally unused NSKIP appears in the sibling
+\wfnamelist ({\sf src/ciwf.f}) and \exnamelist ({\sf src/ciex.f})
+NAMELIST declarations, suggesting a vestigial member of a shared code
+template rather than an MCMAIN-specific oversight.
+\end{indention}%%
+\xsp
+\mtab{NSOL }{Integer*4. Number of CI roots (states) solved simultaneously by the MCSCF procedure (default: 1).}
+\begin{indention}{12mm}%%
+Sizes the CI-vector work array (NS*NSOL) and the per-root energy
+array ET(NSOL) in {\sf src/mcdriv.f}; with the default of 1 the
+MCSCF is single-state (single-root). Listed alongside FLAG as a
+previously undocumented \mcnamelist member, not originally documented
+here.
+\end{indention}%%
+\xsp
+\mtab{STATUS }{Integer*4. Read from \mcnamelist but not referenced anywhere in mcmain.f; not a Character/OPEN-statement string despite the name (default: none found in mcmain.f -- verify).}
+\begin{indention}{12mm}%%
+Explicitly declared Integer*4 (not Character) at {\sf src/mcmain.f:97}.
+The identical, equally unused Integer*4 STATUS appears in the sibling
+\wfnamelist ({\sf src/ciwf.f}) and \exnamelist ({\sf src/ciex.f})
+NAMELIST declarations, suggesting a vestigial member of a shared code
+template rather than an MCMAIN-specific oversight.
+\end{indention}%%
+\xsp
+\mtab{TBLINF }{Integer*4. Read from \mcnamelist but not referenced anywhere in mcmain.f (default: none found in mcmain.f -- verify).}
+\begin{indention}{12mm}%%
+The identical, equally unused TBLINF appears in the sibling
+\wfnamelist ({\sf src/ciwf.f}) and \exnamelist ({\sf src/ciex.f})
+NAMELIST declarations, suggesting a vestigial member of a shared code
+template rather than an MCMAIN-specific oversight.
+\end{indention}%%
+\xsp
+\mtab{TBLSIZ }{Integer*4. Read from \mcnamelist but not referenced anywhere in mcmain.f (default: none found in mcmain.f -- verify).}
+\begin{indention}{12mm}%%
+The identical, equally unused TBLSIZ appears in the sibling
+\wfnamelist ({\sf src/ciwf.f}) and \exnamelist ({\sf src/ciex.f})
+NAMELIST declarations, suggesting a vestigial member of a shared code
+template rather than an MCMAIN-specific oversight.
+\end{indention}%%
+\xspace
+{\bf Example}
+\xsp
+\begin{verbatim}
+ &MC RULE=0, ISPIN=3, IPAR=0, IORB=3, ITNEL=6,
+     NAME=' C TRIPLET EVEN', NPFLG=1,   
+     CLOSED= ' 1S) ', 
+     CSFS= ' 2S*2) 2P*2)) ',' )))',     &END 
+\end{verbatim}
+\xsp
+is the appropriate input for a SCF calculation on, for
+instance,
+Carbon (ITNEL=6), \xsup{3}P\xsub{o} (ISPIN=3,
+IORB=3, IPAR=1). 
+\xspace
+\section*{ \wfnamelist NAMELIST}
+\xsp
+{\bf Function}
+\xsp
+This NAMELIST sets the input for the control of the execution of the
+WFMAIN step (definition of the CSF and of the EE).
+\xspace
+{\bf Parameters}
+\xsp
+\mtab{NAME(30)  }{Integer*4. A title for the WFMAIN step (default: copy of TITLE, see \cntlnamelist NAMELIST).}
+\begin{indention}{12mm}%%
+Up to 120 characters.
+\end{indention}%%
+\xsp
+\mtab{RULE }{Integer*4. Type of CI calculation (default: 1).}
+\begin{indention}{15mm}%%
+{\sf
+ 0 ... general CI (no reference).\\
+ 1 ... SD-CI (Single or Multi Reference).\\
+ 2 ... Perturbative selection of the relevant CSF.\\
+}
+\end{indention}%%
+\begin{indention}{12mm}%%
+The choice of RULE influences the selection of the NRNFG execution
+flags in the \cntlnamelist NAMELIST. A standard input for NRNFG is
+\end{indention}%%
+\begin{indention}{15mm}%%
+{\sf 
+ RULE=0, ... NRNFG= 1, 1, 1, 1, 0, 1, 1, 1,\\
+ RULE=1, ... NRNFG= 1, 1, 1, 1, 0, 0, 1, 1,\\
+ RULE=2, ... NRNFG= 1, 1, 1, 1, 1, 1, 1, 1,\\
+}
+\end{indention}%%
+\begin{indention}{12mm}%%
+for calculations starting from scratch. Refer to the 'Restart
+Capabilities' section for restarts with preexisting files.
+\end{indention}%%
+\xsp
+\mtab{ITNEL }{Integer*4. Number of electrons in the system (default: none).}
+\xsp
+\mtab{ISPIN }{Integer*4. Spin multiplicity (default: none).}
+\begin{indention}{12mm}%%
+Spin multiplicity 2S+1 (1 for singlet, 2 for doublet, ... ).
+\end{indention}%%
+\xsp
+\mtab{IORB }{Integer*4. Orbital angular momentum (default: none).}
+\begin{indention}{12mm}%%
+Spatial angular momentum 2L+1 (1 for S, 3 for P, 5 for D, ... ).
+\end{indention}%%
+\xsp
+\mtab{IPAR }{Integer*4. Parity of the system.}
+\begin{indention}{15mm}%%
+{\sf  0 ... even \htabsp 1 ... odd }
+\end{indention}%%
+\xsp
+\mtab{ISMAX }{Integer*4. Maximum spin multiplicity of the intermediate state (default: 21).}
+\begin{indention}{12mm}%%
+Gives the maximum spin multiplicity allowed in the intermediate
+coupling. All configurations which will result from a sequence of
+coupling steps giving rise to intermediate states with spin
+multiplicity grater than ISMAX will not be included in the CSF list.
+\end{indention}%%
+\xsp
+\mtab{IRMAX }{Integer*4. Maximum spatial multiplicity of the intermediate state (default: 31).}
+\begin{indention}{12mm}%%
+Gives the maximum spatial multiplicity allowed in the intermediate
+coupling. All configurations which will result from a sequence of
+coupling steps giving rise to intermediate states with orbital angular
+momentum
+multiplicity grater than IRMAX will not be included in the CSF list.
+\end{indention}%%
+\xsp
+\mtab{NPFLG }{Integer*4. Debug print flag (default: 0).}
+\begin{indention}{12mm}%%
+Any value $>$ 2 is intended for debug purposes, and should
+not be used. NPFLG $>$ 3 in particular will cause an I/O error.
+\end{indention}%%
+\begin{indention}{15mm}%%
+{\sf 
+ 0 ... prints reference informations only (RULE=1 or 2).\\
+ 1 ... prints type of configurations.\\
+ 2 ... prints the whole list of CSF and echoes the input.\\
+}
+\end{indention}%%
+\xsp
+\mtab{IUNIT }{Integer*4. Unit number for the list of configurations (default: 5).}
+\begin{indention}{12mm}%%
+By default the input data for the configurations follow the \wfnamelist
+NAMELIST. It may be convenient anyway to include the data in a file
+assigned to another unit. In the sample 2 supplied with the package
+for instance, the CSF input data are supposed to be in a file
+associated with unit number 2
+(i.e., IUNIT=2 in the \wfnamelist NAMELIST should be used).
+\xsp
+\end{indention}%%
+\xsp
+\mtab{NFTF }{Integer*4. Unit number of the CFP (coefficients of fractional parentage) table file (default: METHOD(80), see \cntlnamelist NAMELIST's NFTF).}
+\xsp
+\mtab{NFWFA }{Integer*4. Output unit for the rule-0 (general) CSF file (default: METHOD(31)).}
+\begin{indention}{12mm}%%
+Same underlying \cntlnamelist METHOD slot documented there as NFWFB0
+(default 11); \wfnamelist calls it NFWFA rather than NFWFB0. Read back
+by WFETAP/EXTAP1 when RULE=0.
+\end{indention}%%
+\xsp
+\mtab{NFWFB }{Integer*4. Output unit for the rule-1 (SD-CI) CSF file (default: METHOD(32)).}
+\begin{indention}{12mm}%%
+Same underlying \cntlnamelist METHOD slot documented there as NFWFB1
+(default 12); \wfnamelist calls it NFWFB rather than NFWFB1.
+\end{indention}%%
+\xsp
+\mtab{NFWFE }{Integer*4. Output unit for the energy-expression file used by RULE=1 (default: METHOD(34), see \cntlnamelist NAMELIST's NFWFE).}
+\xsp
+\mtab{NFWFP }{Integer*4. Output unit for the energy-expression file used by RULE$\ne$1 (default: METHOD(35), see \cntlnamelist NAMELIST's NFWFP).}
+\begin{indention}{12mm}%%
+WFMAIN selects between NFWFE and NFWFP as the target of WFETAP's
+energy-expression tape depending on RULE: NFWFE for RULE=1, NFWFP
+otherwise.
+\end{indention}%%
+\xsp
+\mtab{NFWFW }{Integer*4. Work-file unit passed to WFETAP for wavefunction extrapolation (default: METHOD(36), see \cntlnamelist NAMELIST's NFWFW).}
+\xsp
+\mtab{NFTBL }{Integer*4. Unit for storing the CFP table and related quantities (default: METHOD(37), see \cntlnamelist NAMELIST's NFTBL).}
+\xsp
+A list of less used variables, mainly controlling buffers sizes,
+and which the user is less likely to modify, follows. In most cases
+the program will print a warning message instructing to change a
+specific variable and will stop with return code $\neq$ 0 into WFMAIN.
+Notice that these variables specify the amount of space reserved
+to the buffer, and do not correspond in general to the actual amount of
+space, generally much smaller, used by the program.
+\xsp
+\xsp
+\kbox{LRPS }{Integer*4. Length of write buffer. (default: 10000).}\\
+\kbox{LTRI }{Integer*4. Length of write buffer. (default: 500000).}\\
+\kbox{LWFL }{Integer*4. Length of write buffer. (default:2000).}\\
+\kbox{LCFC }{Integer*4. Length of write buffer (work file). (default:300).}\\
+\kbox{LISL }{Integer*4. Length of integral address buffer. (default: 1000).}\\
+\kbox{LIJB }{Integer*4. Length of the integral indexes buffer. (default:2000).}\\
+\xsp
+\begin{indention}{12mm}%%
+(Correction: LTRI's default here previously read
+100000; {\sf src/ciwf.f}'s own {\sf DATA LTRI/500000/} confirms 500000,
+matching the correction already applied to the equivalent entries under
+\ptnamelist, \mcnamelist and \cinamelist. Unlike \mcnamelist's LTRI
+(read but never referenced in mcmain.f), \wfnamelist's own LTRI is
+genuinely used: it bounds LTRIX = MIN(MAXRPS*LIJB*100, LTRI), the size
+of the CSF-selection buffer allocated for the RULE$<$3 selection path.)
+\end{indention}%%
+\xsp
+\mtab{TBLSIZ }{Integer*4. Read from \wfnamelist but not referenced anywhere in ciwf.f (default: none found in ciwf.f -- verify).}
+\begin{indention}{12mm}%%
+The identical, equally unused TBLSIZ appears in the sibling
+\mcnamelist ({\sf src/mcmain.f}) and \exnamelist ({\sf src/ciex.f})
+NAMELIST declarations; see \mcnamelist's TBLSIZ entry for the
+shared-template explanation.
+\end{indention}%%
+\xsp
+\mtab{TBLINF }{Integer*4. Read from \wfnamelist but not referenced anywhere in ciwf.f (default: none found in ciwf.f -- verify).}
+\begin{indention}{12mm}%%
+Same shared-template pattern as TBLSIZ above; see \mcnamelist's
+TBLINF entry.
+\end{indention}%%
+\xsp
+\mtab{NCOUNT }{Integer*4. Read from \wfnamelist but not referenced anywhere in ciwf.f (default: none found in ciwf.f -- verify).}
+\begin{indention}{12mm}%%
+Same shared-template pattern as TBLSIZ above; see \mcnamelist's
+NCOUNT entry.
+\end{indention}%%
+\xsp
+\mtab{NSKIP }{Integer*4. Read from \wfnamelist but not referenced anywhere in ciwf.f (default: none found in ciwf.f -- verify).}
+\begin{indention}{12mm}%%
+Same shared-template pattern as TBLSIZ above; see \mcnamelist's
+NSKIP entry.
+\end{indention}%%
+\xsp
+\mtab{FILE }{Integer*4. Read from \wfnamelist but not referenced anywhere in ciwf.f; not a Character/OPEN-statement string despite the name (default: none found in ciwf.f -- verify).}
+\begin{indention}{12mm}%%
+Same shared-template pattern as TBLSIZ above; see \mcnamelist's
+FILE entry, including the declared-Integer*4 note.
+\end{indention}%%
+\xsp
+\mtab{STATUS }{Integer*4. Read from \wfnamelist but not referenced anywhere in ciwf.f; not a Character/OPEN-statement string despite the name (default: none found in ciwf.f -- verify).}
+\begin{indention}{12mm}%%
+Same shared-template pattern as TBLSIZ above; see \mcnamelist's
+STATUS entry.
+\end{indention}%%
+\xsp
+{\bf Example}
+\xsp
+\begin{verbatim}
+ &WF RULE=1, ISPIN=3, IPAR=0, IORB=3, ITNEL=6,
+      NAME=' C TRIPLET EVEN', NPFLG=1, IUNIT=2, &END
+\end{verbatim}
+\xsp
+is the appropriate input for a SD-CI (RULE=1) calculation on, for
+instance,
+Carbon (ITNEL=6), \xsup{3}P\xsub{o} (ISPIN=3,
+IORB=3, IPAR=1). The file with the CSF is on unit 2 (IUNIT=2)
+and a list of the configuration types will be provided in output
+(NPFLG=1).
+\xspace
+\section*{Input data for the CSF}
+\xsp
+The list of CSF should follow the \wfnamelist NAMELIST if IUNIT=5
+(default). It will be included in a separate file assigned to
+unit {\sf n} if IUNIT={\sf n}. The ATGEN utility was designed to
+prepare the input data for the configuration state functions in a
+SD-CI calculation (RULE=1 or RULE=2). The user should thus need to
+type the list only when attempting a general CI calculation (RULE=0)
+or when planning to include restrictions to the
+intermediate couplings (see below).
+For a better understanding of the input conventions it might help to
+look at a CSF output file from ATGEN.
+\xspace
+{\bf CARDS}
+\xsp
+\mtab{{\bf CARD 1} }{List of the atomic orbitals.}
+\begin{indention}{12mm}%%
+Input here the orbitals which will be
+used in defining the configurations (including frozen core).
+End the list with a {\sf ')'}.
+The usual ordering is: virtuals (in ascending order of
+azimuthal quantum number), valence (again in ascending
+order of azimuthal quantum number), closed
+shells. The principal quantum numbers for the virtuals serve only to
+order the orbitals between their respective sets and have nothing to
+do with the functional form of the radial functions.
+\xsp
+Let's look at the f.csf output file obtained by running
+ATGEN with the {\sf f.atg} input data.
+ATGEN labels the virtual orbitals arbitrarily by assigning them
+principal quantum numbers starting from 11 upward. CARD 1 is then
+\xsp
+{\sf 12S 11S 12P 11P 12D 11D 12F 11F 2S 2P 3P 1S )}
+\end{indention}%%
+\xsp
+\mtab{{\bf CARD 2} }{Closed shells.}
+\begin{indention}{12mm}%%
+The orbitals which are treated as closed shells
+in all configurations
+should be listed here. The user does not need to include these shells
+in the configuration input (CARD 5). If a shell is open though,
+it must be explicitly included
+in the list of configurations, even if no excitation is allowed from
+that shell. Again, end with {\sf ')'}.  The user should set at least one closed shell.
+\xsp
+Following the same example (see {\sf f.csf})
+\xsp
+{\sf 1S )}
+\xsp
+indicating a doubly occupancy for the 1s shell in all CSF.
+\end{indention}%%
+\xsp
+\mtab{{\bf CARD 3} }{Order of coupling.}
+\begin{indention}{12mm}%%
+The order in which the shells should
+be coupled will be entered here. If the order is the same of the
+definition of the orbitals given in CARD 1, input only {\sf '))'}.
+\xsp
+For our example
+\xsp
+{\sf 12S 11S 12P 11P 12D 11D 12F 11F 2S 2P 3P 1S )}
+\xsp
+or
+\xsp
+ {\sf  ))}
+\xsp
+can be used equivalently.
+\end{indention}%%
+\xsp
+\mtab{{\bf CARD 4} }{Symbolic definition of the occupancy numbers.}
+\begin{indention}{12mm}%%
+It may be useful to define here symbolic occupancy  numbers, to
+be used in the input of the configurations. This proves to be
+handy when running with the same choice of orbitals on systems with
+different orbital occupancies. The user will have then to change the
+symbolic definitions in CARD 4 without having to change each
+configuration.
+Use alphabetic characters. In the input of configurations (CARD 5)
+a combination
+of symbols and numbers is allowed (i.e., {\sf 'A-1'}, {\sf 'B+2'} for instance
+are accepted,
+provided that the {\sf A} and {\sf B} symbols are defined in CARD 4).
+\xsp
+By including after CARD 3 in sample 1  the following line
+\xsp
+{\sf A=2, B=4, }
+\xsp
+The reference configurations (see CARD 5) could then be input as
+\xsp
+{\sf
+ 2S*A) 2P*B)) \\
+ 2S*A) 2P*B-1) 3P*A-1)) 
+}
+\xsp
+See also the {\sf boron.stdin} sample file included in the package and
+discussed in the {\sf 'Sample 1'} section of this Documentation.
+\end{indention}%%
+\xsp
+\mtab{{\bf CARD 5} }{Input of configurations.}
+\begin{indention}{12mm}%%
+A general format for the configuration specification is:
+\end{indention}%%
+\xsp
+\begin{indention}{15mm}%%
+{\sf
+$<$orbital list$>$, LS-range ) $<$orbital list$>$, LS-range ) ... \\
+$<$orbital list$>$, LS-range ))
+}
+\end{indention}%%
+\xsp
+\begin{indention}{12mm}%%
+where
+\end{indention}%%
+\begin{indention}{15mm}%%
+\xsp
+{\sf  $<$orbital list$>$ }...   list of orbitals of the same angular symmetry,
+followed by an occupancy designation of the form {\sf '*n'} (or
+also {\sf '*A'}, if A has been defined in CARD 4), {\sf n} and {\sf A} giving
+the number of electron in the shell.
+\xsp
+{\sf
+ Valid examples:\\
+ 1S*2 ... two electrons in orbital 1s\\
+ 3 4 5P*1 ... one electron in the 3p or 4p or 5p orbitals\\
+ 2S*0 ... zero occupancy in the 2s orbital\\
+ 3 4 5 6D*A ...  two electrons in 3d or 4d or 5d or 6d (A=2 given in CARD 4)\\
+ 5F*7 ... seven electrons in orbital 5f.
+}
+\xsp
+{\sf LS-range } ... ranges of spin multiplicities and spatial angular
+momentum values to be retained in building the CSF. Give the lower
+limit first. Upper and lower limits must be separated by a {\sf '-'}, the
+S-range by the L-range by a comma. Ranges in S are given by numbers
+(multiplicities). Ranges in L by symmetry symbols {\sf (S, P, D ...)}. The
+ranges are optional, and do not have to be specified if all possible
+CSF generated by a given configuration are desired. ATOMCI retains
+at each intermediate coupling step only those states
+which fall within the ranges and are consistent with Pauli's
+principle.
+\xsp
+{\sf
+ Valid examples: \\
+ 1-1,S-P ... Keep only S and P singlet states at this stage
+of coupling. \\
+ 1-3,S-S ... Keep only singlet and triplet S states.\\
+ 1-3,S-G ... Keep all singlet and triplet S, P, D, F and G states.\\
+}
+\xsp
+while the following specification, as an alternative to {\sf 3S*2)}, is
+not allowed (null coupling):
+\xsp
+{\sf  3S*1) 3S*1, 1-1,S-S)}
+\end{indention}%%
+\begin{indention}{12mm}%%
+\xsp
+Each shell ends with a {\sf ')'}. A {\sf '))'} sequence ends a configuration.
+The list of configurations ends with {\sf ')))'}.
+\xsp
+When RULE $>$ 0 (see \wfnamelist NAMELIST), the reference configurations
+should be separated from the following configurations by an extra {\sf ')'}.
+\xsp
+One input statement cannot generate more than 800 CSF.
+\xsp
+The system does not check for duplication of CSF at this stage,
+but it will eventually provoke an abort of the run at the
+WFMAIN or EXMAIN
+steps, with a corresponding warning message.
+\xsp
+By typing {\sf 'DISPLAY'} at the beginning of the list a printout of the
+available type of spin states (Shell states in the LSQ scheme, see
+F.Sasaki et al., in "Methods and  Techniques in Computational Chemistry:
+METECC-94", cited above) will be obtained.
+\xsp
+In our example, corresponding to a RULE=1 situation, the reference
+state configurations are first entered
+\xsp
+{\sf
+ 2S*2) 2P*4)) \\
+ 2S*2) 2P*3) 3P*1)) \\
+ )
+}
+\xsp
+Notice that blank characters within a shell are neglected, that shells
+have to be separated from each other by at least one blank (and by {\sf ')'})
+and that lines starting with {\sf '"'} are consider as comment lines. ATGEN
+puts extra blank characters within a shell and
+between the configurations and thus  the output looks
+slightly different from what is printed above. After the reference
+configurations, the singly and doubly excited configurations
+within the valence orbitals are input (labeled
+for convenience 'SINGLE AND DOUBLE EXCITATIONS WITHIN GROUP 1' by
+ATGEN)
+\xsp
+{\sf
+ 2S*2) 2P*2) 3P*2))\\
+ 2P*6))\\
+ ...
+}
+\xsp
+followed by the single and double excitations to the virtual
+orbitals (labeled 'FIRST ORDER SPACE' and 'SECOND ORDER SPACE'
+respectively by ATGEN)
+\xsp
+{\sf
+ 12 11S*1) 2S*1) 2P*4))\\
+ ... \\
+ 12 11S*2) 2P*4))\\
+ ... \\
+}
+\xsp
+There are several ways to generate
+the same list of CSF. In the following two examples identical sets
+are generated, but with the second input arrangement the generation
+is faster.
+\xsp
+{\sf
+ 2 3 4 5 6S*1) 2 3 4P*1))\\
+ 1S*1) 2 3 4 5 6S*2) 2 3 4P*1))\\
+ 1S*0) 2 3 4 5 6S*2) 2 3 4 5 6S*1) 2 3 4P*1))\\
+ 1S*1) 2 3 4 5 6S*1) 2 3 4 5 6S*1) 2 3 4P*1))\\
+ 1S*1) 2 3 4P*2) 2 3 4P*1))\\
+ 1S*1) 2 3 4P*1) 2 3 4P*2))\\
+ 1S*0) 2 3 4 5 6S*1) 2 3 4P*2) 2 3 4P*1))\\
+ 1S*0) 2 3 4 5 6S*1) 2 3 4P*1) 2 3 4P*2))\\
+ )))\\
+\\
+ 1 2 3 4 5 6S*2) 2 3 4 5 6S*1) 2 3 4P*1))\\
+ 1 2 3 4 5 6S*1) 2 3 4 5 6S*2) 2 3 4P*1))\\
+ 1 2 3 4 5 6S*1) 2 3 4 5 6S*1) 3 4 5 6S*1) 2 3 4P*1))\\
+ 1 2 3 4 5 6S*1) 2 3 4P*2) 3 4P*1))\\
+ 1 2 3 4 5 6S*1) 2 3 4P*1) 3 4P*2))\\
+ )))\\
+}
+\xsp
+Finally, two examples of use of restriction ranges in intermediate
+coupling. In the following case ranges are specified, though needlessly
+since it is assumed that the final state is a \xsup{1}S\xsub{e}
+for a four electron system, and thus all other possible intermediate
+state couplings are incompatible with the final target symmetry:
+\xsp
+ {\sf 3 4 5D*1) 3 4 5D*1, 1-1,S-S) 2S*2)) }
+\xsp
+a d electron (\xsup{2}D) is coupled to a d electron (\xsup{2}D)
+but out of the several possible resulting intermediate state symmetries
+only \xsup{1}S states are retained, and then coupled with the
+\xsup{1}S state arising from the (2s)\xsup{2} shell.
+Notice however that giving ranges even when not really needed could
+result in saving CPU time by reducing the amount of work done by the
+EE generation routine.
+\xsp
+In the following example on the other hand the restrictions are
+effective (same four electron system and \xsup{1}S final state
+symmetry).
+\xsp
+ {\sf 3 4 5S*1) 3 4 5S*1, 1-1,S-S) 1S*1) 2S*1))}
+\xsp
+Only three CSF are generated, corresponding to three singlet-singlet
+couplings of the first two electrons to the
+second electron pair. CSF coming from possible intermediate triplet S
+states are excluded.
+\end{indention}%%
+\xspace
+\section*{ \trnamelist NAMELIST}
+\xsp
+{\bf Function}
+\xsp
+This NAMELIST sets the input for the control of the execution of the
+TRMAIN step in ATOMCI (integral transformation).
+\xspace
+{\bf Parameters}
+\xsp
+\mtab{NAME(33)  }{Integer*4. A title for the TRMAIN step (default: copy of TITLE, see \cntlnamelist NAMELIST).}
+\begin{indention}{12mm}%%
+Up to 132 characters.
+\end{indention}%%
+\xsp
+\mtab{NSYM }{Integer*4. Number of symmetries (default: none).}
+\begin{indention}{12mm}%%
+Is also the dimension of the NOB and NBF vectors.
+\end{indention}%%
+\xsp
+\mtab{NOB() }{Integer*4. A vector containing the number of orbitals in each symmetry (default: none).}
+\begin{indention}{12mm}%%
+Number of rows in each symmetry block of the transformation
+coefficients matrix.
+\end{indention}%%
+\xsp
+\mtab{NBF() }{Integer*4. A vector containing the number of basis functions in each symmetry (default: none).}
+\begin{indention}{12mm}%%
+Number of columns in each symmetry block of the transformation
+coefficients matrix.
+\end{indention}%%
+\xsp
+\mtab{MPOB() }{Integer*4. Correspondence table (default: none).}
+\begin{indention}{12mm}%%
+Correspondence table between the orbitals defined in the input of
+CSF and the transformation coefficients. A vector with TNOB elements,
+TNOB being the total number of orbitals. Input one symmetry at a time.
+See example at the end of this section.
+\end{indention}%%
+\xsp
+\mtab{NPFLG }{Integer*4. Debug print flag (default: 0).}
+\begin{indention}{12mm}%%
+Any value $>$ 0 is intended for debug purposes, but currently cannot be used: the
+one-electron dump this triggers reads from unit NFTRX, which is only ever written
+under ITRNS$\ne$2 -- itself a setting that already crashes for want of external
+data (see ITRNS above). Setting NPFLG$>$0 with the default ITRNS=2 crashes with a
+Fortran end-of-file runtime error before TRMAIN prints anything from this branch.
+\end{indention}%%
+\xsp
+\mtab{ITVCI }{Integer*4. Input mode for transformation coefficients.}
+\begin{indention}{15mm}%%
+{\sf 
+ 0 ... input from the user. \\
+ 1 ... input from a previous ATOMCI run.
+}
+\end{indention}%%
+\begin{indention}{12mm}%%
+If ITVCI=0 the \basnamelist NAMELIST is needed in input and
+the transformation coefficients will be read in from the file
+in unit IUNIT (see \basnamelist NAMELIST).
+\\%.br
+If ITVCI=1 the \getnamelist NAMELIST is needed and the transformation
+coefficients will be read in from the file in unit IVCS (see \getnamelist
+NAMELIST).
+\end{indention}%%
+\xsp
+\mtab{NFLGS }{Integer*4. Two-electron output packing convention for "diagonal" shell-pair blocks (default: 1).}
+\begin{indention}{12mm}%%
+Only affects blocks where the bra shell-pair equals the ket shell-pair.
+NFLGS=1 (default, used by every shipped sample) packs those blocks
+triangularly; NFLGS=2 writes them full/rectangular. Traced and tested: this measurably changes the transformed-integral
+file's size, but produced byte-identical energies in every case tested --
+block symmetry when the bra/ket shell pair matches means a truncated read
+of the rectangular layout coincidentally reconstructs the same values the
+triangular layout would have given, though this was not independently
+confirmed by a block-by-block raw integral value diff between the two
+layouts.
+\end{indention}%%
+\xsp
+\mtab{ITRNS }{Integer*4. Selects the one-electron transformation path (default: 2).}
+\begin{indention}{12mm}%%
+ITRNS=2 (default, used by every shipped sample) is the normal path.
+Any other value routes through TRNONA/TRNONE, an additional
+one-electron-operator transform that reads from unit NFAIX (default 19)
+-- a file nothing in this codebase's AO-integral generation stage ever
+writes. Setting ITRNS$\ne$2 without independently supplying that file
+crashes with a Fortran end-of-file runtime error partway through TRMAIN.
+\end{indention}%%
+\xsp
+\mtab{NFAII }{Integer*4. AO integral file unit read by TRMAIN (default: 18).}
+\xsp
+\mtab{NFAIX }{Integer*4. File unit read by the TRNONA/TRNONE path -- see ITRNS above (default: 19).}
+\begin{indention}{12mm}%%
+Not written by anything in this codebase's AO-integral generation stage;
+only consulted at all when ITRNS$\ne$2.
+\end{indention}%%
+\xsp
+\mtab{NFTRN }{Integer*4. File unit for the incoming transformation-coefficient/orbital data (default: 27).}
+\xsp
+\mtab{NFTRC }{Integer*4. File unit the orthonormalized transformation coefficients are written back to (default: 21).}
+\xsp
+\mtab{NFTRI }{Integer*4. Output file unit for the transformed (MO) one- and two-electron integrals -- consumed by CIMAIN/PTMAIN (default: 16).}
+\xsp
+\mtab{NFTRX }{Integer*4. Output file unit for the TRNONA/TRNONE path -- see ITRNS above (default: 17).}
+\xsp
+\mtab{NFTRD }{Integer*4. Scratch file unit used only if the in-core two-electron transformation buffer overflows and TRNSFM falls back to its disk (DA-file) path (default: 20).}
+\begin{indention}{12mm}%%
+See LDSK below. This overflow path exists for a two-electron integral
+set too large for the buffer TRDRIV/CALHMD size from available core; it
+is not exercised by any shipped sample.
+\end{indention}%%
+\xsp
+\mtab{LDSK }{Integer*4. Number of blocks in the disk-overflow (DA) file -- see NFTRD above (default: 2000).}
+\xsp
+\mtab{LTRA1B }{Integer*4. Buffer length (words) for the one-electron (S,H) half-transformation, TRNSH (default: 7200).}
+\xsp
+\mtab{LTRB }{Integer*4. Buffer length (words) used when reading/writing the transformation-coefficient file NFTRC (default: 449).}
+\xsp
+\mtab{LTRB1 }{Integer*4. Buffer length (words) passed to TRNSH for the one-electron transform (default: 448).}
+\xsp
+\mtab{MAXM }{Integer*4. Maximum per-symmetry basis-function count, used to size TRNSH's work buffers (default: none).}
+\begin{indention}{12mm}%%
+Also recomputed internally within the TRNONA/TRNONE (ITRNS$\ne$2) path
+from the data it reads, independent of any value supplied here.
+\end{indention}%%
+\xsp
+\mtab{NBFT }{Integer*4. Total basis function count, sum of NBF() (default: 0).}
+\begin{indention}{12mm}%%
+Dimensions the NPBF()/MBF() vectors below.
+\end{indention}%%
+\xsp
+\mtab{NPBF() }{Integer*4. Companion vector to NBF(), NBFT elements, used in orbital-reordering bookkeeping (default: none).}
+\xsp
+\mtab{MBF() }{Integer*4. Companion vector to NBF(), NBFT elements, used in orbital-reordering bookkeeping (default: none).}
+\xsp
+\mtab{NCODC }{Integer*4. Internal consistency code compared against ITVCI when reading the coefficient file NFTRC (default: 1).}
+\xsp
+\mtab{NCODT }{Integer*4. Read back from the AO integral file (NFAII)'s own header and overwritten immediately; any value supplied here is not used (default: 1).}
+\xsp
+\mtab{IORDR }{Integer*4. Declared in this NAMELIST but not read or used anywhere else in this codebase (default: none -- dead).}
+\xsp
+\xspace
+{\bf Example}
+\xsp
+Referring to the example used in documenting the input conventions
+for ATGEN and for the list of CSF, a possible form for the \trnamelist NAMELIST
+might be
+\xsp
+\begin{verbatim}
+ &TR NSYM=4, NBF= 4,4,2,2,  NOB= 4,4,2,2, 
+     MPOB= 4,3,2,1,
+           4,3,1,2,
+               2,1,
+               2,1,
+       ITVCI=0, &END
+\end{verbatim}
+\xsp
+A total of 12 orbitals (NOB=4,4,2,2) projected on 12 basis functions
+(NBF=4,4,2,2) are used, involving 4 symmetries (NSYM=4).
+The order of the atomic orbitals given in CARD 1 in the input data
+for the CSF  was
+\xsp
+ {\sf 12S 11S 12P 11P 12D 11D 12F 11F 2S 2P 3P 1S}
+\xsp
+The 12S orbital corresponds to the fourth orbital of symmetry s
+in the following
+list of transformation coefficients (MPOB(1)=4); the 11S orbital
+corresponds to the third s orbital in the following list; the 2S orbital
+to the second; the 1S to the first. The 12P orbital corresponds to the
+fourth p orbital in the list and so on.
+The transformation coefficient matrix will be supplied by the user
+(ITVCI=0) and the \basnamelist NAMELIST will follow.
+\xspace
+\section*{ \basnamelist NAMELIST}
+\xsp
+{\bf Function}
+\xsp
+Needed when the transformation coefficients are supplied by the user.
+\xspace
+{\bf Parameters}
+\xsp
+\mtab{IUNIT  }{Integer*4. The unit number of the file containing the coefficients (default: 5).}
+\begin{indention}{12mm}%%
+By default the transformation matrix follows the \basnamelist NAMELIST.
+\end{indention}%%
+\xsp
+\mtab{IDPRNT }{Integer*4. Print flag.  (default: 0)}
+\begin{indention}{15mm}%%
+{\sf
+ 0 ... Echo of input. \\
+ 1 ... No echo of input.
+}
+\end{indention}%%
+\xsp
+\mtab{NAME(20) }{Integer*4. A title/label for this transformation-coefficient-vector set (default: blank).}
+\begin{indention}{12mm}%%
+Blanked by an explicit loop before the NAMELIST read in CARDVC
+({\sf src/cinewx.f}), so it defaults to all blanks unless supplied;
+up to 80 characters. Written verbatim, together with the coefficient
+data, to the vector-coefficient file CARDVC produces.
+\end{indention}%%
+\xsp
+The transformation coefficients are input in free format.
+The input sequence follows a sort of double nested loop scheme:
+\xsp
+\begin{verbatim}
+ Loop over the symmetry types.
+      Loop over the orbitals of a given symmetry type.
+           Loop over the basis functions for the symmetry in object.
+                Input transformation coefficients matrix element.
+                End loop.
+           End loop.
+      Input ')'
+      End loop.
+\end{verbatim}
+\xsp
+As indicated above, each symmetry block ends with a {\sf ')'} character.
+%% [Correction] This section previously
+%% claimed a further ')))'  outer-list terminator after the loop above,
+%% by direct analogy with the \wfnamelist CSF list's genuinely 3-level
+%% nested convention. That claim does not match the code: CARDVC
+%% (src/cinewx.f), the routine that actually reads this data, reads
+%% exactly one ')' per non-empty symmetry block and nothing more -- it
+%% returns after the loop above without issuing any further read. The
+%% shipped sample deck (samples/native/boron.stdin) writes a trailing ')))))'
+%% after its last symmetry block anyway; that extra text is inert filler,
+%% silently skipped by the next plain NAMELIST READ (for \exnamelist),
+%% not a required terminator -- confirmed both by reading CARDVC directly
+%% and by a standalone test program reproducing the skip-ahead behavior.
+%% Writing it is a harmless convention, not a rule; omitting it is
+%% equally correct.
+There is no separate terminator for the whole list -- the reader simply
+stops once every symmetry declared by NSYM has been read. Any text after
+that point (including a further run of ')' characters, which the sample
+decks conventionally include) is not read by this routine at all; it is
+silently skipped over by whatever NAMELIST is read next. The number of
+coefficients is obviously equal to the dot product of the NOB and
+NBF vectors. The ordering must be in agreement with the one
+established with the MPOB vector in the \trnamelist NAMELIST.
+\xspace
+{\bf Example}
+\xsp
+An example of \basnamelist NAMELIST:
+\xsp
+\begin{verbatim}
+ &BASVC IDPRNT=0, IUNIT=4, &END
+\end{verbatim}
+\xsp
+The transformations coefficients are in unit 4 (IUNIT=4).
+No echo of input is requested (IDPRNT=0).
+An arbitrary set (for example an identity transformation matrix) of
+coefficients for NBF=4,4,2,2, NOB=4,4,2,2,
+could be arranged as follows
+\xsp
+\begin{verbatim}
+ 1, 0, 0, 0,
+ 0, 1, 0, 0,
+ 0, 0, 1, 0,
+ 0, 0, 0, 1,  )
+ 1, 0, 0, 0,
+ 0, 1, 0, 0,
+ 0, 0, 1, 0,
+ 0, 0, 0, 1,  )
+ 1, 0,
+ 0, 1,  )
+ 1, 0,
+ 0, 1,  )
+ )))
+\end{verbatim}
+\xspace
+\section*{ \getnamelist NAMELIST}
+\xsp
+{\bf Function}
+\xsp
+To be used when the transformation coefficients are extracted from the
+orbital save file of previous ATOMCI runs.
+\xspace
+{\bf Parameters}
+\xsp
+\mtab{IVCS  }{Integer*4. The unit number of the coefficients save file (default: 27).}
+\begin{indention}{12mm}%%
+By default the coefficient save file is assigned to unit 27, and the
+sample data supplied with the package assumes the use of the default
+value. The coefficient save file (Unit NFCIC, see I/O File
+Description) is structured in subsequent records.
+When created by ATOMCI, the first record is used to save the original
+transformation coefficients matrix. The following records are
+written according to the directives given by the user via the
+IOFLG variable within the \cinamelist NAMELIST. The user is referred to the
+discussion of the \cinamelist NAMELIST for a description of the use of the
+IOFLG input data. In general each record after the first in unit
+IVCS contains a set of NO's, obtained at a given time
+by running ATOMCI with the appropriate save directives.
+\end{indention}%%
+\xsp
+\mtab{NIND }{Integer*4. Number of columns in the array IND (default: none).}
+\xsp
+\mtab{IND(4,100) }{Criteria of selection for thetransformation coefficients (default: none).}
+\begin{indention}{12mm}%%
+A series of NIND quartets (columns)\\
+{\sf
+ a\xsub{1}, l\xsub{1}, c\xsub{1}, d\xsub{1},\\
+ a\xsub{2}, l\xsub{2}, c\xsub{2}, d\xsub{2},\\
+ ...\\
+}
+specifying that the next c\xsub{j} through d\xsub{j}
+orbital coefficients of symmetry type l\xsub{j}
+should be taken from the record number a\xsub{j}
+of the save file. The data in this array should be such that all
+the needed orbital coefficient are accounted for.
+\end{indention}%%
+\xsp
+\mtab{NBASE }{Integer*4. Record-number offset added to every IND(1,J) entry above (default: 0).}
+\begin{indention}{12mm}%%
+Read into GETVCA ({\sf src/cinewx.f}), which does {\sf IND(1,I) =
+IND(1,I) + NBASE} for every one of the NIND quartets before using
+IND, letting the same IND table be reused against save files whose
+record numbering starts at a different offset.
+\end{indention}%%
+\xsp
+\mtab{IPAUL }{Integer*4. Selects an optional pre-processing pass over the vector-history file IVCS before IND is applied (default: 0, no pre-processing).}
+\begin{indention}{15mm}%%
+{\sf
+ IPAUL $<$ 0 ... call RPAULC(NPAUL,IVCS,NSHT,NSYM,NBF,NOB,BUF).\\
+ IPAUL $=$ 0 ... skip this step entirely (default).\\
+ IPAUL $>$ 0 ... call RPAUL(IPAUL,NPAUL,IVCS,BUF).
+}
+\end{indention}%%
+\xsp
+\mtab{NPAUL }{Integer*4. Parameter passed to RPAUL/RPAULC -- see IPAUL above (default: none found in cinewx.f -- verify).}
+\xsp
+\mtab{NSHT }{Integer*4. Parameter passed only to RPAULC, the IPAUL$<$0 branch -- see IPAUL above (default: none found in cinewx.f -- verify).}
+\xsp
+\mtab{NSYM }{Integer*4. Number of symmetries describing the basis of the vector-history file, for the IPAUL$<$0 RPAULC branch (default: none found in cinewx.f -- verify).}
+\begin{indention}{12mm}%%
+Distinct from the live NSYM passed into GETVCA's own ISYM dummy
+argument by its caller (TRNSFM/TRDRIV, when \trnamelist's ITVCI=1) --
+that one describes the {\it current} run's basis and drives the IND
+table and the WMEGU call below; this \getnamelist NSYM instead
+describes the basis recorded in the historical save file being
+pre-processed by RPAULC, and is only read when IPAUL$<$0.
+\end{indention}%%
+\xsp
+\mtab{NBF(20) }{Integer*4. Per-symmetry basis-function counts for the IPAUL$<$0 RPAULC branch -- see NSYM above (default: none found in cinewx.f -- verify).}
+\xsp
+\mtab{NOB(20) }{Integer*4. Per-symmetry orbital counts for the IPAUL$<$0 RPAULC branch -- see NSYM above (default: none found in cinewx.f -- verify).}
+\xsp
+\mtab{IFLSYM }{Integer*4. Selects a gerade/ungerade symmetry-doubling mode for the WMEGU combination step applied to the fetched vector (default: 0).}
+\begin{indention}{15mm}%%
+{\sf
+ IFLSYM $=$ 0 ... no doubling (default); WMEGU's MT/CGU-driven
+ combination block is skipped entirely.\\
+ IFLSYM $=$ 2 ... the current basis is treated as doubled (each
+ symmetry's function count used twice) before calling WMEGU.\\
+ IFLSYM $=$ 1 ... enables WMEGU's MT/CGU gerade/ungerade combination
+ block itself (see MT, CGU below).
+}
+\end{indention}%%
+\begin{indention}{12mm}%%
+None of the samples shipped with the package set IFLSYM, so it is
+always 0 in practice, and the MT/CGU block is never exercised by any
+sample. This
+path had a latent array-dimension defect (MT/CGU were declared as
+bare scalars against WMEGU's array indexing), gated on exactly this
+IFLSYM=1 condition, fixed by giving both a real KBASIS(=150)-sized
+backing array.
+\end{indention}%%
+\xsp
+\mtab{MT(150) }{Integer*4. M-value table consumed by WMEGU's gerade/ungerade combination block, only when IFLSYM=1 (default: all zero).}
+\begin{indention}{12mm}%%
+See IFLSYM above. With the default IFLSYM=0 this array is declared
+but never read.
+\end{indention}%%
+\xsp
+\mtab{CGU(2,150) }{Real*8. GU-phase table consumed by WMEGU's gerade/ungerade combination block, only when IFLSYM=1 (default: all zero).}
+\begin{indention}{12mm}%%
+Companion to MT; see IFLSYM above. Note the (phase,basis) subscript
+order here matches WMEGU's own indexing convention, which is
+transposed relative to the (basis,phase) convention used by the
+similarly-named ICG/ICU/MATE gerade/ungerade combination in the
+\cinamelist NAMELIST's Section 5 (STOVC/RMEGU) -- the two are
+separate mechanisms serving an analogous role in different pipeline
+stages, not the same code path.
+\end{indention}%%
+\xsp
+\mtab{IDSP(100) }{Integer*4. Table passed to WMEGU alongside MT/CGU (default: all zero).}
+\begin{indention}{12mm}%%
+Read for every \getnamelist NAMELIST read (unlike MT/CGU, not gated
+behind IFLSYM=1 in GETVCA itself) and always passed through to WMEGU;
+see IFLSYM above for the surrounding WMEGU/MT/CGU context.
+\end{indention}%%
+\xspace
+{\bf Example}
+\xsp
+An example of \getnamelist NAMELIST:
+\xsp
+\begin{verbatim}
+ &GET IVCS=27, NIND=6,
+  IND= 1,0,1,2,
+       2,0,3,4,
+       1,1,1,2,
+       2,1,3,4,
+       2,2,3,4,
+       2,3,3,4,
+  &END
+\end{verbatim}
+\xsp
+The transformations coefficients are read in from unit 27 (IVCS=27).
+The first and second orbitals (IND(3,1)=1, IND(4,1)=2)
+of the s symmetry type (IND(2,1)=0) are taken from
+the first record of the save file (original input) (IND(1,1)=1).
+The third and fourth orbitals (IND(3,2)=3, IND(4,2)=4)
+of the s symmetry type (IND(2,2)=0) are taken from
+the second record of the save file (natural orbitals) (IND(1,2)=2).
+The first and second orbitals (IND(3,3)=1, IND(4,3)=2)
+of the p symmetry type (IND(2,3)=1) are taken from
+the first record of the save file (original input) (IND(1,3)=1),
+and so on.
+\xspace
+\section*{ \ptnamelist NAMELIST}
+\xsp
+{\bf Function}
+\xsp
+This NAMELIST sets the input for the control of the execution of the
+PTMAIN step (perturbative selection of the relevant CSF).
+Normally invoked by setting RULE=2 in the \wfnamelist NAMELIST and
+correspondingly NRNFG(5)=1 in the \cntlnamelist NAMELIST.
+\xspace
+{\bf Parameters}
+\xsp
+\mtab{NAME(30)  }{Integer*4. A title for the PTMAIN step (default: copy of TITLE, see \cntlnamelist NAMELIST).}
+\begin{indention}{12mm}%%
+Up to 120 characters.
+\end{indention}%%
+\xsp
+\mtab{NFTF }{Integer*4. Unit number of the CFP table file (default: METHOD(80), see \cntlnamelist NAMELIST's NFTF).}
+\xsp
+\mtab{NFWFP }{Integer*4. Unit number of the PTMAIN energy-expression tape written by WFMAIN (default: METHOD(35), see \cntlnamelist NAMELIST's NFWFP).}
+\xsp
+\mtab{NFTRI }{Integer*4. Unit number of the TRMAIN transformed-integral file (default: METHOD(46), see \cntlnamelist NAMELIST's NFTRI).}
+\xsp
+\mtab{NFPTV }{Integer*4. Output unit for the PT-CI vector file (default: METHOD(51), see \cntlnamelist NAMELIST's NFPTV).}
+\xsp
+\mtab{NFPTD }{Integer*4. Output unit for the diagonal effective-Hamiltonian file built by CALHMD (default: METHOD(52)).}
+\begin{indention}{12mm}%%
+Same underlying \cntlnamelist METHOD slot documented there as
+NFPTH1; \ptnamelist calls it NFPTD rather than NFPTH1.
+\end{indention}%%
+\xsp
+\mtab{NFPTO }{Integer*4. Output unit for the off-diagonal effective-Hamiltonian file built by CALHMD (default: METHOD(53)).}
+\begin{indention}{12mm}%%
+Same underlying \cntlnamelist METHOD slot documented there as
+NFPTH2; \ptnamelist calls it NFPTO rather than NFPTH2.
+\end{indention}%%
+\xsp
+\mtab{NFPTL }{Integer*4. Unit for the selected/rejected CSF label file written by PTLCPY (default: METHOD(54), see \cntlnamelist NAMELIST's NFPTL).}
+\xsp
+\mtab{NFPTB }{Integer*4. Output unit for the selected-CSF tape passed on to EXMAIN (default: METHOD(55), see \cntlnamelist NAMELIST's NFPTB).}
+\xsp
+\mtab{NFPTI }{Integer*4. I/O unit passed to DIAGDR for the Davidson diagonalization's initial-vector handling (default: METHOD(57)).}
+\begin{indention}{12mm}%%
+Not one of \cntlnamelist's alternate-unit fields (no CNTL/METHOD slot
+documents a matching name); METHOD(57) is a PT-specific slot.
+\end{indention}%%
+\xsp
+\mtab{NFPTS }{Integer*4. Scratch unit passed to PTREES/CALHMD/PTWCSF for reference-CSF bookkeeping (default: 0, fixed by PTMAIN's own setup and not taken from METHOD).}
+\begin{indention}{12mm}%%
+Unlike the other NFPTxx members, PTMAIN's own PROCEDURE SETUP always
+assigns NFPTS=0 before the \ptnamelist NAMELIST is read; the NAMELIST
+read can still override it since NFPTS is a genuine member of the
+list.
+\end{indention}%%
+\xsp
+\mtab{NRNFG(3) }{Integer*4. Run flags (default: 1,1,1).}
+\begin{indention}{12mm}%%
+Each flag controls the execution of one of the three sections in the
+PTMAIN step. Type 1 to execute and 0 to skip.
+\end{indention}%%
+\begin{indention}{15mm}%%
+{\sf
+ NRNFG(1) ...  Construction of the effective Hamiltonian.\\
+ NRNFG(2) ...  Diagonalization.\\
+ NRNFG(3) ...  Analysis of the contribution to the energy.\\
+}
+\end{indention}%%
+\xsp
+\mtab{HOW }{Integer*4. Selection scheme (default: 0)}
+\begin{indention}{12mm}%%
+Specifies how to select the relevant CSF.
+(Correction: this entry previously stated a
+default of 2; {\sf src/cipt.f}'s PROCEDURE SETUP sets HOW=0 before the
+\ptnamelist NAMELIST is read. The value 2 does appear in the code, but
+only as a display-normalization side effect -- any HOW value other
+than 0 or 1 is coerced to 2 immediately before being echoed in the
+section-2 header banner -- it is not the as-shipped default.)
+\end{indention}%%
+\begin{indention}{15mm}%%
+{\sf 
+ 0 ...  Contribution to solution number ISTATE (see below).\\
+ 1 ...  Average contribution among NSOLVE solutions (see below).\\
+ 2 ...  Maximum contribution among NSOLVE solutions (see below).
+}
+\end{indention}%%
+\xsp
+\mtab{ISTATE }{Integer*4. Index of the solution of the eigenvalue problem (default: 1).}
+\begin{indention}{12mm}%%
+Specifies the index of a
+single root in the diagonalization of the effective
+Hamiltonian. Needed when HOW=0. Must always be $\leq$ NSOLVE.
+\end{indention}%%
+\xsp
+\mtab{NREFXX }{Integer*4. Override for the number of reference CSFs passed to PTREES (default: 0, meaning "use NREF").}
+\begin{indention}{12mm}%%
+If NREFXX=0 (default), PTMAIN sets it equal to NREF (the reference
+count established by the earlier WFMAIN step) before calling PTREES.
+A nonzero value overrides that count directly.
+\end{indention}%%
+\xsp
+\mtab{NSOLVE }{Integer*4. Number of solutions of the eigenvalue problem (default: 1).}
+\begin{indention}{12mm}%%
+Specifies how many roots are requested in the diagonalization of
+the effective Hamiltonian.
+\end{indention}%%
+\xsp
+\mtab{IPS }{Integer*4. Threshold for the diagonalization (default: 6).}
+\begin{indention}{12mm}%%
+Norm of the correction vector in the Davidson diagonalization
+routine. The actual threshold will be 10\xsup{-IPS}.
+(Correction: this entry previously stated a
+default of 5; {\sf src/cipt.f}'s compiled-in {\sf DATA} initialization
+gives IPS=6, and PROCEDURE SETUP does not touch it.)
+\end{indention}%%
+\xsp
+\mtab{DEBUG(5) }{Integer*4. Debug error-code injection (default: 0,0,0,0,0).}
+\begin{indention}{12mm}%%
+At the start of PROCEDURE SECTION\_2 and PROCEDURE SECTION\_4 (the
+diagonalization and RS-PT procedures internal to {\sf src/cipt.f}'s
+GOTO structure -- these do not correspond 1:1 with the 3 conceptual
+sections of NRNFG above), PTMAIN sets its working ERRCD directly from
+DEBUG(2) resp. DEBUG(4) before doing any real work; a nonzero value
+therefore makes that procedure immediately report the given return
+code, as if it had failed, without altering any files. DEBUG(1),
+DEBUG(3) and DEBUG(5) are declared and read into the NAMELIST but not
+referenced anywhere in {\sf cipt.f}. Intended only for exercising the
+error-handling/early-return paths, not for normal use.
+\end{indention}%%
+\xsp
+\mtab{ETHR }{Real*8. Threshold for the selection of the CSF (default: 1.0D-04).}
+\begin{indention}{12mm}%%
+The program will compute the contribution to the energy from each
+configuration state function
+and will then arrange the CSF accordingly.
+A cumulative energy is defined by summing all contributions
+(smaller in absolute value than CTHR, see below)
+along
+the list, starting from the smallest.
+When the cumulative energy reaches the value of ETHR
+all the CSF which were taken into account for the summation
+are rejected. Those remaining are automatically selected.
+Note however that CSF corresponding to single excitations from
+a reference configurations are always selected.
+\end{indention}%%
+\xsp
+\mtab{CTHR }{Real*8. Threshold for the contribution of a single CSF (default: 1.0D-03).}
+\begin{indention}{12mm}%%
+A configuration state function
+is automatically included if the absolute value of the coefficient
+is larger that CTHR. It is advisable to choose for CTHR a value
+at most one order of magnitude larger than ETHR not to affect
+the accuracy of the result.
+\end{indention}%%
+\xsp
+\mtab{PTHR }{Real*8. Print flag for the list of selected CSF (default: -1.0D00).}
+\begin{indention}{15mm}%%
+{\sf
+  1.0d0 ... Do not print the list.\\
+ -1.0d0 ... Print the whole list.\\
+}
+\end{indention}%%
+\xsp
+\mtab{THRCSF }{Real*8. CSF selection/inclusion threshold passed to PRCIVC (default: 0, uninitialized).}
+\begin{indention}{12mm}%%
+Unlike ETHR/CTHR above, PTMAIN's PROCEDURE SETUP does not assign a
+compiled-in default for THRCSF, so like other uninitialized NAMELIST
+locals in this codebase, its default relies on {\sf -fno-automatic}
+implicit zero-initialization. Passed to PRCIVC, the same CI-vector print routine used by
+\cinamelist's THRCSF and IDTYP -- see those entries for the print/
+selection-mode role.
+\end{indention}%%
+\xsp
+\mtab{THRVC }{Real*8. CSF selection threshold applied by CFSORT (default: 0.01).}
+\begin{indention}{12mm}%%
+Compare \cinamelist's THRVC, which instead is only a threshold
+{\it displayed} in the CI-vector printout; here in \ptnamelist THRVC
+is the value CFSORT actually applies when deciding which CSF
+coefficients from the effective-Hamiltonian diagonalization are kept
+in the printed/selected list.
+\end{indention}%%
+\xsp
+\mtab{IDTYP(2) }{Integer*4. CSF pre-selection/print mode passed to PRCIVC (default: 1,0).}
+\begin{indention}{12mm}%%
+Compiled-in default via {\sf DATA IDTYP.../1,0/} in {\sf src/cipt.f}
+(not reset by PROCEDURE SETUP), unlike \cinamelist's IDTYP, which
+defaults to (0,0). Passed to the same PRCIVC routine as \cinamelist's
+IDTYP; see that entry for the general IDTYP(1)/IDTYP(2) meaning.
+Unlike \cinamelist, PTMAIN does not also thread IDTYP through the
+unimplemented EMDEL CSF-selection path, so the "IDTYP(1) $>$ 0 aborts"
+caveat noted there does not apply here.
+\end{indention}%%
+\xsp
+\mtab{NPFLG(3) }{Integer*4. Debug print flag (default: 0,0,0).}
+\begin{indention}{12mm}%%
+Each section of PTMAIN (see NRNFG)
+has its debug print flag. Set to 1 for debug informations.
+\end{indention}%%
+\xsp
+\mtab{LTRI }{Integer*4. Length of write buffer. (default: 500000).}
+\begin{indention}{12mm}%%
+Should be equal or greater than the dimensions actually used
+in WFMAIN. The user should make sure, by looking at the output
+of the WFMAIN step, that the this write buffer length in both the PTMAIN
+and CIMAIN steps is adequate.
+(Correction: this entry previously stated a
+default of 100000; {\sf src/cipt.f}'s own {\sf DATA LTRI/500000/}
+confirms 500000, matching the correction already applied to the
+equivalent entries under \wfnamelist, \mcnamelist and \cinamelist.
+Genuinely used here, passed directly to CALHMD when building the
+effective-Hamiltonian file.)
+\end{indention}%%
+\xsp
+\mtab{ADD }{Integer*4. Selects whether PTLCPY runs, and in which mode (default: -1, disabled).}
+\begin{indention}{12mm}%%
+PTLCPY is called only when ADD $\ge$ 0. ADD=0 (re)writes the CSF label
+file NFPTL from scratch; ADD $>$ 0 treats NRLBL/IDREC (see below) as an
+existing set of previously-selected record numbers and appends to
+them. With the default ADD=-1, PTLCPY is skipped entirely.
+\end{indention}%%
+\xsp
+\mtab{IDREC(100) }{Integer*4. Record-number list for the ADD $>$ 0 PTLCPY append mode (default: all zero).}
+\begin{indention}{12mm}%%
+Only consulted when ADD $>$ 0 (see ADD above); holds up to 100 record
+numbers within the CSF label file NFPTL that PTLCPY treats as already
+selected.
+\end{indention}%%
+\xsp
+\mtab{NRLBL }{Integer*4. Count of valid entries in IDREC for the ADD $>$ 0 PTLCPY append mode (default: 0).}
+\begin{indention}{12mm}%%
+See ADD and IDREC above.
+\end{indention}%%
+\xspace
+{\bf Example}
+\xsp
+A typical choice of input data for the \ptnamelist NAMELIST:
+\xsp
+\begin{verbatim}
+ &PT NAME=' PERTURBATIVE SELECTION WITH THRESHOLD=1.D-05 ',
+     HOW=0, ISTATE=1, IPS=7, ETHR=1.D-05,
+     CTHR=1.0D-04, PTHR=1.D0, &END
+\end{verbatim}
+\xsp
+ATOMCI will go through the
+construction of the effective Hamiltonian, the solution of the
+eigenvalue problem for the lowest state (ISTATE=1) with a
+diagonalization threshold of 10\xsup{-7} (IPS=7) and the
+analysis of the contribution to the energy of state number ISTATE
+(HOW=0), rejecting all CSF giving rise to a cumulative energy of
+1.D-05 a.u. (ETHR=1.D-05). A CSF whose contribution exceeds
+1.D-04 a.u. will be automatically selected (CTHR=1.D-04). The printout
+of the selected CSF is disabled (PTHR=1.D0).
+\xspace
+\section*{ \exnamelist NAMELIST}
+\xsp
+{\bf Function}
+\xsp
+This NAMELIST sets the input for the control of the execution of the
+EXMAIN step (Construction of the energy expression).
+Set NRNFG(6)=1 in the \cntlnamelist NAMELIST when doing a general CI
+(RULE=0) or a perturbative selection (RULE=2).
+\xspace
+{\bf Parameters}
+\xsp
+\mtab{NAME(30)  }{Integer*4. A title for the EXMAIN step (default: copy of TITLE, see \cntlnamelist NAMELIST).}
+\begin{indention}{12mm}%%
+Up to 120 characters.
+\end{indention}%%
+\xsp
+\mtab{RETRY }{Integer*4. Restart run flag (default: 0).}
+\begin{indention}{15mm}%%
+{\sf 
+ 0 ... Normal execution.\\
+ 1 ... Restart.
+}
+\end{indention}%%
+\begin{indention}{12mm}%%
+The construction of the energy
+expression is generally the most expensive
+step of the CI calculation. The RETRY flag is provided for restart
+operations after an abort occurred within the EXMAIN step. When
+RETRY=1, the user should provide the
+incomplete EE file (unit NFEXW, see below).
+\end{indention}%%
+\xsp
+\mtab{NFEXE }{Integer*4. Unit number of the EE file (default: 15).}
+\begin{indention}{12mm}%%
+Normally (RETRY=0) it should not be modified, unless by modifying
+accordingly the input file and the unit number in
+all other steps using this file. In a restart, setting NFEXE
+to the same value of NFEXW (the incomplete EE file, see below)
+will result in the EE file being updated.
+\end{indention}%%
+\xsp
+\mtab{NFEXW }{Integer*4. Unit number of the incomplete EE file (default: 0).}
+\begin{indention}{12mm}%%
+The incomplete EE file (resulting for an aborted ATOMCI run) should
+be assigned to unit number NFEXW.
+\end{indention}%%
+\xsp
+\mtab{NFTF }{Integer*4. Unit number of the CFP table file (default: METHOD(80), see \cntlnamelist NAMELIST's NFTF).}
+\xsp
+\mtab{NFPTB }{Integer*4. Input unit for the selected-CSF tape produced by WFMAIN (or PTMAIN, for RULE=2) (default: METHOD(55), see \cntlnamelist NAMELIST's NFPTB).}
+\xsp
+\mtab{NFTBL }{Integer*4. Work-file unit local to EXMAIN (default: METHOD(63)).}
+\begin{indention}{12mm}%%
+Unlike \wfnamelist's own NFTBL (also read from METHOD, but slot 37,
+the CFP-table unit documented under \cntlnamelist's NFTBL), EXMAIN's
+NFTBL is METHOD(63), a slot \cntlnamelist does not name or default --
+EXMAIN's own header comment labels it simply "WORK FILE". Despite the
+identical NAMELIST-member name, these are two unrelated METHOD slots;
+do not confuse them.
+\end{indention}%%
+\xsp
+\mtab{NPFLG }{Integer*4. Debug print flag (default: 0).}
+\begin{indention}{12mm}%%
+Should be used only for debug. Setting NPFLG $>$ 3 will generate
+an error in input.
+\end{indention}%%
+\xsp
+\mtab{MSHMS }{Integer*4. Selects which of two internal implementations SHMS uses to evaluate shell-state matrix elements (default: 0).}
+\begin{indention}{12mm}%%
+Immediately after the \exnamelist NAMELIST is read, EXMAIN calls the
+TSHMSB entry point in {\sf src/shms.f} with this value: MSHMS $>$ 0
+forces SHMS to always route through the reference/debug SHMSD
+implementation; MSHMS $\le$ 0 (default) lets SHMS use its normal fast
+path (SHMSRC), falling back to SHMSD only in the specific cases
+SHMSRC does not itself handle. Distinct from the \checknamelist
+NAMELIST's ISHMS, which sets a trace-print level via a different
+entry point (TSHMS) without changing which implementation runs.
+\end{indention}%%
+\xsp
+Among the less used variables in the \exnamelist NAMELIST we should mention
+LWFL, LCFC, LIJB, and LISL, already briefly
+discussed within the \wfnamelist NAMELIST documentation. They have here
+the same meaning and default values, and the user should refer
+to the \wfnamelist NAMELIST section in the quite remote occurrence of
+necessity of their modification.
+\xsp
+\kbox{LWFL }{Integer*4. Length of write buffer. (default: 2000).}\\
+\xsp
+\mtab{TBLSIZ }{Integer*4. Read from \exnamelist but not referenced anywhere in ciex.f (default: none found in ciex.f -- verify).}
+\begin{indention}{12mm}%%
+Same shared-template pattern documented at \mcnamelist's TBLSIZ
+entry, which this codebase's EXMAIN, WFMAIN and MCMAIN NAMELISTs all
+declare identically and equally unused.
+\end{indention}%%
+\xsp
+\mtab{TBLINF }{Integer*4. Read from \exnamelist but not referenced anywhere in ciex.f (default: none found in ciex.f -- verify).}
+\begin{indention}{12mm}%%
+Same shared-template pattern as TBLSIZ above; see \mcnamelist's
+TBLINF entry.
+\end{indention}%%
+\xsp
+\mtab{NCOUNT }{Integer*4. Read from \exnamelist but not referenced anywhere in ciex.f (default: none found in ciex.f -- verify).}
+\begin{indention}{12mm}%%
+Same shared-template pattern as TBLSIZ above; see \mcnamelist's
+NCOUNT entry.
+\end{indention}%%
+\xsp
+\mtab{NSKIP }{Integer*4. Read from \exnamelist but not referenced anywhere in ciex.f (default: none found in ciex.f -- verify).}
+\begin{indention}{12mm}%%
+Same shared-template pattern as TBLSIZ above; see \mcnamelist's
+NSKIP entry.
+\end{indention}%%
+\xsp
+\mtab{FILE }{Integer*4. Read from \exnamelist but not referenced anywhere in ciex.f; not a Character/OPEN-statement string despite the name (default: none found in ciex.f -- verify).}
+\begin{indention}{12mm}%%
+Same shared-template pattern as TBLSIZ above; see \mcnamelist's
+FILE entry, including the declared-Integer*4 note.
+\end{indention}%%
+\xsp
+\mtab{STATUS }{Integer*4. Read from \exnamelist but not referenced anywhere in ciex.f; not a Character/OPEN-statement string despite the name (default: none found in ciex.f -- verify).}
+\begin{indention}{12mm}%%
+Same shared-template pattern as TBLSIZ above; see \mcnamelist's
+STATUS entry.
+\end{indention}%%
+\xspace
+{\bf Example}
+\xsp
+A normal form for the \exnamelist NAMELIST:
+\xsp
+{\sf \exnamelist RETRY=0 \namelistend }
+\xsp
+while for a restart after an abort within the EXMAIN module
+\xsp
+{\sf  \exnamelist RETRY=1, NFEXW=14, NFEXE=15, \namelistend }
+\xsp
+with the incomplete EE file assigned to unit 14 (NFEXW=14) and the
+complete EE file resulting in unit 15 (NFEXE=15). Notice that only
+the RETRY=1 input is essential, the selected
+unit numbers corresponding to the default values.
+\xspace
+\section*{ \cinamelist NAMELIST}
+\xsp
+{\bf Function}
+\xsp
+This NAMELIST sets the input for the control of the execution of the
+CIMAIN step (Construction and diagonalization of the CI Hamiltonian,
+density matrices, natural orbitals).
+\xspace
+{\bf Parameters}
+\xsp
+\mtab{NAME(30)  }{Integer*4. A title for the CIMAIN step (default: copy of TITLE, see \cntlnamelist NAMELIST).}
+\begin{indention}{12mm}%%
+Up to 120 characters.
+\end{indention}%%
+\xsp
+\mtab{NRNFG(6) }{Integer*4. Run flags (default: 1,1,1,0,1,1).}
+\begin{indention}{12mm}%%
+The CIMAIN step is divided in six sections, whose execution is
+controlled by the NRNFG flag. Set to 1 to execute and to 0 to skip
+a particular section.
+\end{indention}%%
+\begin{indention}{15mm}%%
+{\sf 
+ NRNFG(1) ... Construction of the Hamiltonian (energy matrix).\\
+ NRNFG(2) ... Diagonalization of the Hamiltonian.\\
+ NRNFG(3) ... Density matrices.\\
+ NRNFG(4) ... Not used. Set always to 0.\\
+ NRNFG(5) ... Natural orbitals.\\
+ NRNFG(6) ... Preparation of the interface (summary) 
+file for the RSMAIN step.
+}
+\end{indention}%%
+\xsp
+\mtab{NSTATE }{Integer*4. Number of solutions requested (default: 1).}
+\begin{indention}{12mm}%%
+Number of solutions requested in the diagonalization of the
+Hamiltonian.  
+\end{indention}%%
+\xsp
+\mtab{MAXIT }{Integer*4. Maximum number of iterations in the diagonalization (default: 1000).}
+\xsp
+\mtab{NSDIM }{Integer*4. Initial expansion vector for the diagonalization (default: 400).}
+\begin{indention}{15mm}%%
+{\sf 
+ 0 ... unit vector. \\
+ $>$ 0 ... dimension of the trial submatrix.
+}
+\end{indention}%%
+\begin{indention}{12mm}%%
+The initial trial vector can be either a unit vector (NSDIM=0) or
+the eigenvector of a block of dimension NSDIM (NSDIM $>$ 0) of the
+energy matrix.
+\end{indention}%%
+\xsp
+\mtab{IPS }{Integer*4. Threshold for the diagonalization (default: 6).}
+\begin{indention}{12mm}%%
+Norm of the correction vector in the Davidson diagonalization
+routine. The actual threshold will be 10\xsup{{\bf -IPS}}.
+\end{indention}%%
+\xsp
+\mtab{NPFLG(6) }{Integer*4. Debug print flag for each section (default: 0,0,0,0,0,0).}
+\begin{indention}{12mm}%%
+Should be used only for debug.
+\end{indention}%%
+\xsp
+\mtab{NFIV }{Integer*4. Unit number for the CI vector file (default: 0).}
+\begin{indention}{12mm}%%
+A preexisting CI vector file can be used to furnish the initial
+trial vector for the diagonalization. Use NFIV to indicate its
+unit number (usually 37). Useful when restarting after missing
+convergence. Overrides NSDIM.
+\end{indention}%%
+\xsp
+\mtab{NFTE }{Integer*4. Unit number for the EE file (default: 15).}
+\xsp
+\mtab{IOFLG(6) }{Integer*4. Flag controlling write operations (default: 0,-1,-1,0,0,0).}
+\begin{indention}{15mm}%%
+{\sf
+ IOFLG(1) ... Not used.\\
+ IOFLG(2) ... Write mode for the CI vectors.\\
+ IOFLG(3) ... Write mode for the density matrices.\\
+ IOFLG(4) ... Not used.\\
+ IOFLG(5) ... Write Mode for the natural orbitals.\\
+ IOFLG(6) ... Not used.\\
+}
+\end{indention}%%
+\begin{indention}{12mm}%%
+The CI vectors, the density matrices and the natural orbitals can
+be saved on file. CI vectors and density matrices can be written
+on unit NFCIW (default: 28). Natural orbitals can be saved on
+unit NFCIC (default: 27). It is possible to modify the default
+unit numbers. The files may be preexisting and already storing
+data from old ATOMCI runs.
+IOFLG controls the write operations by enabling or
+disabling the write option and by establishing where to write.
+Values given to IOFLG have are interpreted as follows:
+\end{indention}%%
+\begin{indention}{15mm}%%
+{\sf
+ -1 ... Do not write on the save file.\\
+  0 ... Write in append mode (after the last existing record).\\
+  n ... Write on record n (all records
+following record n will be destroyed).
+}
+\end{indention}%%
+\begin{indention}{12mm}%%
+By default, the NO's are saved on unit 27 after each ATOMCI run
+(provided of course that NRNFG(5)=1), while CI vectors and density
+matrices are not saved on unit 28. Since those last two arrays are
+transferred to the same file, the values given to IOFLG(2)
+and IOFLG(3) must be consistent, i.e. one cannot specify different
+records in the same write operation for the CI vectors and the
+density matrices. Thus
+\end{indention}%%
+\begin{indention}{15mm}%%
+{\sf 
+ IOFLG(2)= n ... IOFLG(3)= n\\
+ IOFLG(2)= n ... IOFLG(3)= 0\\
+ IOFLG(2)= 0 ... IOFLG(3)= n\\
+}
+\end{indention}%%
+\begin{indention}{12mm}%%
+are invalid choices of options.
+\end{indention}%%
+\xsp
+\mtab{LTRI }{Integer*4. Length of write buffer. (default: 500000).}
+\begin{indention}{12mm}%%
+See \ptnamelist NAMELIST. (Correction: this entry,
+and the equivalent entries under \ptnamelist, \wfnamelist and
+\mcnamelist, previously stated 100000; {\sf src/cici.f}'s own
+{\sf DATA LTRI/500000/} -- and the matching statement in each of the
+other three files -- confirms 500000 is the actual default in every
+case. Not something specific to this NAMELIST.)
+\end{indention}%%
+\xsp
+\mtab{DEBUG(6) }{Integer*4. Debug print level for each of the six CIMAIN sections (default: 0,0,0,0,0,0).}
+\begin{indention}{12mm}%%
+Same per-section indexing convention as NRNFG/INFLG/IOFLG/NPFLG.
+Assigned into IRTNCD at the start of Section 1 (energy matrix),
+Section 2 (diagonalization), Section 3 (density matrix) and Section 5
+(natural orbitals); intended for debugging only.
+\end{indention}%%
+\xsp
+\mtab{ICG(150) }{Integer*4. Gerade combination coefficients (default: none found in cici.f -- verify).}
+\begin{indention}{12mm}%%
+Consulted only when MOTYP $\ne$ 1. Together with ICU and MATE, ICG
+supplies per-basis-function coefficients that STOVC converts to a
+real array and passes to RMEGU, which forms a symmetry
+(gerade/ungerade) linear combination of each basis function with its
+MATE-designated partner before the transformed orbitals are written
+to NFTV in Section 5 (orbital transformation).
+\end{indention}%%
+\xsp
+\mtab{ICU(150) }{Integer*4. Ungerade combination coefficients (default: none found in cici.f -- verify).}
+\begin{indention}{12mm}%%
+Companion to ICG; see ICG above.
+\end{indention}%%
+\xsp
+\mtab{IDTYP(2) }{Integer*4. CSF pre-selection mode (default: 0,0).}
+\begin{indention}{15mm}%%
+{\sf
+ IDTYP(1) $>$ 0 ... select the diagonalized CSF set via NKEPT/IKEPT.\\
+ IDTYP(1) $>$ 1 ... also pre-diagonalize and keep only CSFs whose
+ coefficient exceeds THRCSF.\\
+ IDTYP(2) $>$ 0 ... print the CI vector for the coefficient-based
+ selection, and additionally attempt a (stubbed) store-to-NFTD step.
+}
+\end{indention}%%
+\begin{indention}{12mm}%%
+Both IDTYP(1) $>$ 0 branches unconditionally reach EMDEL, whose entire
+body is an abort (the routine was never implemented -- see its header
+comment in cici.f). In the shipped code, therefore, IDTYP(1) must
+stay at its default of 0 for CIMAIN to complete; the CSF-selection
+behavior described above is not currently reachable.
+\end{indention}%%
+\xsp
+\mtab{IKEPT(2000) }{Integer*4. Explicit CSF-index list for the NKEPT selection modes (default: all zero).}
+\begin{indention}{12mm}%%
+See NKEPT below for how its contents are interpreted. Only consulted
+along the IDTYP(1) $>$ 0 path, which currently aborts before reaching
+it (see IDTYP).
+\end{indention}%%
+\xsp
+\mtab{IND(4,100) }{Integer*4. Index quadruples (default: none found in cici.f -- verify).}
+\begin{indention}{12mm}%%
+NIND (documented below) gives the number of valid quadruples. In
+Section 5 (orbital transformation) each IND(1:4,J) is written
+verbatim, alongside the stored coefficient set, into the
+natural-orbital output file NFTV via STOVC/RMEGU; it is also passed
+through to EMDEL on the (currently unreachable, see IDTYP)
+IDTYP(1) $>$ 0 CSF-selection path.
+\end{indention}%%
+\xsp
+\mtab{INFLG(6) }{Integer*4. Per-section restart-read record selector (default: 0,0,0,0,0,0).}
+\begin{indention}{12mm}%%
+Mirrors NRNFG/IOFLG's per-section indexing. INFLG(i) $>$ 0 skips
+recomputing section i and instead reads a previously saved record
+back from unit NFTW (the record number is INFLG(i) itself) -- the
+same file IOFLG writes to, enabling a two-pass restart. This
+mechanism is undocumented elsewhere and has a known byte-splice
+gotcha on the read-back path.
+\end{indention}%%
+\xsp
+\mtab{INREF(400) }{Integer*4. Reference-configuration indices (default: none found in cici.f -- verify).}
+\begin{indention}{12mm}%%
+Declared, included in the NAMELIST, and threaded through CIDRIV's
+argument list, but not referenced by any computation, condition, or
+WRITE anywhere in cici.f -- appears unused in the shipped code.
+\end{indention}%%
+\xsp
+\mtab{IOBVC }{Integer*4. Input orbital-vector record selector (default: 1).}
+\begin{indention}{12mm}%%
+When IOBVC $\ge$ 2, Section 5 (orbital transformation) reads forward
+through the transformation-coefficient file NFTT until record number
+IOBVC is found, then rewinds and rewrites that record as record 1,
+promoting it to be the working coefficient set used to build the
+natural orbitals.
+\end{indention}%%
+\xsp
+\mtab{LMTA }{Integer*4. Declared file-length parameter (default: 2000).}
+\begin{indention}{12mm}%%
+Printed in the file-summary header alongside LTRI and threaded
+through CIDRIV's argument list, but (unlike LTRI) not read by any
+computation in cici.f -- appears unused in the shipped code.
+\end{indention}%%
+\xsp
+\mtab{LNIX }{Integer*4. Word length of the density-expression write buffer (default: 449).}
+\begin{indention}{12mm}%%
+Record length (LRECL = LNIX words) of the buffer CALHMD/CALEMS use
+when building the energy-matrix/density-expression file in Section 1,
+and that DENMX uses for its core allocation in Section 3.
+\end{indention}%%
+\xsp
+\mtab{MATE(150) }{Integer*4. Symmetry-partner ("mate") basis-function index (default: all zero).}
+\begin{indention}{12mm}%%
+Set to zero for all 150 entries during CIMAIN's own setup, before the
+NAMELIST READ. MATE(I) gives the basis-function index paired with I
+for the ICG/ICU gerade/ungerade combination in Section 5 (see ICG);
+consulted only when MOTYP $\ne$ 1.
+\end{indention}%%
+\xsp
+\mtab{MOTYP }{Integer*4. Orbital-combination type for Section 5 (default: 1).}
+\begin{indention}{12mm}%%
+MOTYP = 1 skips the MATE/ICG/ICU gerade-ungerade symmetry combination
+entirely when writing the natural-orbital coefficients; any other
+value applies it (see ICG, MATE).
+\end{indention}%%
+\xsp
+\mtab{MSELCT }{Integer*4. Selected state for coefficient-based CSF pre-selection (default: 1).}
+\begin{indention}{12mm}%%
+Passed positionally into CIDRIV's JSTATE dummy argument (the actual
+and dummy names differ; this is the only place MSELCT's value is
+used). Gives the index of the computed CI state whose coefficients
+drive the IDTYP(1) $>$ 1 pre-selection step (see IDTYP); like
+NFDW1/NFOW1, currently unreachable because that path aborts in EMDEL
+before using it.
+\end{indention}%%
+\xsp
+\mtab{NAMEFG }{Integer*4. Job-name source selector (default: 0).}
+\begin{indention}{15mm}%%
+{\sf
+ 0 ... keep NAME as set from TITLE (see \cntlnamelist NAMELIST).\\
+ 1 ... adopt the name recorded in the EE-integral file (NFTE) header.\\
+ 2 ... adopt the name recorded in the transformed-integral file (NFTA)
+ header.
+}
+\end{indention}%%
+\xsp
+\mtab{NFDW1 }{Integer*4. Output unit for the CSF-reduced ("diagonal") Hamiltonian file (default: 34).}
+\begin{indention}{12mm}%%
+Written by EMDEL after CSF selection, on the IDTYP(1) $>$ 0 path; see
+IDTYP for why that path currently aborts before reaching this file.
+\end{indention}%%
+\xsp
+\mtab{NFOW1 }{Integer*4. Output unit for the CSF-reduced ("off-diagonal") Hamiltonian file (default: 35).}
+\begin{indention}{12mm}%%
+Companion to NFDW1; see NFDW1 above.
+\end{indention}%%
+\xsp
+\mtab{NIND }{Integer*4. Number of valid quadruples supplied in IND (default: 0).}
+\xsp
+\mtab{NKEPT }{Integer*4. CSF-selection mode for IKEPT (default: none found in cici.f -- verify).}
+\begin{indention}{15mm}%%
+{\sf
+ NKEPT $<$ 0 ... IKEPT lists individual CSF indices to keep, one per
+ entry, up to the first non-positive value.\\
+ NKEPT $\ge$ 1 ... IKEPT lists (start,end) index-range pairs; every
+ CSF index in each closed range is kept.
+}
+\end{indention}%%
+\begin{indention}{12mm}%%
+Only consulted along the IDTYP(1) $>$ 0 CSF-selection path, which
+currently aborts in EMDEL before either mode takes effect (see
+IDTYP).
+\end{indention}%%
+\xsp
+\mtab{NPCVC }{Integer*4. Print flag while positioning within the CI-vector/density save file (default: 1).}
+\begin{indention}{12mm}%%
+Passed as the print-control argument to MOVEW when seeking a target
+record in NFTW; controls whether each skipped record's header is
+echoed to output.
+\end{indention}%%
+\xsp
+\mtab{NPOVC }{Integer*4. Print flag for the natural-orbital save file (default: 1).}
+\begin{indention}{12mm}%%
+Passed as STOVC's print-control argument; controls whether
+vector-set headers are echoed to output when natural orbitals are
+written to NFTV in Section 5.
+\end{indention}%%
+\xsp
+\mtab{NREL(20) }{Integer*4. Declared array (default: all zero).}
+\begin{indention}{12mm}%%
+Declared, included in the NAMELIST, and threaded through CIDRIV's
+argument list, but not referenced by any computation in cici.f or
+cipt.f -- appears unused in the shipped code.
+\end{indention}%%
+\xsp
+\mtab{NRUN }{Integer*4. Run/pass counter (default: 1).}
+\begin{indention}{12mm}%%
+Printed as the run label ("RUN nnn") in each CI-vector printout, and
+automatically incremented by one at the end of each successful
+CIMAIN invocation.
+\end{indention}%%
+\xsp
+\mtab{PEREL }{Real*8. Declared threshold (default: 0.005).}
+\begin{indention}{12mm}%%
+Declared, defaulted, and threaded through CIDRIV's argument list, but
+not referenced by any computation in cici.f -- appears unused in the
+shipped code (same pattern as NREL and INREF above).
+\end{indention}%%
+\xsp
+\mtab{THRCSF }{Real*8. CSF selection/inclusion threshold (default: 0.001).}
+\begin{indention}{12mm}%%
+Used by CFSORT to decide which CSF coefficients are large enough to
+keep in the selected list printed after diagonalization (or after
+the coefficient-based pre-selection of IDTYP(1) $>$ 1).
+\end{indention}%%
+\xsp
+\mtab{THRREF }{Real*8. Declared threshold (default: 0.5).}
+\begin{indention}{12mm}%%
+Declared, defaulted, and threaded through CIDRIV's argument list, but
+not referenced by any computation in cici.f or cipt.f -- appears
+unused in the shipped code (same pattern as NREL, INREF and PEREL
+above).
+\end{indention}%%
+\xsp
+\mtab{THRVC }{Real*8. Displayed pre-selection threshold (default: 0.0001).}
+\begin{indention}{12mm}%%
+Passed to PRCIVC, which prints it as "THRES=" in the CI-vector output
+header whenever IDTYP(1) = 2, labelling the threshold nominally in
+effect for that run. Compare THRCSF, the value CFSORT actually
+applies when selecting CSFs.
+\end{indention}%%
+\xsp
+\mtab{XREF(20) }{Real*8. Per-state reference energy (default: all zero).}
+\begin{indention}{12mm}%%
+EQUIVALENCEd onto the same EDT block as ET and EONE.
+PRCIVC prints XREF(I) as "E (REFERENCE)" next to the computed total
+energy for state I, together with their difference
+"E (TOTAL-REF)".
+\end{indention}%%
+\xspace
+{\bf Example}
+\xsp
+A valid \cinamelist NAMELIST input could be the following:
+\xsp
+\begin{verbatim}
+ &CI NAME=' CI STEP ', NRNFG= 1,1,1,0,1,1,
+     NSTATE= 1, MAXIT= 500, IPS= 7, NFIV= 37,
+     IOFLG= 0,-1,0,0,0,0, &END
+\end{verbatim}
+\xsp
+ATOMCI will go through all five implemented sections of CIMAIN
+(NRNFG= 1,1,1,0,1,1),
+attempting to solve the eigenvalue problem for the lowest root
+(NSTATE=1) in a maximum of 500 iterations (MAXIT=500), with a
+threshold at 10\xsup{-7} (IPS=7). The initial trial CI vector
+will be read in from the save file on unit 37 (NFIV=37).
+This file was assigned to unit number NFCIV (default: 37) on a
+preceding run of ATOMCI (see I/O file description')
+The final CI vector will not be saved on unit 28 (IOFLG(2)=-1),
+while the density matrix will be written after the last record
+on unit 28 (IOFLG(3)=0)
+and the natural orbitals will be saved after the last
+record in unit 27 (IOFLG(5)=0).
+\xspace
+\section*{ \rsnamelist NAMELIST}
+\xsp
+{\bf Function}
+\xsp
+This NAMELIST sets the input for the control of the execution of the
+RSMAIN step (Analysis of the CI vectors and summary).
+\xspace
+{\bf Parameters}
+\xsp
+\mtab{NAME(30)  }{Integer*4. A title for the RSMAIN step (default: copy of TITLE, see \cntlnamelist NAMELIST).}
+\begin{indention}{12mm}%%
+Up to 120 characters.
+\end{indention}%%
+\xsp
+\mtab{NRNFG }{Integer*4. Run flag (default: 0).}
+\begin{indention}{15mm}%%
+{\sf 
+ 0 ... General CI or SD-CI.\\
+ $>$ 0 ... Perturbative selection.
+}
+\end{indention}%%
+\begin{indention}{12mm}%%
+Set NRNFG=0 when RULE=0 or RULE=1 in the \wfnamelist NAMELIST. Set NRNFG $>$
+0 when RULE=2 in the \wfnamelist NAMELIST; in this case an estimate of the
+correction to the energy from the rejected CSF will be computed.
+Notice that the RSMAIN step will be executed only if the summary
+files from the CIMAIN step (unit number NFCIS, default:71) exists.
+\end{indention}%%
+\xsp
+\mtab{RULE }{Integer*4. Method of estimation of the CSF contribution (default: 2).}
+\begin{indention}{15mm}%%
+{\sf 
+ 1 ... Bunge method.\\
+ 2 ... Brown's formula.
+}
+\end{indention}%%
+\begin{indention}{12mm}%%
+The Bunge method cannot be applied when the reference is not
+defined. In this case the system automatically selects RULE=2.
+See R.E. Brown, Ph.D. thesis, Indiana University, Bloomington,
+Indiana, (1967) and C.F. Bunge, Phys. Rev. {\bf 168}, 92,
+(1968) for details on the two methods.
+\end{indention}%%
+\xsp
+\mtab{PTHR }{Real*8. Print threshold (default: 0.001)}
+\begin{indention}{12mm}%%
+Threshold for the value of the contributions to the eigenvector.
+Set PTHR $>$ 0 to print everything. Set PTHR $<$ 0 to print only
+contributions exceeding PTHR.
+\end{indention}%%
+\xsp
+\mtab{NPFLG }{Integer*4. Debug print flag (default: 0).}
+\begin{indention}{12mm}%%
+Should be used only for debug purposes.
+\end{indention}%%
+\xsp
+\mtab{NFCIS }{Integer*4. Unit number of the CIMAIN summary file this step reads (default: 71).}
+\xsp
+\mtab{NFTF }{Integer*4. Unit number of the CSF/energy-expression file (default: 10).}
+\xsp
+\mtab{NFPTD }{Integer*4. Unit number of a PTMAIN-produced density file, used only in the RULE $>$ 0 rejected-CSF correction (default: 32).}
+\xsp
+\mtab{NFPTO }{Integer*4. Unit number of a PTMAIN-produced file, used only in the RULE $>$ 0 rejected-CSF correction (default: 33).}
+\xsp
+\mtab{NFPTB }{Integer*4. Unit number of a PTMAIN-produced buffer file, used only in the RULE $>$ 0 rejected-CSF correction (default: 11).}
+\xspace
+{\bf Example}
+\xsp
+\begin{verbatim}
+ &RS RULE=2, PTHR= -0.001, &END
+\end{verbatim}
+\xsp
+for a non perturbative calculation (NRNFG=0, default) where the
+analysis of the contributions to the CI eigenvectors is done using
+the Brown's formula (RULE=2) and only contributions exceeding -0.001
+are printed on unit 6 (PTHR=-0.001).
+\xspace
+\section*{ \checknamelist NAMELIST}
+\xsp
+{\bf Function}
+\xsp
+This NAMELIST sets debug/trace-print levels for the angular
+coupling-coefficient machinery (AFACT, CFAC, SMAT, SHMS, ISP, SETIAD,
+XCFP) shared by two different energy-expression-tape stages: WFETAP
+(part of the WFMAIN CSF-generation step, {\sf ciwf.f}, which selects
+only the CSF pairs with non-zero matrix elements relative to the
+reference CSFs) and EXTAPE (called from EXTAP1, part of the EXMAIN
+SD-CI energy-expression-tape step, {\sf ciex.f}). Both {\sf extape.f}
+and {\sf wfetap.f} declare an identical \checknamelist NAMELIST with
+the same member list, the same all-zero defaults, and route every
+member to the same underlying subroutine's trace-print entry point --
+the members carry the same meaning and the same default in both
+files; only the surrounding pipeline stage (WFMAIN vs. EXMAIN)
+differs. In either file this NAMELIST is read only when the enclosing
+step's own debug-print flag NPFLG is 3 or greater
+(\wfnamelist/\exnamelist NAMELIST); otherwise all members stay at
+their compiled-in defaults.
+\xspace
+{\bf Parameters}
+\xsp
+\mtab{IAFACT }{Integer*4. Trace-print level for AFACT's two-electron angular coupling factor (6j/9j Wigner) evaluation, forwarded via the TAFACT entry (default: 0).}
+\begin{indention}{12mm}%%
+Nonzero makes {\sf afact.f} print a diagnostic dump of the intermediate
+coupling indices and the 9j-symbol products it computes for every call.
+\end{indention}%%
+\xsp
+\mtab{IISP }{Integer*4. Trace-print level for the shell-state decoding entries ISP/IQS/ILFO/LSQN, forwarded via the ISPTST entry (default: 0).}
+\begin{indention}{12mm}%%
+Nonzero makes {\sf isp.f} print the decoded shell parameters on every call.
+\end{indention}%%
+\xsp
+\mtab{IISQT }{Integer*4. Trace-print level for the running two-electron integral-address lookups int1ad/int2ad in {\sf setiad.f}, forwarded via the TINTAD entry (default: 0).}
+\begin{indention}{12mm}%%
+Controls the per-call address print inside int1ad/int2ad, once the
+address table itself has been built. Distinct from INTBL below, which
+controls the one-time dump of the table itself.
+\end{indention}%%
+\xsp
+\mtab{ISHMS }{Integer*4. Trace-print level for the SHMS shell-state matrix-element routine, forwarded via the TSHMS entry (default: 0).}
+\xsp
+\mtab{ICFAC }{Integer*4. Trace-print level for the CFAC angular-coefficient routine (CFP times 6j), forwarded via the TCFACA entry (default: 0).}
+\xsp
+\mtab{ISMAT }{Integer*4. Trace-print level for the SMAT angular energy-expression engine, forwarded via the TSMATA entry (default: 0).}
+\xsp
+\mtab{ICFP }{Integer*4. Trace-print level for the XCFP coefficient-of-fractional-parentage evaluator, forwarded via the TCFP entry (default: 0).}
+\xsp
+\mtab{INTBL }{Integer*4. Print level passed as SETIAD's own IDPRNT argument, controlling the one-time dump of the shell-pair integral address table that SETIAD builds (default: 0).}
+\begin{indention}{12mm}%%
+Distinct from IISQT above, which controls the later, per-call address
+prints of int1ad/int2ad after this table has already been built.
+\end{indention}%%
+\xsp
+\mtab{ICVAL }{Integer*4. Read into a local variable and echoed in the closing diagnostic WRITE of {\sf extape.f}/{\sf wfetap.f}, but not passed to any subroutine entry and not branched on anywhere in either file (default: 0 -- read but otherwise inert, unlike the other eight \checknamelist members).}
+\xspace
+\section*{ \dscfnamelist NAMELIST}
+\xsp
+{\bf Function}
+\xsp
+This NAMELIST controls the micro-SCF (per-orbital Fock-diagonalization)
+loop inside MCFOCK ({\sf mcfock.f}), the routine the MCSCF macro iteration
+({\sf mcdriv.f}) calls once per macro step to re-optimize the orbitals
+for the current CI vector. It is an undocumented, internal NAMELIST:
+it is read only once, on MCFOCK's first call (guarded by
+NRDSCF$>$0, which MCFOCK then clears), and is normally left at its
+compiled-in defaults -- no
+tuning guidance for WT/DFC/CTHR is documented anywhere in the
+codebase.
+\xspace
+{\bf Parameters}
+\xsp
+\mtab{CTHR }{Real*8. Orbital (coefficient-change) convergence threshold for the micro-SCF loop (default: 5.0D-07).}
+\begin{indention}{12mm}%%
+Compared against the summed coefficient change RX returned by CHCKCV
+({\sf jacjac.f}); the micro-SCF loop for a given orbital is
+considered converged once RX $<$ CTHR.
+\end{indention}%%
+\xsp
+\mtab{WT }{Real*8. Projection level-shift weight added to the effective Fock operator via MKPROJ (default: 5.0D04).}
+\begin{indention}{12mm}%%
+Adding WT times the projector onto already-solved orbitals pushes their
+directions up strongly, so the next orbital to be solved drops into
+the complementary subspace -- a large level shift acting as an
+effective hard projection that preserves sequential orthogonality
+between orbitals solved earlier in the same micro-SCF pass.
+\end{indention}%%
+\xsp
+\mtab{ITMAX }{Integer*4. Maximum number of micro-SCF iterations per symmetry block (default: 2).}
+\begin{indention}{12mm}%%
+This is the micro-level iteration count (ITX), completely separate
+from the macro-level ITMAX of the \mcnamelist NAMELIST (default 99);
+do not confuse the two.
+\end{indention}%%
+\xsp
+\mtab{DFC }{Real*8. Linear damping coefficient applied to unconverged orbital updates (default: 0.8).}
+\begin{indention}{12mm}%%
+When a micro-SCF step has not yet converged, the new orbital
+coefficients are mixed with the old ones instead of being adopted
+outright: C $\leftarrow$ DFC times C(new) + (1-DFC) times C (or with a
+sign flip when the eigenvector signs disagree). This is fixed linear
+damping; there is no DIIS or adaptive damping anywhere in the
+micro-SCF loop.
+\end{indention}%%
+\xsp
+\mtab{ISCF }{Integer*4. Iteration-count parameter passed into the mcscf0-3 orbital-rotation routines (default: 20).}
+\xsp
+\mtab{ISMAX }{Integer*4. Maximum number of outer SCF passes (over all symmetries) before MCFOCK returns with its convergence count (default: 2).}
+\xspace
+\section*{ \hfnamelist NAMELIST}
+\xsp
+{\bf Function}
+\xsp
+This NAMELIST is declared inside HFMAIN ({\sf ciutil.f:167}), the
+Hartree-Fock step stub. HFMAIN's own header comment states its
+FUNCTION as ``DUMMY'' and its CALLING list as ``NONE''; at runtime it
+copies its own NAME array from the TITLE argument, prints a banner
+that reads `` === HF IS NOT YET IMPLEMENTED * '' / `` === THIS STEP
+IS SKIPPED * '', and returns immediately. HFMAIN is, moreover, never
+invoked from anywhere else in the codebase: the driver's own stage
+dispatch table ({\sf ci.f:216-217}, array SUBNAM) lists only AIMAIN,
+MCMAIN, WFMAIN, TRMAIN, PTMAIN, EXMAIN, CIMAIN and RSMAIN, so this
+whole subroutine is unreachable from the ATOMCI master driver. There
+is no {\tt READ (5,HF)} (or equivalent) anywhere in the codebase, and
+no other file declares a \hfnamelist NAMELIST. This NAMELIST is
+therefore dead in the same sense as the \trnamelist NAMELIST's IORDR
+member (see that entry): declared, but never actually read from user
+input, inside a subroutine that is itself never called.
+\xspace
+{\bf Parameters}
+\xsp
+\mtab{NAME(33) }{Integer*4. Declared in this NAMELIST but not read from user input anywhere in this codebase -- HFMAIN populates it internally from its own TITLE argument before printing it, rather than from a NAMELIST READ (default: none -- dead).}

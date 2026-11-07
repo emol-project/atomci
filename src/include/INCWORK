@@ -1,0 +1,41 @@
+   /*  PARAMETER LIST FOR CORE ALLOCATION  */
+   INTEGER   * 4  WKCORE,   -- ALLOCATION RETURNS ADDR
+                  ACTION,   -- ACTION CODE
+                  LENGTH,   -- LENGTH OF VAR
+                  RTNWK     -- RETURN CODE
+
+   CHARACTER * 2  TYPE      -- TYPE OF ARRAY
+
+   /*
+   /* FUNCTION : VAR CONTROLLE ROUTINE IN COMMON SECTION
+   /*
+   /*                 codded by Mas july  5,1987
+   /*
+   /*   COMMON /WORK/ VAR(MXWORK)   : integer * 4
+   /*
+   /* ENTRY   : WKSET (VAR,MXWORK)
+   /*
+   /* USAGE
+   /* TYPE TABLE
+    %%C1 'C1'% ; %%L1 'L1'% ; %%L2 'L2'% ; %%L4 'L4'% ;
+    %%I2 'I2'% ; %%I4 'I4'% ; %%R4 'R4'% ; %%R8 'R8'% ;
+   /* ROUTIN NAME
+    %%ROUTIN '%SUBNAME ' %  ; %%VNAME DUMMY  %
+   /* ALLOCATION COMMAND */
+    %%WKCORE %VNAME=WKCORE(ACTION,'%VNAME ',%ROUTIN,TYPE,LENGTH,RTNWK) ;
+             IF RTNWK > 0 THEN EXIT EXEC WK_ERROR %
+   /*
+   /*
+   /* ACTION TABLE         FUNCTION                 RTNVAL VAL
+    %%ALLOC      1 %  ; /* ALLOCATION              STARTING ADDR
+    %%FREE       2 %  ; /* FREE VNAME              NULL
+    %%FREEALL    3 %  ; /* ALL CLEAR               NULL
+    %%EXPAND     4 %  ; /* CONDENSE OR EXPAND      STARTING ADDR
+    %%KNOCKVAR   5 %  ; /* INOFRMATION OF VAR      STARTING ADDR
+    %%REGION     6 %  ; /* FREE REGION SIZE        FREE REGION SIZE
+    %%NVAR       7 %  ; /* NUMBER OF VAR           NUMBER OF VAR
+    %%LIST       8 %  ; /* CORE ALLOCATION LIST    NULL
+   /* 
+   /* UPDATE DEC. 12 1991 at U of A 
+   %%WK_LIST  ( 2L ; ACTION = %LIST ; --
+   NDUMY =WKCORE(ACTION,'WK_LIST  ',%ROUTIN,TYPE,LENGTH,RTNWK); 4L ) ; %

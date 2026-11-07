@@ -1,0 +1,186 @@
+   PROCESS FILE 'ciutil.f'
+   %%SUBNAME  RANDOM%
+   PROCESS    NO LIST      MAP    HEADER  %SUBNAME
+   %CPYRIGHT
+   %UPDATE
+   FUNCTION %SUBNAME (LK)
+      INTEGER * 4  LK      , -- INITIAL VALUE
+                   N1        -- ONE
+
+      integer * 4  SEED      -- INITIAL VALUE
+
+  /*  REAL    * 8  SEED      -- INITIAL VALUE
+
+      REAL    * 4  RANDOM       ; /* RANDOM NUMBER
+
+      INTEGER * 4  IX(24) 
+      data  (ix(i),i=1,24)/ --
+        2, 4, 8,16,32,64,128,256,--
+      512,1024,2048,4096,8192,16384,32768,65536,--
+   131072,262144,524288,1048576,--
+  2097152,4194304,8388608,16777216/ 
+      data N1/1/ 
+   BEGIN
+      SEED = ABS(LK)
+      SEED =  (SEED *1103515245 + 12345 ) / ix(8)
+      SEED = ABS(SEED)
+      RANDOM =  MOD( SEED,ix(20))/float(ix(20))
+ /    SEED = ABS(LK)
+ /    SEED =  (SEED *1103515245 + 12345 ) / 65536 + 32768 
+ /    RANDOM =  MOD( SEED,65536)/65536.0e0
+ /*   CALL SURAND( SEED, N1, X )
+ /*   LI = ABS(LK)
+ /*   CALL \SGU1M( N1, LI, X, IER )
+ /*   RANDOM = X
+      END
+   %%LOCAL_VAR   --
+      IMPLICIT REAL*8(A-H,O-Z) ;    --
+      REAL    * 8  CLEAR    ;       --
+      REAL    * 8  LABEL(NTBL) ;    --
+      REAL    * 8  VALUE(NTBL) ;    --
+      INTEGER * 4  DEBUG       ;    --
+      INTEGER * 4  FIN         ;    --
+      INTEGER * 4 MTBL,MCOUNT,MSKIP ; --
+      INTEGER * 4 NTBL,NCOUNT,NSKIP ; --
+      CHARACTER*4 FILE ;              --
+      INTEGER * 4 NFTBL ;             --
+      DATA CLEAR/0.0D0/%
+      %%TRK_LENGTH 23474%
+      %%OLD    'OLD '%
+      %%NEW    'NEW '%
+      %%DEL    'DEL '%
+      %%SAVE   'SAVE'%
+   %%SUBNAME  PRTHMS%
+   PROCESS    NO LIST      MAP    HEADER  %SUBNAME
+      SUBROUTINE %SUBNAME --
+                       (HDIAG,NKEEP,NREF,NFTE,NPFLG)
+      %UPDATE
+      /* FILE STRUCTURE IS CHANGED BY MAS
+      /*                   CHANGED BY TASHI
+      REAL * 8 HDIAG(NKEEP)
+      %COMDIAG
+   BEGIN
+      2L ;
+      FORMAT WRITE (I,I,HDIAG(I),I=1,NREF) ;
+         (3X,'  ENERGY DIAG MATRIX (',I3,',',I3,' ) = ',E20.10 )  ;
+      IF NPFLG = 0 THEN EXIT
+      3L ; ' - ENERGY MATRIX OF DIAGONAL ELEMENTS - ' ; 2L
+      FORMAT WRITE (I,HDIAG(I),I=1,NKEEP)
+          (/1(I6,6X,D24.15))
+      3L ;
+      IF NPFLG = 1 THEN EXIT
+      REWIND NFTE
+      BINARY READ : NFTE NDY
+      '  NON-ZERO ELEMENTS OF ENERGY MATRIX' ; 1L  ; 1L ;
+      IF NPFLG > 2 THEN --   CHANGED BY MAS 1988-02-22
+      DO UNTIL IROW(LEMBF) = 0
+         BINARY READ :NFTE HOFF,IROW,ICOL
+         FORMAT WRITE  (IROW(I),ICOL(I),HOFF(I),I=1,ICOL(LEMBF))
+             (1X,1(2I6,D24.15))
+         END
+      ELSE DO  ; / FIRST RECORD PRINTED IN LP / 1988-02-22
+         BINARY READ :NFTE HOFF,IROW,ICOL
+         FORMAT WRITE  (IROW(I),ICOL(I),HOFF(I),I=1,ICOL(LEMBF))
+             (1X,1(2I6,D24.15))
+         END
+      REWIND NFTE
+      EXIT
+      END
+
+
+   %%SUBNAME  JOB   %
+   PROCESS    NO   LIST      MAP    HEADER  %SUBNAME
+      FUNCTION %SUBNAME (TITLE, FILES, METHOD, FLAG,  ERRCD)
+  %UPDATE
+  / ORIGINAL WFEES
+  /   MODIFIED BY M.S. 01/12/1987   AT IMS
+  /*
+  /*     FUNCTION :  TIME COUNT ROUTINE
+  /*
+  /*     CALLED   : ATOMCI
+  /*     CALLING  : CLOCKM
+  /*
+  /*
+  IMPLICIT INTEGER   * 4 (A-Z)
+  /* DCL FOR INPUT PARAMETER & USING PARM
+  /*KGN
+  CHARACTER *(*)  TITLE
+  CHARACTER * 10   TITLEX
+  INTEGER   * 4   --            TITLE(2), -- TITLE
+                  FILES    , -- SUMMARY FILE UNIT
+                  FLAG     , -- RETURNS USING CPU ( M SEC )
+                  METHOD(30),-- RUN FLAG
+                  ERRCD      -- ERROR CODE
+
+  INTEGER   * 4   USCPU,ITIME
+  BEGIN
+     CALL  CLOCKM(USCPU) ; JOB = USCPU  ;
+     TITLEX = TITLE // '      '
+     IF FLAG = 1 THEN EXIT  ITIME = USCPU
+     ITIME = USCPU - ITIME ; JOB = ITIME
+     FORMAT WRITE 'END OF ',TITLEX,' == RETURN CODE IS ',ERRCD, --
+                  ' ====     USED TIME IS ',ITIME, ' M SEC ' ;
+       (/' ',15('='),4X,3A,I4,A,I10,A////) ;
+     END
+   %%SUBNAME  ERSTOP %
+   PROCESS   NO LIST      MAP    HEADER  %SUBNAME
+   SUBROUTINE %SUBNAME    (SUBNAM)
+   %UPDATE
+      CHARACTER * 12 SUBNAM
+   BEGIN
+      2L ; '  ==  EMERGENCY STOP IN ' ; PUT SUBNAM C 12 ; ' == ' ;
+      STOP
+      END
+  %%SUBNAME  HFMAIN  %
+  PROCESS    NO LIST      MAP    HEADER  %SUBNAME
+      SUBROUTINE %SUBNAME (TITLE, FILES, METHOD, USCPU,  ERRCD)
+  %UPDATE
+  /   MODIFIED BY M.S.  01/12/1987   AT IMS
+  /   MODIFIED BY TASHI 10/24/1989   AT HUCC
+  /*
+  /*     FUNCTION :  DUMMY
+  /*
+  /*     CALLED   : ATOMCI
+  /*     CALLING  : NONE
+  /*
+  IMPLICIT INTEGER   * 4 (A-Z)
+
+  %param
+      INTEGER   * 4 VAR(%WORKCORE)
+      common/work/var
+
+  %INCMAIN
+   /*
+   /* DCL FOR LOCAL VAR
+   /*
+   INTEGER   * 4 NAME(33)
+   %INCDATA
+
+
+  %%NAMELIST HF %
+  /* NAMELIST ITEM
+  NAMELIST /%NAMELIST/ --                   STATUS  DEFAULT DIM TYPE
+            NAME     -- COMMENT ON NFTB                NONE    33*I4
+
+   BEGIN
+      /*KGN
+      ERRCD =0 ; RTNCD = 0 ;
+      FOR  I= 1,18 ; NAME(I) = TITLE(I)
+      FOR  I=19,33 ; NAME(I) = IBLNK
+      / READ (5,%NAMELIST,ERR=900,END=900)
+      EXEC PRINT_HEADER
+      FORTRAN WRITE(6,'(1H1)')
+    / EXIT
+    / FORTRAN 900 CONTINUE
+    /   FORMAT WRITE --
+    /   '    NAMELIST - &%NAMELIST - IS NOT FOUND IN INPUT DATA  '
+    /   (/' ',A,20('*')////)
+      END
+  > PRINT_HEADER
+     FORMAT WRITE (TITLE(I),I=1,18),(NAME(I), I=1,18)
+     ('1',45('*'),3X,'HF HF HF HF HF(%SUBNAME)'/      --
+        /' TITLE:  ',18A4 /                           --
+        /' NAME :  ',18A4 /// )
+      ' === HF IS NOT YET IMPLEMENTED * ' ; 1L
+      ' === THIS STEP IS SKIPPED      * ' ; 2L
+     END

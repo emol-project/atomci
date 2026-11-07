@@ -1,0 +1,36 @@
+# Be 2s2 1S -- multi-reference SD-CI: cc-pVTZ, MCSCF of the two
+# configurations 2s2 and 2p2 (1S), then SD-CI from both, with 1s frozen.
+# Needs be.bas (next to this file) in the work directory.
+# Answer: MCSCF -14.61643826, SD-CI = -14.618544
+
+title:  " BE SINGLET S, MRSDCI "
+deck:   be.deck
+csf:    be.csf
+
+atom:
+  z:     4
+  ang:   S
+  spin:  1
+
+files:
+  cfptable:  ./CFPTBL
+  basis:     be.bas
+  open:
+    - unit: 27, file: be.NO, format: binary, status: unknown
+
+orbital:
+  frozen_core:  1S
+  active:       2S, 2P
+  outer:        2S, 2P, 2D, 1F
+
+reference:
+  - scf: true, occ: 2S*2 2P*0
+  - scf: true, occ: 2S*0 2P*2
+
+ctrl:
+  ai:  type: 2, idprnt: 0
+  mc:  itmax: 30
+  wf:  rule: 1, npflg: 0
+  tr:  from_record: 1
+  ci:  ips: 7, maxit: 100, nsdim: 100, nstate: 1
+  rs:  print: -0.001

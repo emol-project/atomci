@@ -1,0 +1,1301 @@
+  process file 'wt9x.f'
+  %%SUBNAME WT9X%
+  PROCESS NO LIST      MAP    HEADER  %SUBNAME
+  FUNCTION    %SUBNAME --
+                  ( HSX, HSI, HST, HRX, HRI, HRT, --
+                    FSX, FSI, FST, FRX, FRI, FRT, --
+                    GSX, GSI, GST, GRX, GRI, GRT, --
+                    WFF, WFG, NFQ, NGQ,           --
+                    JSI, JRI, NOP, MODEOP,ITEST )
+  %UPDATE
+  /*
+  /*
+  /*
+  /*   CALLED  SUBROUTINE :  FACTOR
+  /*   CALLING SUBROUTINE :  CFP WIG6J WIG9X CFACRC
+  /*
+  /*     FUNCTION : FACTORIZATION
+  /*                USING RECOUPLING FORMULA
+  /*
+  /*   ENTRY :  
+  /*
+  /*
+  /*                          PROGRAMMED BY M. SEKIYA 11-23-1986
+  /*                          CHANGED   BY TASHI     10-24-1989
+  /*
+  /*                       FORTRAN77 AND FPL ( FORTRAN PRE PROCESSOR )
+  /*
+  IMPLICIT INTEGER * 4 (A-Z)
+  /* PREPROCESSOR      SINGLET DOUBLET .... */
+     %%S    1%
+     %%D    2%
+     %%T    3%
+     %%I  0%
+     %%C  1%
+     %%A  2%
+     %%CC  3%
+     %%AA  4%
+     %%CA  5%
+     %%AC  6%
+     %%CCA  7%
+     %%CAC  8%
+     %%CAA  9%
+     %%ACA  10%
+     %%CACA  11%
+     %%SK  KSTACT = KSTACT + 1;  KSTACK(KSTACT) %
+     %%UK  KSTACK(KSTACT);  KSTACT = KSTACT - 1 %
+     /* END OF PRE DCL
+     /* EXTERNAL FUNCTION OR STATEMENT FUNCTION
+     EXTERNAL IOR,IQS,ISP,CFP,WIG9X,WIG6J,ILFO,CFACRC
+     REAL * 8 ZP,WT9X,WIG9X,WIG6J,CFP,CFACRC
+     INTEGER * 4 IOR,IQS,ISP,ILFO
+     /* INPUT PARAMETER */
+     INTEGER * 4       HSX, HSI, HST, HRX, HRI, HRT, -- OPERATOR
+                       FSX, FSI, FST, FRX, FRI, FRT, -- RIGHT CSF
+                       GSX, GSI, GST, GRX, GRI, GRT, -- LEFT  CSF
+                       WFF, WFG, NFQ, NGQ,           -- SHELL & # OF EL
+                       JSI, JRI, NOP, MODEOP       ;
+     /
+     %comwfa
+     INTEGER * 4            ITEST            ; /* DEBUG FLAG
+     /* DCL FOR LOCAL  VAR ( REAL * 8 )
+     REAL    * 8  ET               , -- FACTOR FOR < !A!L> ETC.
+                  WT,WTL,WTR       , -- WEIGHT FACTOR ( USING SUM UP )
+                  SLES             ; /* THRESHOLD FOR FACTOR
+     REAL   * 8   RVALUE
+     /* DCL FOR LOCAL  VAR ( INTEGER * 4 )
+     INTEGER * 4  WSL,WRL,WSR,WRR  , -- SPIN AND ORBITAL MULTIPLICITY
+                  MODE             , -- MODE OF LK_TABLE
+                  LST,LRT          , -- = HSX, HRX,
+                  LSI,LRI          , -- = JSI, JRI, ( OR 1 1 )
+                  LSO,LRO          , -- LSO=2, LRO SHELL SYMMETRY
+                  LS               , -- USING CREATION LABEL
+                  NREL             , -- = NFQ ( # OF ELECTRON )
+                  DEBUG            ; /* DEBUG FLAG
+     / SAS   89-10-30    MOVED
+     ZP( IH )  = 1.0D0 - 2.0D0*(MOD( (IH+8888)/2, 2 ) ); /* PHASE
+     DATA         SLES/1.0D-10/
+     %%DEBUG  /* %
+  BEGIN
+     DEBUG=ITEST
+     EXEC X_WT9X
+     END
+  > X_WT9X
+     IF DEBUG > 0 THEN EXEC DEBUG_PRINT_WEIGHT_TABLE_9X_ENTER
+     EXEC LK_TABLE
+     IF DABS ( ET ) > SLES THEN --
+        WT9X    = ET * ( 1.0D0 - 2.0D0 * MOD( NFQ * NOP, 2 ) ) --
+           *    DSQRT ( DFLOAT                                 --
+              ( HST * HRT * FSI * FRI * GST * GRT ) )          --
+           *     WIG9X ( HSX,      HSI,      HST,              --
+                         FSX,      FSI,      FST,              --
+                         GSX,      GSI,      GST       )       --
+           *     WIG9X ( HRX,      HRI,      HRT,              --
+                         FRX,      FRI,      FRT,              --
+                         GRX,      GRI,      GRT       )
+     ELSE WT9X      = 0.0D0
+     IF DEBUG > 0 THEN EXEC DEBUG_PRINT_WEIGHT_TABLE_9X_EXIT
+     END
+
+  PROCEDURE DEBUG_PRINT_WEIGHT_TABLE_9X_ENTER ;
+     IF DEBUG > 1 THEN DO ;
+        FORMAT WRITE ' -->--> ENTER WEIGHT TABLE 9X -->--> ' ;  ( A ) ;
+        IF DEBUG > 2 THEN DO ;
+           FORMAT WRITE --
+           '   VEC, NEL, SPX, SPI, SPT, ORX, ORI, ORT,        ' ; ( A );
+           FORMAT WRITE --
+               WFF, NFQ, FSX, FSI, FST, FRX, FRI, FRT, ' ( KET ) ' ;
+           ( 2X,Z4,1X,Z4,6I5, A ) ;
+           FORMAT WRITE --
+               WFG, NGQ, GSX, GSI, GST, GRX, GRI, GRT, ' ( BRA ) ' ;
+           ( 2X,Z4,1X,Z4,6I5,A  ) ;
+           FORMAT WRITE --
+                         HSX, HSI, HST, HRX, HRI, HRT, ' (OPERATOR)' ;
+           ( 11X,        6I5,A ) ;
+           END ;
+        END ;
+     END ;
+
+  PROCEDURE DEBUG_PRINT_WEIGHT_TABLE_9X_EXIT
+     IF DEBUG > 1 THEN --
+        FORMAT WRITE '  WEIGHT 9X  >> ',WT9X,--
+        '  JSI > ',JSI,'  JRI > ',JRI,'  MODEOP > ',MODEOP ;
+        ( A, F14.8, A, I4, A, I4, A, I4 ) ;
+     FORMAT WRITE ' <--<-- EXIT  WEIGHT TABLE 9X <--<-- ' ; ( A ) ;
+     END ;
+
+  PROCEDURE   LK_TABLE
+     LST = HSX ; LRT = HRX ; NREL = NFQ ;
+     LSI =   1 ; LRI =   1 ;
+  /* PRE DCL */
+  %%CFPXX  --
+      RVALUE = 0.0D0 ; --
+      LRO = ILFO( WFG ) ; L = LRO/2 + 1 ;    --
+      LSO = 2 ; --
+      LS =   LSI * 2  +  LST  ; --
+         WSR = ISP( WFF ) ; WSL = ISP( WFG ) ; --
+         WRR = IOR( WFF ) ; WRL = IOR( WFG ) ; --
+         %ACTION ; --
+      ET = RVALUE ; %
+     %%CXXX   1%
+     %%XXCX   2%
+     %%XAXX   3%
+     %%XXXA   4%
+     %%CXCX   5%
+     %%XAXA   6%
+     %%CAXX   7%
+     %%XXCA   8%
+     %%CXXA   9%
+     %%XACX  10%
+     %%CXCA  11%
+     %%CACX  12%
+     %%CAXA  13%
+     %%XACA  14%
+     %%CACAX 15%
+   /* END OF PRE DCL */
+     DO CASE OF MODEOP ;
+       %I : --
+           IF WFG = WFF & NFQ = NGQ
+           THEN ET = DSQRT( DFLOAT( FSX * FRX ) ) ;
+           ELSE   ET = 0.0D0
+       %CXXX :
+       %XXCX : --
+           IF NFQ + 1 = NGQ  --
+           THEN ET = CFP(WFG,WFF,NREL, 1)
+           ELSE ET = 0.0D0
+
+       %XAXX :
+       %XXXA : --
+           IF NFQ - 1 = NGQ  & NFQ > 0
+           THEN ET = CFP(WFG,WFF,NREL,-1)
+           ELSE ET = 0.0D0
+
+     %%ACTION   EXEC LK_TABLE_CC              %
+       %CXCX : --
+           IF NFQ + 2 = NGQ THEN --
+           DO ;
+              MODE = %CC ; %CFPXX ;
+              END ;
+           ELSE ET = 0.0D0
+
+     %%ACTION   EXEC LK_TABLE_AA              %
+       %XAXA : --
+           IF NFQ - 2 = NGQ & NFQ > 1 THEN --
+           DO ;
+              MODE = %AA ; %CFPXX ;
+              END ;
+           ELSE ET = 0.0D0
+
+     %%ACTION   EXEC LK_TABLE_CA              %
+      %CAXX :
+      %XXCA :
+      %CXXA : --
+           IF NFQ = NGQ  & NFQ > 0 THEN --
+           DO ;
+              MODE = %CA ; %CFPXX ;
+              END ;
+           ELSE ET = 0.0D0
+
+     %%ACTION   EXEC LK_TABLE_AC              %
+      %XACX : --
+           IF NFQ = NGQ            THEN --
+           DO ;
+              MODE = %AC ; %CFPXX ;
+              END ;
+           ELSE ET = 0.0D0
+
+     %%ACTION   EXEC LK_TABLE_CCA             %
+      %CXCA : --
+           IF NFQ + 1 = NGQ & NFQ > 0  THEN --
+           DO ;
+              LSI  = JSI ; LRI = JRI ;
+              MODE = %CCA ; %CFPXX ;
+              END ;
+           ELSE ET = 0.0D0
+
+     %%ACTION   EXEC LK_TABLE_CAC             %
+      %CACX : --
+           IF NFQ + 1 = NGQ & NFQ > 0  THEN --
+           DO ;
+              LSI  = JSI ; LRI = JRI ;
+              MODE = %CAC ; %CFPXX ;
+              END ;
+           ELSE ET = 0.0D0
+
+     %%ACTION   EXEC LK_TABLE_CAA             %
+      %CAXA : --
+           IF NFQ - 1 = NGQ & NFQ > 1 THEN --
+           DO ;
+              LSI  = JSI ; LRI = JRI ;
+              MODE = %CAA ; %CFPXX ;
+              END ;
+           ELSE ET = 0.0D0
+
+     %%ACTION   EXEC LK_TABLE_ACA             %
+      %XACA : --
+           IF NFQ - 1 = NGQ & NFQ > 1 THEN --
+           DO ;
+              LSI  = JSI ; LRI = JRI ;
+              MODE = %ACA ; %CFPXX ;
+              END ;
+           ELSE ET = 0.0D0
+
+     %%ACTION   EXEC LK_TABLE_CACA            %
+      %CACAX : --
+           IF NFQ = NGQ & NFQ > 1 THEN --
+           DO ;
+              LSI  = JSI ; LRI = JRI ;
+              MODE = %CACA ; %CFPXX ;
+              END ;
+           ELSE ET = 0.0D0
+
+       OTHERWISE FORMAT WRITE ' >> ERROR >> OCCURRED IN WT9X  ' ; ( A );
+     IF DEBUG > 1 THEN DO ;
+        FORMAT WRITE --
+              '  RETURN VALUES LK_T >> ',  ET  ;  ( A, F14.8 ) ;
+        FORMAT WRITE  ' --<--< EXIT  LK_TABLE --<--<'  ; ( A ) ;
+        END ;
+     END
+
+    /* PROCEDURE LK_TABLE
+    PROCEDURE LK_TABLE_CC
+        RVALUE= 0.0D0
+        K =  TOPADR( L ) + NREL + 1
+        FOR I = WFADR( K ), WFADR( K ) + NSHL( K ) - 1 ;
+        DO ;
+           RVALUE= RVALUE--
+             + WIG6J( LSO, LST, LSO, WSL, WS(I), WSR )  --
+             * WIG6J( LRO, LRT, LRO, WRL, WR(I), WRR )  --
+             * CFP  ( WFG, WF( I ), NREL + 1, 1)          --
+             * CFP  ( WF(I), WFF,   NREL   , 1)
+           END ;
+        RVALUE = RVALUE --
+               * DSQRT ( DFLOAT( LST * LRT ) ) --
+               * ZP( LST + LRT + WSL + WRL + WSR + WRR - 4 )
+        /      * ZP( LST + LRT + WSL + WRL + WSR + WRR - 6 )
+        /      REVISED BY MAS 11/15/86
+        END ;
+    PROCEDURE LK_TABLE_AA
+        RVALUE= 0.0D0
+        K =  TOPADR( L ) + NREL - 1
+        FOR I = WFADR( K ), WFADR( K ) + NSHL( K ) - 1 ;
+        DO ;
+           RVALUE= RVALUE--
+             + WIG6J( LSO, LST, LSO, WSL, WS(I), WSR )  --
+             * WIG6J( LRO, LRT, LRO, WRL, WR(I), WRR )  --
+             * CFP  ( WFG, WF( I ), NREL - 1,-1)          --
+             * CFP  ( WF(I), WFF,   NREL   ,-1)
+           END
+        RVALUE = RVALUE --
+               * DSQRT( DFLOAT ( LST * LRT ) )  --
+               * ZP( LST + LRT + WSL + WRL + WSR + WRR - 4 )
+        /      * ZP( LST + LRT + WSL + WRL + WSR + WRR - 6 )
+        /      REVISED BY MAS 11/15/86
+        END ;
+    PROCEDURE LK_TABLE_CA
+        RVALUE= 0.0D0
+        K =  TOPADR( L ) + NREL - 1
+        FOR I = WFADR( K ), WFADR( K ) + NSHL( K ) - 1 ;
+        DO ;
+           RVALUE= RVALUE--
+             + WIG6J( LSO, LST, LSO, WSL, WS(I), WSR )  --
+             * WIG6J( LRO, LRT, LRO, WRL, WR(I), WRR )  --
+             * CFP  ( WFG, WF( I ), NREL - 1,1)         --
+             * CFP  ( WF(I), WFF,   NREL   ,-1)
+           END
+        RVALUE=   RVALUE--
+               * DSQRT( DFLOAT ( LST * LRT ) )  --
+               * ZP( LST + LRT + WSL + WRL + WSR + WRR - 4 )
+        END ;
+    PROCEDURE LK_TABLE_AC
+        EXEC LK_TABLE_CA
+        RVALUE = RVALUE * ZP( LST + LRT - 2 )
+       /IF LST = 1 & LRT = 1 & WFG = WFF THEN --
+       /   DO ;
+       /   RMALUE= RVALUE + DSQRT( DFLOAT ( LSO * LRO ) )
+       /   END
+        END ;
+    PROCEDURE LK_TABLE_CCA
+        RVALUE= 0.0D0
+        K =  TOPADR( L ) + NREL
+        FOR I = WFADR( K ), WFADR( K ) + NSHL( K ) - 1 ;
+        DO ;
+           WT = CFACRC(WF(I),WFF,NREL,LSI,LRI)
+           IF DABS ( WT ) < SLES THEN EXIT ;
+           RVALUE= RVALUE--
+             + WIG6J( LSI, LST, LSO, WSL, WS(I), WSR )  --
+             * WIG6J( LRI, LRT, LRO, WRL, WR(I), WRR )  --
+             * CFP  ( WFG, WF( I ), NREL   , 1)           --
+             * WT
+           END ;
+        RVALUE= RVALUE --
+          * DSQRT ( DFLOAT ( LST * LRT ) ) --
+          * ZP ( WSL + WRL + LST + LRT + WSR + WRR - 6 )
+        END ;
+    PROCEDURE LK_TABLE_CAC
+        EXEC LK_TABLE_CCA
+        RVALUE= RVALUE* ZP( LRO + LSO + LSI + LRI - LST - LRT - 2)
+      /*IF LST = LSO & LRT = LRO THEN --
+      /*VVALUE= RVALUE --
+      /*  + DSQRT( DFLOAT( LSI * LRI ) --
+      /*  / DFLOAT( LSO * LRO ))--
+      /*  * CFP( WFG, WFF, NREL, 1) * ZP( LSI + LRI - 2 )
+        END ;
+    PROCEDURE LK_TABLE_CAA
+        RVALUE= 0.0D0
+        K =  TOPADR( L ) + NREL - 1
+        FOR I = WFADR( K ), WFADR( K ) + NSHL( K ) - 1 ;
+        DO ;
+           WT = CFACRC(WFG,WF(I),NREL-1,LSI,LRI)
+           IF DABS ( WT ) < SLES THEN EXIT ;
+           RVALUE= RVALUE--
+             + WIG6J( LSO, LST, LSI, WSL, WS(I), WSR )   --
+             * WIG6J( LRO, LRT, LRI, WRL, WR(I), WRR )   --
+             * CFP  ( WF(I), WFF, NREL   ,-1)              --
+             * WT
+           END ;
+        RVALUE= RVALUE* DSQRT( DFLOAT ( LST * LRT )) --
+          * ZP ( WSL + WRL + LST + LRT + WSR + WRR - 6 )
+        END ;
+    PROCEDURE LK_TABLE_ACA
+        EXEC LK_TABLE_CAA
+        RVALUE= RVALUE * ZP( LRO + LSO + LSI + LRI - LST - LRT -2)
+      /*IF LST = LSO & LRT = LRO THEN --
+      /*VVALUE= RVALUE --
+      /*  + DSQRT( DFLOAT( LSI * LRI ) --
+      /*  / DFLOAT( LSO * LRO ))--
+      /*  * CFP( WFG, WFF, NREL,-1) * ZP( LSI + LRI - 2 )
+        END ;
+    PROCEDURE LK_TABLE_CACA
+        RVALUE= 0.0D0
+        K =  TOPADR( L ) + NREL
+        FOR I = WFADR( K ), WFADR( K ) + NSHL( K ) - 1 ;
+        DO ;
+           WTL = CFACRC(WFG,WF(I),NREL,LSI,LRI)
+           IF DABS ( WTL ) < SLES THEN EXIT ;
+           WTR = CFACRC(WF(I),WFF,NREL,LSI,LRI)
+           IF DABS ( WTR ) < SLES THEN EXIT ;
+           RVALUE= RVALUE--
+             + WIG6J( LSI, LST, LSI, WSL, WS(I), WSR )   --
+             * WIG6J( LRI, LRT, LRI, WRL, WR(I), WRR )   --
+             * WTL * WTR
+           END ;
+        RVALUE= RVALUE* DSQRT( DFLOAT ( LST * LRT ) )  --
+          * ZP ( WSL + WRL + LST + LRT + WSR + WRR - 6 )
+        IF LST = 1 & LRT = 1 THEN --
+        DO ;
+           RVALUE = RVALUE --
+              + CFACRC(WFG,WFF,NREL,  1,  1) --
+              * DSQRT( DFLOAT( LSI * LRI ) /DFLOAT(LSO*LRO) )
+           END ;
+        END ;
+  %%SUBNAME FACTOR%
+  PROCESS    NO LIST      MAP    HEADER  %SUBNAME
+  FUNCTION  %SUBNAME --
+         ( ITEST, FSX, FRX, FSC, FRC, GSX, GRX, GSC, GRC, --
+           HSX, HRX, HSC, HRC, NHVN, NHWN, FN, GN, --
+           NL,HL,MD,LSI,LRI,LSF,LRF,LST,LRT,NHT,MODEP,PAIR,PHASE,MP)
+  %UPDATE
+  /*
+  /*   CALLED  SUBROUTINE :  SHMSRC
+  /*   CALLING SUBROUTINE :  WT9X
+  /*
+  /*     FUNCTION :
+  /*       GENERATE OPERATOR COUPLING SCHEME AND CALC RECOUPLING FACTOR
+  /*
+  /*                          PROGRAMMED BY M. SEKIYA 11-23-1986
+  /*                          CHANGED   BY TASHI     10-24-1989
+  /*
+  /*                          FORTRAN77 AND FPL ( FORTRAN PRE PROCESSOR )
+  /*
+  IMPLICIT REAL*8(A-H,O-Z)
+  /* DCL PARAMETER */
+     %%MAX_SHELL  11%
+     INTEGER * 4 LSF,LRF,LST,LRT
+     INTEGER * 4 NL(4),MD(4),HL(4),LSI,LRI,NHT,MODEP,PAIR(2)
+     REAL    * 8 FACTOR,PHASE
+     LOGICAL  MP
+  /* DCL LOCAL     */
+     REAL    * 8 W,WT,ET,ZP,WT9X
+     INTEGER * 4 NHWN (%MAX_SHELL)
+     INTEGER * 4 NHVN (%MAX_SHELL)
+     INTEGER * 4 FN  (%MAX_SHELL)
+     INTEGER * 4 GN  (%MAX_SHELL)
+     INTEGER * 4 HSX (%MAX_SHELL),HRX (%MAX_SHELL)
+     INTEGER * 4 FSX (%MAX_SHELL),FRX (%MAX_SHELL)
+     INTEGER * 4 GSX (%MAX_SHELL),GRX (%MAX_SHELL)
+     INTEGER * 4 HSC (0:%MAX_SHELL),HRC (0:%MAX_SHELL)
+     INTEGER * 4 FSC (0:%MAX_SHELL),FRC (0:%MAX_SHELL)
+     INTEGER * 4 GSC (0:%MAX_SHELL),GRC (0:%MAX_SHELL)
+     INTEGER * 4 MODE(%MAX_SHELL),  NOP (%MAX_SHELL)
+     INTEGER * 4 NSH, M, EXFLG ;
+     REAL    * 8 SLES
+     INTEGER * 4 DEBUG
+     %%BUFFER  100%
+     INTEGER * 4 KSTACT,KSTACK(%BUFFER) ;
+     /  SAS 89-10-30
+     DATA        EXFLG/0/ ;
+     DATA        SLES/1.0D-10/
+     /* PREPROCESSOR      SINGLET DOUBLET .... */
+     %%SK  KSTACT = KSTACT + 1;  KSTACK(KSTACT) %
+     %%UK  KSTACK(KSTACT);  KSTACT = KSTACT - 1 %
+     %%NOT  MSHELL = 0 %
+     %%SAME MSHELL = 1 %
+     %%S    1%
+     %%D    2%
+     %%T    3%
+     /* OPERATOR TYPE*/
+     %%I  0%
+     %%C  1%
+     %%A  2%
+     %%CC  3%
+     %%AA  4%
+     %%CA  5%
+     %%AC  6%
+     %%CCA  7%
+     %%CAC  8%
+     %%CAA  9%
+     %%ACA  10%
+     %%CACA  11%
+     %%CXXX   1%
+     %%XXCX   2%
+     %%XAXX   3%
+     %%XXXA   4%
+     %%CXCX   5%
+     %%XAXA   6%
+     %%CAXX   7%
+     %%XXCA   8%
+     %%CXXA   9%
+     %%XACX  10%
+     %%CXCA  11%
+     %%CACX  12%
+     %%CAXA  13%
+     %%XACA  14%
+     %%CACA  15%
+     /* RECOUPLING TYPE
+     %%NONE    1%
+     %%NONEC12 2%
+     %%NORMAL  3%
+     %%NC12    4%
+     %%NC34    5%
+     %%NC123   6%
+     %%NC234   7%
+     %%NC12C34 8%
+     %%NC1234  9%
+     %%NM23   10%
+     %%NR23   11%
+     %%NR123  12%
+     %%NR234  13%
+     %%NR1234 14%
+     %%ZERO_EXIT  IF DABS(W) < SLES THEN EXIT %
+  /*     (HSC(M-1),HSX(M))--> HSC(M)
+  /*     (HRC(M-1),HRX(M))--> HRC(M)
+  /*     (FSC(M-1),FSX(M))--> FSC(M)
+  /*     (FRC(M-1),FRX(M))--> FRC(M)
+  /*    NHWN : SHELL STATE
+  /*   FN    : # OF ELECTRON IN OPEN SHELL
+  /*   GSC: COUPLING SCHEME
+  /*   GSX ***: LEFT STATE VECTOR
+  /*   FSX ***: RIGHT STATE VECTOR
+
+  /* STATEMENT FUNCTION
+     ZP( IH )  = 1.0D0 - 2.0D0*(MOD( (IH+8888)/2, 2 ) ); /* PHASE
+     MAXS(I,J) = I + J - 1
+     MINS(I,J) = IABS( I - J ) + 1
+  BEGIN
+     DEBUG = ITEST
+     EXEC  X_FACT
+     END
+
+  PROCEDURE X_FACT
+     IF DEBUG > 0 THEN EXEC DEBUG_PRINT_FIRST
+  /* SET INITIAL VALUE */
+     W = 0.0D0 ; FACTOR = 0.0D0; ET = 1.0D0
+                 WT = 0.0D0    ;
+     KSTACT = 0 ; LSM = 0 ; LRM = 0 ;
+     /* CALC FOR 1->NL(1)-1
+     HSC(0) = %S ; HRC(0) = %S;
+     DO FOR NSH = 1, NL(1) - 1  ;
+        IF NHWN(NSH) ^= NHWN(NSH) ! FN  (NSH) ^= GN  (NSH) ! --
+           FSC (NSH) ^= GSC (NSH) ! FRC (NSH) ^= GRC (NSH)   --
+           THEN ( FACTOR = 0.0D0 ; RETURN )
+        HSC(NSH) = %S ; HRC(NSH) = %S;
+        END ;
+     /* OPERATOR SEQUENCE IS NL(1),NL(2),NL(3),NL(4)
+     /*       ASSUMPTION
+     /*            C1 < C2
+     %%WT9X      WT9X  --
+                      (HSX(NSH), HSC(NSH-1), HSC(NSH)  ,--
+                       HRX(NSH), HRC(NSH-1), HRC(NSH)  ,--
+                       FSX(NSH), FSC(NSH-1), FSC(NSH)  ,--
+                       FRX(NSH), FRC(NSH-1), FRC(NSH)  ,--
+                       GSX(NSH), GSC(NSH-1), GSC(NSH)  ,--
+                       GRX(NSH), GRC(NSH-1), GRC(NSH)  ,--
+                       NHVN(NSH),NHWN(NSH),  FN(NSH),   GN(NSH), --
+                       LSI, LRI, NOP(NSH),   MODE(NSH), DEBUG) ;%
+     %%RCPLZZ DSQRT( DFLOAT( LSI * LRI * LSM * LRM ) ) --
+              * ZP( LSM + LRM - 2 )  --
+              * WIG6J( %D   , %D   , LSM, %D , %D , LSI ) --
+              * WIG6J( HL(1),     HL(2),       LRM, --
+                       HL(PAIR(2)), HL(PAIR(1)), LRI ) %
+     %%RCPLXX DSQRT( DFLOAT( LSI * LRI * LSM * LRM ) ) --
+              * WIG6J( %D   , %D   , LSM, %D , %D , LSI ) --
+              * WIG6J( HL(1),     HL(2),       LRM, --
+                       HL(PAIR(2)), HL(PAIR(1)), LRI ) %
+     %%RCPLYY DSQRT( DFLOAT( LSI * LRI * LSM * LRM ) ) --
+              * WIG6J( %D   , %D   , LSM, %D , %D , LSI ) --
+              * WIG6J( HL(2),     HL(3),       LRM, --
+                       HL(1),     HL(4),       LRI ) %
+     DO CASE OF MODEP
+        %NONE   : EXEC OPERATOR_SET_1EL ;
+        %NONEC12: EXEC OPERATOR_SET_1EL_C12 ;
+        %NORMAL : EXEC OPERATOR_SET_NORMAL ;
+        %NC12   : EXEC OPERATOR_SET_NORMAL_C12 ;
+        %NC34   : EXEC OPERATOR_SET_NORMAL_C34 ;
+        %NC123  : EXEC OPERATOR_SET_NORMAL_C123;
+        %NC234  : EXEC OPERATOR_SET_NORMAL_C234;
+        %NC12C34: EXEC OPERATOR_SET_NORMAL_C12_C34;
+        %NC1234 : EXEC OPERATOR_SET_NORMAL_C1234
+        %NM23   : EXEC OPERATOR_SET_RCPL_C23
+        %NR23   : EXEC OPERATOR_SET_RCPL_23
+        %NR123  : EXEC OPERATOR_SET_RCPL_C12_3
+        %NR234  : EXEC OPERATOR_SET_RCPL_2_C34
+        %NR1234 : EXEC OPERATOR_SET_RCPL_C12_C34
+        *         EXEC ERROR_PRINT
+        END ;
+     FACTOR = W * PHASE ;
+     IF DEBUG > 0  THEN EXEC DEBUG_PRINT_FIN
+     END
+  PROCEDURE ERROR_PRINT ;
+     FORMAT WRITE --
+     '  >> ERROR >> IN FACTOR >> ERRROROR >> ' ; ( A ) ;
+     FACTOR = 0.0D0 ;
+     END ;
+
+  PROCEDURE FACTORIZATION
+     W = 1.0D0
+     DO FOR NSH = MI,  ME ;
+        W = W * %WT9X ;
+        %ZERO_EXIT W = 0.0D0
+        END ;
+     END ;
+     PROCEDURE OPERATOR_SET_RCPL_C12_C34
+        /* --(H1H2)--(H3H4)--
+        /*                 XX
+        M = NL(4)
+        HSC(M) = %S ; HRC(M) = %S    ;
+        DO FOR M = NL(4)+1, NHT ;
+           HSC(M) = HSC(M-1) ; HRC(M)=HRC(M-1) ; NOP(M) = 0 ;
+           HSX(M) = %S       ; HRX(M)= %S      ; MODE(M) = %I
+           END ;
+        %SAME
+        EXEC FIND_MID_STATE
+        IF KSTACT = 0 THEN EXIT
+        WHILE KSTACT >= 2  ;
+        DO ;
+           LSM = %UK   ; LRM = %UK ;
+           IF MP
+           THEN ET = %RCPLZZ
+           ELSE ET = %RCPLXX
+           IF DABS(ET) < SLES THEN EXIT
+           /* --(H1H2)--(H3H4)--
+           /*     XX
+           M = NL(1)   ; MODE(M)= MD(1) ; NOP(M)= 4 ;
+           HSX(M) = LSM; HRX(M) = LRM   ;
+           HSC(M) = HSX(M) ; HRC(M) = HRX(M) ;
+           /* --(H1H2)--(H3H4)--
+           /*         XX
+           DO FOR M = NL(2)+1, NL(3) - 1 ;
+              HSC(M) = HSC(M-1) ; HRC(M)=HRC(M-1) ; NOP(M) = 2 ;
+              HSX(M) = %S       ; HRX(M)= %S      ; MODE(M) = %I
+              END ;
+           /* --(H1H2)--(H3H4)--
+           /*             XX
+           M = NL(3)   ; MODE(M)= MD(3) ; NOP(M)= 2 ;
+           HSX(M) = HSX(NL(1)) ;
+           HRX(M) = HRX(NL(1)) ;
+           HSC(M) = %S ; HRC(M) = %S    ;
+           MI = NL(1)  ; ME = NHT       ; EXEC FACTORIZATION ;
+           WT = WT + W * ET ; /* ET IS RECOUPLING COEFFICIENT
+           W  = 0.0D0
+           END ;
+        W = WT ;
+        END ;
+     PROCEDURE OPERATOR_SET_RCPL_C12_3
+        /* --(H1H2)--H3--H4--
+        /*             XX
+        M = NL(3)
+        HSC(M) = %D ; HRC(M) = HL(4) ;
+        DO FOR M = NL(3)+1, NL(4) - 1 ;
+           HSC(M) = HSC(M-1) ; HRC(M)=HRC(M-1) ; NOP(M) = 1 ;
+           HSX(M) = %S       ; HRX(M)= %S      ; MODE(M) = %I
+           END
+        /* --(H1H2)--H3--H4--
+        /*               XX
+        M = NL(4)   ; MODE(M)= MD(4) ; NOP(M)= 1 ;
+        HSX(M) = %D ; HRX(M) = HL(4) ;
+        HSC(M) = %S ; HRC(M) = %S    ;
+        /* --(H1H2)--H3--H4--
+        /*                 XX
+        DO FOR M = NL(4)+1, NHT ;
+           HSC(M) = HSC(M-1) ; HRC(M)=HRC(M-1) ; NOP(M) = 0 ;
+           HSX(M) = %S       ; HRX(M)= %S      ; MODE(M) = %I
+           END ;
+        %SAME
+        EXEC FIND_MID_STATE
+        WT = 0.0D0
+        IF KSTACT = 0 THEN EXIT
+        WHILE KSTACT >= 2  ;
+        DO ;
+           LSM = %UK   ; LRM = %UK ;
+           IF MP
+           THEN ET = %RCPLZZ
+           ELSE ET = %RCPLXX
+           IF DABS(ET) < SLES THEN EXIT
+           /* --(H1H2)--H3--H4--
+           /*     XX
+           M = NL(2)   ; MODE(M)= MD(2) ; NOP(M)= 4 ;
+           HSX(M) = LSM; HRX(M) = LRM   ;
+           HSC(M) = HSX(M) ; HRC(M) = HRX(M) ;
+           /* --(H1H2)--H3--H4--
+           /*         XX
+           DO FOR M = NL(2)+1, NL(3) - 1 ;
+              HSC(M) = HSC(M-1) ; HRC(M)=HRC(M-1) ; NOP(M) = 2 ;
+              HSX(M) = %S       ; HRX(M)= %S      ; MODE(M) = %I
+              END ;
+           /* --(H1H2)--H3--H4--
+           /*           XX
+           M = NL(3)   ; MODE(M)= MD(3) ; NOP(M)= 2 ;
+           HSX(M) = %D ; HRX(M) = HL(3) ;
+           HSC(M) = %D ; HRC(M) = HL(4) ;
+           MI = NL(1)  ; ME = NHT       ; EXEC FACTORIZATION ;
+           WT = WT + W * ET ; /* ET IS RECOUPLING COEFFICIENT
+           W  = 0.0D0
+           END ;
+        W = WT ;
+        END ;
+     PROCEDURE OPERATOR_SET_RCPL_2_C34
+        /* --H1--H2--(H3H4)--
+        /*   XX
+        M = NL(1)   ; MODE(M)= MD(1) ; NOP(M)= 4 ;
+        HSX(M) = %D ; HRX(M) = HL(1) ;
+        HSC(M) = %D ; HRC(M) = HL(1) ;
+        /* --H1--H2--(H3H4)--
+        /*     XX
+        DO FOR M = NL(1)+1, NL(2) - 1 ;
+           HSC(M) = HSC(M-1) ; HRC(M)=HRC(M-1) ; NOP(M) = 3 ;
+           HSX(M) = %S       ; HRX(M)= %S      ; MODE(M) = %I
+           END
+        /* --H1--H2--(H3H4)--
+        /*                 XX
+        M = NL(4)   ;
+        HSC(M) = %S ; HRC(M) = %S    ;
+        DO FOR M = NL(4)+1, NHT ;
+           HSC(M) = HSC(M-1) ; HRC(M)=HRC(M-1) ; NOP(M) = 0 ;
+           HSX(M) = %S       ; HRX(M)= %S      ; MODE(M) = %I
+           END ;
+        %SAME
+        EXEC FIND_MID_STATE
+        WT = 0.0D0
+        IF KSTACT = 0 THEN EXIT
+        WHILE KSTACT >= 2  ;
+        DO ;
+           LSM = %UK   ; LRM = %UK ;
+           IF MP
+           THEN ET = %RCPLZZ
+           ELSE ET = %RCPLXX
+           IF DABS(ET) < SLES THEN EXIT
+           /* --H1--H2--(H3H4)--
+           /*       XX
+           M = NL(2)   ; MODE(M)= MD(2) ; NOP(M)= 3 ;
+           HSX(M) = %D ; HRX(M) = HL(2) ;
+           HSC(M) = LSM; HRC(M) = LRM   ;
+           /* --H1--H2--(H3H4)--
+           /*         XX
+           DO FOR M = NL(2)+1, NL(3) - 1 ;
+              HSC(M) = HSC(M-1) ; HRC(M)=HRC(M-1) ; NOP(M) = 2 ;
+              HSX(M) = %S       ; HRX(M)= %S      ; MODE(M) = %I
+              END ;
+           /* --H1--H2--(H3H4)--
+           /*             XX
+           M = NL(4)   ; MODE(M)= MD(4) ; NOP(M)= 2 ;
+           HSX(M) = LSM; HRX(M) = LRM   ;
+           HSC(M) = %S ; HRC(M) = %S    ;
+           MI = NL(1)  ; ME = NHT       ; EXEC FACTORIZATION ;
+           WT = WT + W * ET ; /* ET IS RECOUPLING COEFFICIENT
+           W  = 0.0D0
+           END ;
+        W = WT ;
+        END ;
+
+     PROCEDURE OPERATOR_SET_RCPL_23
+        /* --H1--H2--H3--H4--
+        /*   XX
+        M = NL(1)   ; MODE(M)= MD(1) ; NOP(M)= 4 ;
+        HSX(M) = %D ; HRX(M) = HL(1) ;
+        HSC(M) = %D ; HRC(M) = HL(1) ;
+        /* --H1--H2--H3--H4--
+        /*     XX
+        DO FOR M = NL(1)+1, NL(2) - 1 ;
+           HSC(M) = HSC(M-1) ; HRC(M)=HRC(M-1) ; NOP(M) = 3 ;
+           HSX(M) = %S       ; HRX(M)= %S      ; MODE(M) = %I
+           END
+        M = NL(3)   ; MODE(M)= MD(3) ; NOP(M)= 2 ;
+        HSC(M) = %D ; HRC(M) = HL(4) ;
+        /* --H1--H2--H3--H4--
+        /*             XX
+        DO FOR M = NL(3)+1, NL(4) - 1 ;
+           HSC(M) = HSC(M-1) ; HRC(M)=HRC(M-1) ; NOP(M) = 1 ;
+           HSX(M) = %S       ; HRX(M)= %S      ; MODE(M) = %I
+           END ;
+        /* --H1--H2--H3--H4--
+        /*               XX
+        M = NL(4)   ; MODE(M)= MD(4) ; NOP(M)= 1 ;
+        HSX(M) = %D ; HRX(M) = HL(4) ;
+        HSC(M) = %S ; HRC(M) = %S    ;
+        DO FOR M = NL(4)+1, NHT ;
+           HSC(M) = HSC(M-1) ; HRC(M)=HRC(M-1) ; NOP(M) = 0 ;
+           HSX(M) = %S       ; HRX(M)= %S      ; MODE(M) = %I
+           END ;
+        %NOT
+        EXEC FIND_MID_STATE
+        WT = 0.0D0
+        IF KSTACT = 0 THEN EXIT
+        WHILE KSTACT >= 2  ;
+        DO ;
+           LSM = %UK   ; LRM = %UK ;
+           IF MP
+           THEN ET = %RCPLZZ
+           ELSE ET = %RCPLXX
+           IF DABS(ET) < SLES THEN EXIT
+           /* --H1--H2--H3--H4--
+           /*       XX
+           M = NL(2)   ; MODE(M)= MD(2) ; NOP(M)= 3 ;
+           HSX(M) = %D ; HRX(M) = HL(2) ;
+           HSC(M) = LSM; HRC(M) = LRM   ;
+           /* --H1--H2--H3--H4--
+           /*         XX
+           DO FOR M = NL(2)+1, NL(3) - 1 ;
+              HSC(M) = HSC(M-1) ; HRC(M)=HRC(M-1) ; NOP(M) = 2 ;
+              HSX(M) = %S       ; HRX(M)= %S      ; MODE(M) = %I
+              END ;
+           /* --H1--H2--H3--H4--
+           /*           XX
+           M = NL(3)   ; MODE(M)= MD(3) ; NOP(M)= 2 ;
+           HSX(M) = %D ; HRX(M) = HL(3) ;
+           HSC(M) = %D ; HRC(M) = HL(4) ;
+           MI = NL(1)  ; ME = NHT       ; EXEC FACTORIZATION ;
+           WT = WT + W * ET ; /* ET IS RECOUPLING COEFFICIENT
+           W  = 0.0D0
+           END ;
+        W = WT ;
+        END ;
+     PROCEDURE OPERATOR_SET_RCPL_C23
+        /* --H1--(H2H3)--H4--
+        /*   XX
+        M = NL(1)   ; MODE(M)= MD(1) ; NOP(M)= 4 ;
+        HSX(M) = %D ; HRX(M) = HL(1) ;
+        HSC(M) = %D ; HRC(M) = HL(1) ;
+        /* --H1--(H2H3)--H4--
+        /*     XX
+        DO FOR M = NL(1)+1, NL(2) - 1 ;
+           HSC(M) = HSC(M-1) ; HRC(M)=HRC(M-1) ; NOP(M) = 3 ;
+           HSX(M) = %S       ; HRX(M)= %S      ; MODE(M) = %I
+           END
+        /* --H1--(H2H3)--H4--
+        /*         XX
+        M = NL(2)   ; MODE(M)= MD(2) ; NOP(M)= 3 ;
+        HSC(M) = %D ; HRC(M) = HL(4) ;
+        /* --H1--(H2H3)--H4--
+        /*             XX
+        DO FOR M = NL(3)+1, NL(4) - 1 ;
+           HSC(M) = HSC(M-1) ; HRC(M)=HRC(M-1) ; NOP(M) = 1 ;
+           HSX(M) = %S       ; HRX(M)= %S      ; MODE(M) = %I
+           END ;
+        /* --H1--(H2H3)--H4--
+        /*               XX
+        M = NL(4)   ; MODE(M)= MD(4) ; NOP(M)= 1 ;
+        HSX(M) = %D ; HRX(M) = HL(4) ;
+        HSC(M) = %S ; HRC(M) = %S    ;
+        DO FOR M = NL(4)+1, NHT ;
+           HSC(M) = HSC(M-1) ; HRC(M)=HRC(M-1) ; NOP(M) = 0 ;
+           HSX(M) = %S       ; HRX(M)= %S      ; MODE(M) = %I
+           END ;
+        IF MD(2) =%CAXX ! MD(2) =%XXCA
+        THEN DO ;
+           M = NL(2)   ; MODE(M)= MD(2) ; NOP(M)= 3 ;
+           HSX(M) = LSI; HRX(M) = LRI   ;
+           HSC(M) = %D ; HRC(M) = HL(4) ;
+           MI = NL(1)  ; ME = NHT       ; EXEC FACTORIZATION ;
+           END ;
+        ELSE DO ;
+           EXEC FIND_OPERATOR_COUPLING_23
+           IF KSTACT = 0 THEN EXIT
+           WT = 0.0D0
+           WHILE KSTACT >= 2  ;
+           DO ;
+              LSM = %UK  ; LRM =%UK ;
+              ET = %RCPLYY
+              IF DABS(ET) < SLES THEN EXIT
+              /* --H1--(H2H3)--H4--
+              /*         XX
+              M = NL(2)   ; MODE(M)= MD(2) ; NOP(M)= 3 ;
+              HSX(M) = LSM; HRX(M) = LRM   ;
+              HSC(M) = %D ; HRC(M) = HL(4) ;
+              MI = NL(1)  ; ME = NHT       ; EXEC FACTORIZATION ;
+              WT = WT + W * ET ; /* ET IS RECOUPLING COEFFICIENT
+              W  = 0.0D0
+              END ;
+           W = WT ;
+           END ;
+        END ;
+  PROCEDURE  FIND_OPERATOR_COUPLING_23
+
+  /* # OF SHELL    = 1
+  /* # OF OPERATOR = 2
+     NSH = NL(2) ;
+  /* TRIANGLE CONDITION  HL(2) AND HL(3)
+     MAXOS1 = 3                    ; MINOS1 = 1 ;
+     MAXOR1 = HL(3) +  HL(2) - 1   ; MINOR1 = 1 ;
+  /* TRIANGLE CONDITION  FSX, HSX, GSX
+     MAXOS2= MAXS (FSX(NSH) ,GSX(NSH)) ;
+     MINOS2= MINS (FSX(NSH) ,GSX(NSH)) ;
+     MAXOR2= MAXS (FRX(NSH) ,GRX(NSH)) ;
+     MINOR2= MINS (FRX(NSH) ,GRX(NSH)) ;
+  /* TRIANGLE CONDITION  FSX(NSH-1), HSX, FSX(NSH)
+     MAXOS3= MAXS (FSX(NSH-1) ,FSX(NSH)) ;
+     MINOS3= MINS (FSX(NSH-1) ,FSX(NSH)) ;
+     MAXOR3= MAXS (FRX(NSH-1) ,FRX(NSH)) ;
+     MINOR3= MINS (FRX(NSH-1) ,FRX(NSH)) ;
+  /* OPERATOR COUPLING FOR SPIN
+     MAXOPS= MAX0( MAXOS1, MAXOS2, MAXOS3 ) ;
+     MINOPS= MIN0( MINOS1, MINOS2, MINOS3 ) ;
+     IF MAXOPS < MINOPS THEN EXIT
+     MAXOPR= MAX0( MAXOR1, MAXOR2, MAXOR3 ) ;
+     MINOPR= MIN0( MINOR1, MINOR2, MINOR3 ) ;
+     IF MAXOPR < MINOPR THEN EXIT
+     /* FIND PAIR FOR HL(2)
+     FOR NSPIN =     1,     3,  2
+     FOR NORB = MINOPR, MAXOPR, 2
+     DO ;
+        %SK = NORB      ; %SK = NSPIN   ;
+        END
+     END
+
+ /* XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+     PROCEDURE OPERATOR_SET_1EL
+        IF LSI ^= 1 & LSI ^= 3  THEN EXIT W = 0.0D0
+        IF MAXS( HL(1), HL(2) ) < LRT ! --
+           MINS( HL(1), HL(2) ) > LRT THEN EXIT  W = 0.0D0
+        /* --H1--H2--
+        /* XX
+        HSC(0) = %S ; HRC(0) = %S;
+        DO FOR M = 1, NL(1) -1 ;
+           HSC(M) = HSC(M-1) ; HRC(M)=HRC(M-1) ; NOP(M) = 2 ;
+           HSX(M) = %S       ; HRX(M)= %S      ; MODE(M) = %I
+           END
+        /* --H1--H2--
+        /*   XX
+        M = NL(1)   ; MODE(M)= MD(1) ; NOP(M)= 2 ;
+        HSX(M) = %D ; HRX(M) = HL(1) ;
+        HSC(M) = %D ; HRC(M) = HL(1) ;
+        /* --H1--H2--
+        /*   XX
+        DO FOR M = NL(1)+1, NL(2) - 1 ;
+           HSC(M) = HSC(M-1) ; HRC(M)=HRC(M-1) ; NOP(M) = 1 ;
+           HSX(M) = %S       ; HRX(M)= %S      ; MODE(M) = %I
+           END
+        /* --H1--H2--
+        /*       XX
+        M = NL(2)   ; MODE(M)= MD(2) ; NOP(M)= 1 ;
+        HSX(M) = %D ; HRX(M) = HL(2) ;
+        HSC(M) = LST; HRC(M) = LRT   ;
+        /* --H1--H2--
+        /*         XX
+        DO FOR M = NL(2)+1, NHT ;
+           HSC(M) = HSC(M-1) ; HRC(M)=HRC(M-1) ; NOP(M) = 0 ;
+           HSX(M) = %S       ; HRX(M)= %S      ; MODE(M) = %I
+           END ;
+        MI = NL(1) ; ME = NHT   ; EXEC FACTORIZATION ;
+        END ;
+
+     PROCEDURE OPERATOR_SET_1EL_C12
+        DO CASE OF LST
+           1 : IF MOD( LRT, 4 ) = 1 THEN EXFLG = 0 ; ELSE EXFLG = 1
+           3 : IF MOD( LRT, 4 ) = 3 THEN EXFLG = 0 ; ELSE EXFLG = 1
+           OTHERWISE   EXFLG = 1
+        IF EXFLG = 1 THEN EXIT W = 0.0D0
+        /* --(H1H2)--
+        /* XX
+        HSC(0) = %S ; HRC(0) = %S;
+        DO FOR M = 1, NL(1) -1 ;
+           HSC(M) = HSC(M-1) ; HRC(M)=HRC(M-1) ; NOP(M) = 2 ;
+           HSX(M) = %S       ; HRX(M)= %S      ; MODE(M) = %I
+           END
+        /* --(H1H2)--
+        /*     XX
+        M = NL(1)   ; MODE(M)= MD(1) ; NOP(M)= 2 ;
+        HSX(M) = LST; HRX(M) = LRT   ;
+        HSC(M) = LST; HRC(M) = LRT   ;
+        /* --(H1H2)--
+        /*         XX
+        DO FOR M = NL(2)+1, NHT
+           HSC(M) = HSC(M-1) ; HRC(M)=HRC(M-1) ; NOP(M) = 0 ;
+           HSX(M) = %S       ; HRX(M)= %S      ; MODE(M) = %I
+           END ;
+        MI = NL(1) ; ME = NHT   ; EXEC FACTORIZATION ;
+        END ;
+     PROCEDURE OPERATOR_SET_NORMAL_C1234
+        /* --((H1H2)(H2H3))--
+        /*         XX
+        M = NL(1)   ; MODE(M)= MD(1) ; NOP(M)= 4 ;
+        HSX(M) = LST; HRX(M) = LRT   ;
+        HSC(M) = LST; HRC(M) = LRT   ;
+        /* --((H1H2)(H2H3))--
+        /*                 XX
+        DO FOR M = NL(2)+1, NHT
+           HSC(M) = HSC(M-1) ; HRC(M)=HRC(M-1) ; NOP(M) = 0 ;
+           HSX(M) = %S       ; HRX(M)= %S      ; MODE(M) = %I
+           END ;
+        MI = NL(1) ; ME = NHT ; EXEC FACTORIZATION ;
+        END ;
+
+     PROCEDURE OPERATOR_SET_NORMAL
+        /* --H1--H2--H3--H4--
+        /*   XX
+        M = NL(1)   ; MODE(M)= MD(1) ; NOP(M)= 4 ;
+        HSX(M) = %D ; HRX(M) = HL(1) ;
+        HSC(M) = %D ; HRC(M) = HL(1) ;
+        /* --H1--H2--H3--H4--
+        /*     XX
+        DO FOR M = NL(1)+1, NL(2) - 1 ;
+           HSC(M) = HSC(M-1) ; HRC(M)=HRC(M-1) ; NOP(M) = 3 ;
+           HSX(M) = %S       ; HRX(M)= %S      ; MODE(M) = %I
+           END
+        /* --H1--H2--H3--H4--
+        /*       XX
+        M = NL(2)   ; MODE(M)= MD(2) ; NOP(M)= 3 ;
+        HSX(M) = %D ; HRX(M) = HL(2) ;
+        HSC(M) = LSI; HRC(M) = LRI   ;
+        /* --H1--H2--H3--H4--
+        /*         XX
+        DO FOR M = NL(2)+1, NL(3) - 1 ;
+           HSC(M) = HSC(M-1) ; HRC(M)=HRC(M-1) ; NOP(M) = 2 ;
+           HSX(M) = %S       ; HRX(M)= %S      ; MODE(M) = %I
+           END ;
+        /* --H1--H2--H3--H4--
+        /*           XX
+        M = NL(3)   ; MODE(M)= MD(3) ; NOP(M)= 2 ;
+        HSX(M) = %D ; HRX(M) = HL(3) ;
+        HSC(M) = %D ; HRC(M) = HL(4) ;
+        /* --H1--H2--H3--H4--
+        /*             XX
+        DO FOR M = NL(3)+1, NL(4) - 1 ;
+           HSC(M) = HSC(M-1) ; HRC(M)=HRC(M-1) ; NOP(M) = 1 ;
+           HSX(M) = %S       ; HRX(M)= %S      ; MODE(M) = %I
+           END ;
+        /* --H1--H2--H3--H4--
+        /*               XX
+        M = NL(4)   ; MODE(M)= MD(4) ; NOP(M)= 1 ;
+        HSX(M) = %D ; HRX(M) = HL(4) ;
+        HSC(M) = %S ; HRC(M) = %S    ;
+        DO FOR M = NL(4)+1, NHT ;
+           HSC(M) = HSC(M-1) ; HRC(M)=HRC(M-1) ; NOP(M) = 0 ;
+           HSX(M) = %S       ; HRX(M)= %S      ; MODE(M) = %I
+           END ;
+        MI = NL(1) ; ME = NHT ; EXEC FACTORIZATION ;
+        END ;
+
+     PROCEDURE OPERATOR_SET_NORMAL_C12
+        /* --(H1H2)--H3--H4--
+        /*     XX
+        M = NL(1)   ; MODE(M)= MD(1) ; NOP(M)= 4 ;
+        HSX(M) = LSI; HRX(M) = LRI   ;
+        HSC(M) = LSI; HRC(M) = LRI   ;
+        /* --(H1H2)--H3--H4--
+        /*         XX
+        DO FOR M = NL(2)+1, NL(3) - 1 ;
+           HSC(M) = HSC(M-1) ; HRC(M)=HRC(M-1) ; NOP(M) = 2 ;
+           HSX(M) = %S       ; HRX(M)= %S      ; MODE(M) = %I
+           END ;
+        /* --(H1H2)--H3--H4--
+        /*           XX
+        M = NL(3)   ; MODE(M)= MD(3) ; NOP(M)= 2 ;
+        HSX(M) = %D ; HRX(M) = HL(3) ;
+        HSC(M) = %D ; HRC(M) = HL(4) ;
+        /* --(H1H2)--H3--H4--
+        /*             XX
+        DO FOR M = NL(3)+1, NL(4) - 1 ;
+           HSC(M) = HSC(M-1) ; HRC(M)=HRC(M-1) ; NOP(M) = 1 ;
+           HSX(M) = %S       ; HRX(M)= %S      ; MODE(M) = %I
+           END ;
+        /* --(H1H2)--H3--H4--
+        /*               XX
+        M = NL(4)   ; MODE(M)= MD(4) ; NOP(M)= 1 ;
+        HSX(M) = %D ; HRX(M) = HL(4) ;
+        HSC(M) = %S ; HRC(M) = %S    ;
+        DO FOR M = NL(4)+1, NHT ;
+           HSC(M) = HSC(M-1) ; HRC(M)=HRC(M-1) ; NOP(M) = 0 ;
+           HSX(M) = %S       ; HRX(M)= %S      ; MODE(M) = %I
+           END ;
+        MI = NL(1) ; ME = NHT ; EXEC FACTORIZATION ;
+        END ;
+
+     PROCEDURE OPERATOR_SET_NORMAL_C34
+        /* --H1--H2--(H3H4)--
+        /*   XX
+        M = NL(1)   ; MODE(M)= MD(1) ; NOP(M)= 4 ;
+        HSX(M) = %D ; HRX(M) = HL(1) ;
+        HSC(M) = %D ; HRC(M) = HL(1) ;
+        /* --H1--H2--(H3H4)--
+        /*   XX
+        DO FOR M = NL(1)+1, NL(2) - 1 ;
+           HSC(M) = HSC(M-1) ; HRC(M)=HRC(M-1) ; NOP(M) = 3 ;
+           HSX(M) = %S       ; HRX(M)= %S      ; MODE(M) = %I
+           END
+        /* --H1--H2--(H3H4)--
+        /*       XX
+        M = NL(2)   ; MODE(M)= MD(2) ; NOP(M)= 3 ;
+        HSX(M) = %D ; HRX(M) = HL(2) ;
+        HSC(M) = LSI; HRC(M) = LRI   ;
+        /* --H1--H2--(H3H4)--
+        /*         XX
+        DO FOR M = NL(2)+1, NL(3) - 1 ;
+           HSC(M) = HSC(M-1) ; HRC(M)=HRC(M-1) ; NOP(M) = 2 ;
+           HSX(M) = %S       ; HRX(M)= %S      ; MODE(M) = %I
+           END ;
+        /* --H1--H2--(H3H4)--
+        /*             XX
+        M = NL(3)   ; MODE(M)= MD(3) ; NOP(M)= 2 ;
+        HSX(M) =LSI ; HRX(M) = LRI   ;
+        HSC(M) = %S ; HRC(M) = %S    ;
+        /* --H1--H2--(H3H4)--
+        /*                 XX
+        DO FOR M = NL(4)+1, NHT ;
+           HSC(M) = HSC(M-1) ; HRC(M)=HRC(M-1) ; NOP(M) = 0 ;
+           HSX(M) = %S       ; HRX(M)= %S      ; MODE(M) = %I
+           END ;
+        MI = NL(1) ; ME = NHT ; EXEC FACTORIZATION ;
+        END ;
+
+     PROCEDURE OPERATOR_SET_NORMAL_C123
+        /* --((H1H2)H3)--H4--
+        /*       XX
+        M = NL(1)   ; MODE(M)= MD(1) ; NOP(M)= 4 ;
+        HSX(M) = %D ; HRX(M) = HL(4) ;
+        HSC(M) = %D ; HRC(M) = HL(4) ;
+        /* --((H1H2)H3)--H4--
+        /*             XX
+        DO FOR M = NL(3)+1, NL(4) - 1 ;
+           HSC(M) = HSC(M-1) ; HRC(M)=HRC(M-1) ; NOP(M) = 1 ;
+           HSX(M) = %S       ; HRX(M)= %S      ; MODE(M) = %I
+           END ;
+        /* --((H1H2)H3)--H4--
+        /*               XX
+        M = NL(4)   ; MODE(M)= MD(4) ; NOP(M)= 1 ;
+        HSX(M) = %D ; HRX(M) = HL(4) ;
+        HSC(M) = %S ; HRC(M) = %S    ;
+        /* --((H1H2)H3)--H4--
+        /*                 XX
+        DO FOR M = NL(4)+1, NHT ;
+           HSC(M) = HSC(M-1) ; HRC(M)=HRC(M-1) ; NOP(M) = 0 ;
+           HSX(M) = %S       ; HRX(M)= %S      ; MODE(M) = %I
+           END ;
+        MI = NL(1) ; ME = NHT ; EXEC FACTORIZATION ;
+        END ;
+
+     PROCEDURE OPERATOR_SET_NORMAL_C234
+        /* --H1--(H2(H3H4))--
+        /*   XX
+        M = NL(1)   ; MODE(M)= MD(1) ; NOP(M)= 4 ;
+        HSX(M) = %D ; HRX(M) = HL(1) ;
+        HSC(M) = %D ; HRC(M) = HL(1) ;
+        /* --H1--(H2(H3H4))--
+        /*     XX
+        DO FOR M = NL(1)+1, NL(2) - 1 ;
+           HSC(M) = HSC(M-1) ; HRC(M)=HRC(M-1) ; NOP(M) = 3 ;
+           HSX(M) = %S       ; HRX(M)= %S      ; MODE(M) = %I
+           END ;
+        /* --H1--(H2(H3H4))--
+        /*          XX
+        M = NL(2)   ; MODE(M)= MD(2) ; NOP(M)= 3 ;
+        HSX(M) = %D ; HRX(M) = HL(1) ;
+        HSC(M) = %S ; HRC(M) = %S    ;
+        /* --H1--(H2(H3H4))--
+        /*                 XX
+        DO FOR M = NL(4)+1, NHT ;
+           HSC(M) = HSC(M-1) ; HRC(M)=HRC(M-1) ; NOP(M) = 0 ;
+           HSX(M) = %S       ; HRX(M)= %S      ; MODE(M) = %I
+           END ;
+        MI = NL(1) ; ME = NHT ; EXEC FACTORIZATION ;
+        END ;
+
+     PROCEDURE OPERATOR_SET_NORMAL_C12_C34
+        /* --(H1H2)--(H3H4)--
+        /*     XX
+        M = NL(1)   ; MODE(M)= MD(1) ; NOP(M)= 4 ;
+        HSX(M) = LSI; HRX(M) = LRI   ;
+        HSC(M) = LSI; HRC(M) = LRI   ;
+        /* --(H1H2)--(H3H4)--
+        /*         XX
+        DO FOR M = NL(2)+1, NL(3) - 1 ;
+           HSC(M) = HSC(M-1) ; HRC(M)=HRC(M-1) ; NOP(M) = 2 ;
+           HSX(M) = %S       ; HRX(M)= %S      ; MODE(M) = %I
+           END ;
+        /* --(H1H2)--(H3H4)--
+        /*             XX
+        M = NL(3)   ; MODE(M)= MD(3) ; NOP(M)= 2 ;
+        HSX(M) =LSI ; HRX(M) = LRI   ;
+        HSC(M) = %S ; HRC(M) = %S    ;
+        DO FOR M = NL(4)+1, NHT ;
+           HSC(M) = HSC(M-1) ; HRC(M)=HRC(M-1) ; NOP(M) = 0 ;
+           HSX(M) = %S       ; HRX(M)= %S      ; MODE(M) = %I
+           END ;
+        MI = NL(1) ; ME = NHT ; EXEC FACTORIZATION ;
+        END ;
+
+   PROCEDURE DEBUG_PRINT_FIRST ;
+      FORMAT WRITE ' --->---> ENTER FACTOR --->---> ' ; ( A ) ;
+      IF DEBUG > 2 THEN DO ;
+         FORMAT WRITE '   NL1,NL2,NL3,NL4, HL1,HL2,HL3,HL4,', --
+         ' MD1,MD2,MD3,MD4,  LSI, LRI,MODE,PAIR,        PHASE' ;
+                    ( A , A ) ;
+         FORMAT WRITE ( NL(N),N=1,4 ), ( HL(N),N=1,4 ),--
+                      ( MD(N),N=1,4 ), --
+                       LSI, LRI, MODEP, PAIR(1),PAIR(2),PHASE;
+                      ( 1X,3(4I4,1X),5I5, F16.8 ) ;
+         END ;
+      END ;
+   PROCEDURE DEBUG_PRINT_FIN   ;
+      IF DEBUG > 1 THEN DO ;
+         IF  DEBUG > 2 THEN --
+         DO ;
+            FORMAT WRITE ' >> ATTENTION >>  >>> LSI LRI <<< ', --
+                          LSI,LRI ; (A,2I6) ;
+            FORMAT WRITE ' LEFT     SPIN     >> ',( GSX(N),N=1,NHT ) ;
+            ( A,5X,11I5 )  ;
+            FORMAT WRITE ' LEFT     ANGULAR  >> ',( GRX(N),N=1,NHT ) ;
+            ( A,5X,11I5 )  ;
+            FORMAT WRITE ' COUPLING SCHEME SP>> ',( GSC(N),N=0,NHT ) ;
+            ( A,3X,12I5 )  ;
+            FORMAT WRITE ' COUPLING SCHEME AN>> ',( GRC(N),N=0,NHT ) ;
+            ( A,3X,12I5 )  ;
+            FORMAT WRITE ' RIGHT    SPIN     >> ',( FSX(N),N=1,NHT ) ;
+            ( A,5X,11I5 )  ;
+            FORMAT WRITE ' RIGHT    ANGULAR  >> ',( FRX(N),N=1,NHT ) ;
+            ( A,5X,11I5 )  ;
+            FORMAT WRITE ' COUPLING SCHEME SP>> ',( FSC(N),N=0,NHT ) ;
+            ( A,3X,12I5 )  ;
+            FORMAT WRITE ' COUPLING SCHEME AN>> ',( FRC(N),N=0,NHT ) ;
+            ( A,3X,12I5 )  ;
+            END ;
+         FORMAT WRITE ' OPERATOR SPIN     >> ',( HSX(N),N=1,NHT ) ;
+         ( A,5X,11I5 )  ;
+         FORMAT WRITE ' OPERATOR ANGULAR  >> ',( HRX(N),N=1,NHT ) ;
+         ( A,5X,11I5 )  ;
+         FORMAT WRITE ' COUPLING SCHEME SP>> ',( HSC(N),N=0,NHT ) ;
+         ( A,3X,12I5 )  ;
+         FORMAT WRITE ' COUPLING SCHEME AN>> ',( HRC(N),N=0,NHT ) ;
+         ( A,3X,12I5 )  ;
+         FORMAT WRITE ' DUMP KSTACK       >> ',--
+                      ( KSTACK(N),N=1,20);
+         ( A,/(3X,5('(L>',I3,' S>',I3,' ) ')) )   ;
+
+         END ;
+      FORMAT WRITE ' FACTOR>>',FACTOR , --
+                   ' PHASE >>',PHASE  , --
+                   ' RCPL  >>',ET     ; (  3(A, F14.8, 2X) ) ;
+      FORMAT WRITE ' ---<---- EXIT  FACTOR ---<---- ' ; ( A ) ;
+      END ;
+
+  PROCEDURE  FIND_MID_STATE
+  /* # OF SHELL    = 2
+  /* # OF OPERATOR = 2
+  /*  1 :  GSC(NSH+1) - FSC(NSH+1) --> SPIN & ORB
+  /*  2 :  HL(1) - HL(2)             --> ORB
+  /*  3 :  HL(3) - HL(4)             --> ORB
+  /* TRIANGLE CONDITION  HL(1) AND HL(2)
+  /* MAXOS1 = 3                 ; /* MINOS1 = 1 ;
+     MAXOR1 = MAXS( HL(1), HL(2) ) ; MINOR1 = MINS( HL(1), HL(2) )
+  /* TRIANGLE CONDITION  HL(3) AND HL(2)
+  /* MAXOS2 = 3                 ; /* MINOS2 = 1 ;
+     MAXOR2 = MAXS( HL(3), HL(4) ) ; MINOR2 = MINS( HL(3), HL(4) )
+  /* TRIANGLE CONDITION  FSC, HSC, GSC
+     MAXOS3 = MAXS(FSC(NL(2)),GSC(NL(2)));
+     MINOS3 = MINS(FSC(NL(2)),GSC(NL(2)));
+     MAXOR3 = MAXS(FRC(NL(2)),GRC(NL(2)));
+     MINOR3 = MINS(FRC(NL(2)),GRC(NL(2)));
+  /* TRIANGLE CONDITION  FSX(NSH-1), HSX, FSX(NSH) / ASAMPTION
+  /* OPERATOR COUPLING FOR SPIN
+  /* MAXOPS= MAX0( MAXOS1, MAXOS2 ) ;
+  /* MINOPS= MIN0( MINOS1, MINOS2 ) ;
+  /* IF MAXOPS < MINOPS THEN EXIT
+     IF MAXOS3 < MINOS3 THEN EXIT
+     MAXOPR= MIN0( MAXOR1, MAXOR2, MAXOR3 ) ;
+     MINOPR= MAX0( MINOR1, MINOR2, MINOR3 ) ;
+     IF MAXOPR < MINOPR THEN EXIT
+
+     FOR NSPIN = MINOS3, MAXOS3,  2
+     FOR NORB = MINOPR, MAXOPR, 2
+     DO ;
+       /IF MSHELL = 1 & MOD( NSPIN + NORB, 4 ) = 0 THEN EXIT
+        %SK = NORB
+        %SK = NSPIN
+        END
+     END
+
+   %%SUBNAME CFP %
+   PROCESS    NO LIST      MAP    HEADER  %SUBNAME
+   FUNCTION   %SUBNAME(IM,KM,KMP,ID)
+     IMPLICIT REAL*8(A-H,O-Z)
+  begin
+   %SUBNAME =X%SUBNAME(IM,KM,KMP,ID)
+   end
+
+   %%SUBNAME  WIG6J %
+   PROCESS    NO LIST      MAP    HEADER  %SUBNAME
+   FUNCTION   %SUBNAME(I1,I2,I3,I4,I5,I6)
+      IMPLICIT REAL*8(A-H,O-Z)
+   BEGIN ;
+         RVALUE = XWIG6J(I1,I2,I3,I4,I5,I6)
+      WIG6J = RVALUE ;
+      END ;
+   %%SUBNAME  WIG9X %
+   PROCESS    NO LIST      MAP    HEADER  %SUBNAME
+   FUNCTION   %SUBNAME(I1,I2,I3,I4,I5,I6,I7,I8,I9)
+      IMPLICIT REAL*8(A-H,O-Z)
+   BEGIN ;
+         RVALUE = XWIG9X(I1,I2,I3,I4,I5,I6,I7,I8,I9)
+      WIG9X = RVALUE
+      END ;
+   %%SUBNAME  CFACRC %
+   PROCESS    NO LIST      MAP    HEADER  %SUBNAME
+   FUNCTION   %SUBNAME (WFL,WFR,NREL,LST,LRT)
+      IMPLICIT REAL*8(A-H,O-Z)
+      EXTERNAL IOR,ISP,CFP
+      %comwfa
+      INTEGER * 4  WSL,WRL,WSR,WRR
+      REAL    * 8  ZP,XCFAC,%SUBNAME
+      INTEGER * 4  WFL,WFR,LST,LRT
+      INTEGER * 4  DEBUG ; DATA DEBUG/0/
+      ZP( IH )  = 1.0D0 - 2.0D0*(MOD( (IH+8888)/2, 2 ) )
+   BEGIN
+      XCFAC= 0.0D0
+      LRO = ILFO( WFL ) ; L = LRO/2 + 1 ;
+      LSO = 2 ; / DOUBLET /
+      WSL = ISP( WFL ) ; WRL = IOR( WFL ) ;
+      WSR = ISP( WFR ) ; WRR = IOR( WFR ) ;
+       K =  TOPADR( L ) + NREL - 1
+       FOR I = WFADR( K ), WFADR( K ) + NSHL( K ) - 1 ;
+       DO ;
+          XCFAC= XCFAC--
+            + WIG6J( LSO, LST, LSO, WSL, WS(I), WSR )  --
+            * WIG6J( LRO, LRT, LRO, WRL, WR(I), WRR )  --
+            * CFP  ( WFL, WF( I ), NREL - 1,1)         --
+            * CFP  ( WF(I), WFR,   NREL   ,-1)
+          END
+       XCFAC=   XCFAC--
+              * DSQRT( DFLOAT ( LST * LRT ) )  --
+              * ZP( LST + LRT + WSL + WRL + WSR + WRR - 4 )
+       %SUBNAME = XCFAC
+      END ;

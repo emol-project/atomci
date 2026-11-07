@@ -1,0 +1,10 @@
+      common/comcfp/ CMTTBL(8000)
+      common/comcfp/ INAME(18),IBEL,ICNN,ILFN,ICMTN,ICDX
+      common/comcfp/ IMMINT(18),ILSTAD(18),ICONNT(9,100),ICMTDX(5,100)
+      common/comcfp/ ILFUNC(600)
+      common/comcfp/ IBELS,ICNNS,ILFNS,ICMTNS,ICDXS
+      integer        INAME,IBEL,ICNN,ILFN,ICMTN,ICDX
+      integer        IBELS,ICNNS,ILFNS,ICMTNS,ICDXS
+      integer        IMMINT,ILSTAD,ICONNT,ICMTDX
+      integer        ILFUNC
+      real * 8       CMTTBL

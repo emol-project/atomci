@@ -1,0 +1,250 @@
+\xspace
+\section*{Appendix: Error Codes.}
+\xsp
+In normal runs the return code for each of the eight steps of
+ATOMCI should be 0. Very often when an error occurs ATOMCI will
+stop and return a non zero error code.
+The following is a list of error codes which may be observed. It is not
+intended to be complete, and it gives only a brief general
+description of the
+type of error which occurred. Most of the error codes arise when trying
+to read or write to one of the several I/O files, and the user should
+then check the status of that particular file. Some error codes report
+inconsistencies between data read in from a particular unit and current
+data. In that case the user should check the consistency of input
+data for the different steps of ATOMCI. Finally, some errors may be
+related with the dimensions of the working space and/or of some
+buffer sizes. The user should keep an eye on the informations printed
+in output on the reserved space for some variables or buffers and on
+the space actually used or needed.
+\xsp
+Error codes:
+\xsp
+\mtab{ 1 to 9 }{Dynamic allocation failed.}
+\xsp
+Error codes in WFMAIN:
+\xsp
+\mtab{ 2000 }{Cannot find NAMELIST in input.}
+\mtab{ 2010 }{Error in reading from unit NFWFB0.}
+\mtab{ 2011 }{Error in reading from unit NFWFB0.}
+\mtab{ 2012 }{Inconsistency: value of RULE and input from unit NFWFB0.}
+\mtab{ 2021 }{Error in writing on unit NFWFB1.}
+\mtab{ 2022 }{Error in writing on unit NFWFB1.}
+\mtab{ 2071 }{End of File detected in reading CFP table (unit NFTF).}
+\mtab{ 2072 }{Error detected in reading CFP table (unit NFTF).}
+\mtab{ 2100 }{Error in reading from unit NFWFB0.}
+\mtab{ 2101 }{Input data error: Reference CSF.}
+\mtab{ 2102 }{Input data error: No Reference CSF.}
+\mtab{ 2110 }{EOF detected in reading unit NFWFB0.}
+\mtab{ 2112 }{Input data error: Format of Reference CSF.}
+\mtab{ 2210 }{Duplication of configuration in input.}
+\mtab{ 2211 }{Storage overflow in reading wavefunction (NFWFB0).}
+\mtab{ 2212 }{EOF detected in reading unit NFWFB0.}
+\mtab{ 2215 }{Error in constructing the EE file.}
+\mtab{ 2321 }{Error in writing on the EE file (unit NFWFE or NFWFP).}
+\mtab{ 2322 }{Error in writing on the EE file (unit NFWFE or NFWFP).}
+\mtab{ 2323 }{Error in writing on the EE file (unit NFWFE or NFWFP).}
+\mtab{ 2325 }{Error in reading from unit NFWFW.}
+\mtab{ 2330 }{Severe error: Cannot prepare the EE file.}
+\mtab{ 9611 }{IO buffer overflow: LIJB is too small.}
+\mtab{ 9613 }{IO buffer overflow: LTRI is too small.}
+\mtab{ 9614 }{IO buffer overflow: LTRI is too small.}
+\mtab{ 9620 }{Error in writing on the EE file (unit NFWFE or NFWFP).}
+\xsp
+Error codes in AIMAIN:
+\xsp
+\mtab{ 3000 }{Cannot find NAMELIST in input.}
+\mtab{ 3999 }{Basis set too large.}
+\xsp
+Error codes in TRMAIN:
+\xsp
+\mtab{ 4000 }{Cannot find NAMELIST in input.}
+\mtab{ 4001 }{Cannot find unit NFAII.}
+\mtab{ 4101 }{Input data error: NSYM.}
+\mtab{ 4300 }{Error in reading from unit NFAII.}
+\mtab{ 4320 }{Error in writing on unit NFTRI.}
+\mtab{ 4321 }{Error in reading from unit NFTRC2.}
+\mtab{ 4322 }{Error in reading from unit NFAII.}
+\mtab{ 4323 }{Norm too small.}
+\mtab{ 4324 }{Error in writing on unit NFTRC2.}
+\mtab{ 4400 }{Cannot transform basis integral.}
+\xsp
+Error codes in PTMAIN:
+\xsp
+\mtab{ 5000 }{Cannot find NAMELIST in input.}
+\mtab{ 5001 }{Inconsistency in assigning number to unit NFWFP.}
+\mtab{ 5002 }{Inconsistency in assigning number to unit NFTRI.}
+\mtab{ 5003 }{Inconsistency: Number of selected CSF from unit NFPTH2.}
+\mtab{ 5011 }{Error in reading from unit NFWFP.}
+\mtab{ 5012 }{EOF detected in reading from unit NFWFP.}
+\mtab{ 5020 }{Error in reading from unit NFPTV.}
+\mtab{ 5021 }{NSOLVE $>$ number of selected CSF.}
+\mtab{ 5022 }{NSOLVE=0.}
+\mtab{ 5023 }{ISTATE=0 when HOW=0.}
+\mtab{ 5024 }{ISTATE $>$ NSOLVE.}
+\mtab{ 5025 }{NSOLVE $<$ 0.}
+\mtab{ 5201 }{No reference CSF.}
+\mtab{ 5211 }{Inconsistency: number of CSF.}
+\mtab{ 5310 }{Error in reading from unit NFPTL.}
+\mtab{ 5311 }{Error in reading from unit NFPTL.}
+\mtab{ 5312 }{Error in reading from unit NFPTL.}
+\mtab{ 5313 }{Error in reading from unit NFPTL.}
+\mtab{ 5314 }{Error in reading from unit NFPTL.}
+\mtab{ 5315 }{Error in reading from unit NFPTL.}
+\mtab{ 5321 }{Error in writing on unit NFPTL.}
+\mtab{ 5331 }{Inconsistency: data read in from unit NFPTL.}
+\mtab{ 5332 }{Inconsistency: data read in from unit NFPTL.}
+\mtab{ 5333 }{Error in sorting records read from unit NFPTL.}
+\mtab{ 5401 }{Error in reading reference CSF from unit NFWFP.}
+\mtab{ 5601 }{Sorting failed.}
+\mtab{ 5711 }{Error in reading from unit NFWFP.}
+\mtab{ 5712 }{Error in reading from unit NFWFP.}
+\mtab{ 5721 }{Error in reading from unit NFWFP.}
+\mtab{ 5722 }{EOF detected in reading from unit NFWFP.}
+\mtab{ 5731 }{Error in reading from unit NFWFP.}
+\mtab{ 5811 }{EOF detected in reading from unit NFPTH1.}
+\mtab{ 5812 }{Error in reading from unit NFPTH1.}
+\mtab{ 5821 }{Inconsistency: data read in from unit NFPTH1.}
+\mtab{ 5831 }{EOF detected in reading from unit NFPTV.}
+\mtab{ 5832 }{Error in reading from unit NFPTV.}
+\mtab{ 5841 }{Inconsistency: data read in from unit NFPTV.}
+\mtab{ 5842 }{Inconsistency: data read in from unit NFPTV.}
+\mtab{ 5911 }{Error in writing on unit NFPTB.}
+\mtab{ 5912 }{Error in writing on unit NFPTB.}
+\mtab{ 5988 }{Error in selection (sorting contributions).}
+\mtab{ 5999 }{Error in selection of CSF. Number of selected CSF.}
+\xsp
+Error codes in EXMAIN:
+\xsp
+\mtab{ 6000 }{Cannot find NAMELIST in input.}
+\mtab{ 6001 }{Inconsistency in assigning number to unit NFPTB.}
+\mtab{ 6101 }{Error in reading from unit NFWFB0 or NFPTB.}
+\mtab{ 6110 }{Error in reading from unit NFWFB0, NFWFB1, or NFPTB.}
+\mtab{ 6111 }{Error in reading from unit NFWFB0, NFWFB1, or NFPTB.}
+\mtab{ 6112 }{Error in reading from unit NFWFB0, NFWFB1, or NFPTB.}
+\mtab{ 6113 }{Error in reading from unit NFWFB0, NFWFB1, or NFPTB.}
+\mtab{ 6121 }{Error in reading from unit NFEXW.}
+\mtab{ 6201 }{Error in writing on unit NFEXE.}
+\mtab{ 6202 }{Error in writing on unit NFEXE.}
+\mtab{ 6203 }{Error in writing on unit NFEXE.}
+\mtab{ 6210 }{Duplication of configuration in input.}
+\mtab{ 6211 }{Error in reading from unit NFEXE.}
+\mtab{ 6212 }{Error copying from unit NFEXW to unit NFEXE.}
+\mtab{ 6221 }{Inconsistency: data read in from unit NFEXE.}
+\mtab{ 6222 }{Inconsistency: error in reading from unit NFEXW.}
+\mtab{ 6223 }{Error copying from unit NFEXW to unit NFEXE.}
+\mtab{ 6231 }{Inconsistency: data read in from unit NFEXE.}
+\mtab{ 6232 }{Inconsistency in copying from unit NFEXW to unit NFEXE.}
+\mtab{ 6233 }{Error copying from unit NFEXW to unit NFEXE.}
+\mtab{ 6301 }{Error in reading wavefunction from unit NFEXW.}
+\mtab{ 6399 }{Error in restart.}
+\mtab{ 9095 }{Orbital too large.}
+\mtab{ 9611 }{IO buffer overflow: LIJB is too small.}
+\mtab{ 9613 }{IO buffer overflow: LTRI is too small.}
+\mtab{ 9614 }{IO buffer overflow: LTRI is too small.}
+\mtab{ 9620 }{Error in writing on the EE file (unit NFEXE)}
+\xsp
+Error codes in CIMAIN:
+\xsp
+\mtab{ 7000 }{Cannot find NAMELIST in input.}
+\mtab{ 7011 }{Error in reading from the EE file (unit NFEXE or NFWFE).}
+\mtab{ 7110 }{Error in reading from unit NFTRI}
+\mtab{ 7111 }{Error in reading from unit NFTRI}
+\mtab{ 7120 }{Storage overflow in reading integrals (NFTRI).}
+\mtab{ 7121 }{Error in reading from unit NFTRI}
+\mtab{ 7122 }{Error in reading from unit NFTRI}
+\mtab{ 7131 }{Storage overflow: Extend LTRI or change MCORE.}
+\mtab{ 7132 }{Storage overflow: Extend LTRI or change MCORE.}
+\mtab{ 7134 }{Inconsistency: number of orbitals (NFEXE (or NFWFE) and NFTRI).}
+\mtab{ 7135 }{Inconsistency: number of Symmetries (NFEXE (or NFWFE) and NFTRI).}
+\mtab{ 7201 }{Inconsistency: number of CSF, unit NFCIW.}
+\mtab{ 7211 }{Error in reading from unit NFCIH1 or NFCIH2.}
+\mtab{ 7212 }{Error in reading from unit NFCIH1 or NFCIH2.}
+\mtab{ 7230 }{Storage overflow: extend MCORE.}
+\mtab{ 7231 }{Storage overflow: extend MCORE.}
+\mtab{ 7250 }{Error: Cannot obtain the eigenvectors.}
+\mtab{ 7310 }{Storage overflow: extend MCORE.}
+\mtab{ 7321 }{Error in reading from unit NFCID.}
+\mtab{ 7322 }{EOF   in reading from unit NFCID.}
+\mtab{ 7331 }{Error in writing on unit NFCIH.}
+\mtab{ 7341 }{Error in reading from unit NFCIW.}
+\mtab{ 7342 }{EOF   in reading from unit NFCIW.}
+\mtab{ 7343 }{Error in reading from unit NFCIW.}
+\mtab{ 7344 }{Input data error: cannot get CI vectors.}
+\mtab{ 7351 }{Error in reading/writing on unit NFCIW.}
+\mtab{ 7352 }{Error in reading/writing on unit NFCIW.}
+\mtab{ 7353 }{Error in writing on unit NFCIW.}
+\mtab{ 7360 }{Input data error: IOFLG(2) or IOFLG(3) in \cinamelist NAMELIST}
+\mtab{ 7361 }{Error in reading from unit NFCIH.}
+\mtab{ 7501 }{Error in reading from unit NFTRC2}
+\mtab{ 7502 }{Error in writing on unit NFTRC2}
+\mtab{ 7511 }{Error in reading from unit NFTRC2}
+\mtab{ 7512 }{Error in writing on unit NFTRC2}
+\mtab{ 7513 }{Error in writing on unit NFTRC2}
+\mtab{ 7521 }{Error in reading from unit NFCIH.}
+\mtab{ 7531 }{Error in constructing the natural orbitals (JACOBI).}
+\mtab{ 7540 }{Storage overflow in obtaining the natural orbitals.}
+\mtab{ 7551 }{Error in reading/writing on unit NFCIW.}
+\mtab{ 7552 }{Error in reading/writing on unit NFCIW.}
+\mtab{ 7611 }{Error in reading from the EE file (unit NFTE).}
+\mtab{ 7612 }{Error in reading from the EE file (unit NFTE).}
+\mtab{ 7613 }{EOF detected in reading from the EE file (unit NFTE).}
+\mtab{ 7614 }{Error in writing on unit NFCIS.}
+\mtab{ 7615 }{Error in writing on unit NFCIS.}
+\mtab{ 7616 }{Error in writing on unit NFCIS.}
+\mtab{ 7617 }{Error in copying from the EE file (unit NFTE) to unit NFCIS.}
+\mtab{ 7618 }{EOF detected in copying from the EE file (unit NFTE) to unit NFCIS.}
+\mtab{ 7621 }{Error in reading from unit NFCIH1.}
+\mtab{ 7622 }{EOF detected in reading from unit NFCIH1.}
+\mtab{ 7623 }{Error in writing on unit NFCIS.}
+\mtab{ 7631 }{Error in reading from unit NFCIH2.}
+\mtab{ 7632 }{EOF detected in reading from unit NFCIH2.}
+\mtab{ 7633 }{Error in reading from unit NFCIH2.}
+\mtab{ 7634 }{Error in writing on unit NFCIS.}
+\mtab{ 7641 }{EOF detected in reading from unit NFCIV.}
+\mtab{ 7642 }{Error in reading from unit NFCIV.}
+\mtab{ 7643 }{EOF detected in reading from unit NFCIV.}
+\mtab{ 7644 }{Error in reading from unit NFCIV.}
+\mtab{ 7645 }{Error in writing on unit NFCIS.}
+\mtab{ 7681 }{Inconsistency: number of reference (reading from the EE file (unit NFTE) or NFWFE)}
+\mtab{ 7682 }{Inconsistency: number of CSF (reading from NFCIH1)}
+\mtab{ 7683 }{Inconsistency: number of CSF (reading from NFCIV)}
+\mtab{ 7684 }{Inconsistency: number of solutions (reading from NFCIV)}
+\xsp
+Error codes in RSMAIN:
+\xsp
+\mtab{ 8000 }{Cannot find NAMELIST in input.}
+\mtab{ 8001 }{Inconsistency in assigning number to unit NFCIS.}
+\mtab{ 8111 }{Error in reading from unit NFCIS.}
+\mtab{ 8112 }{Error in reading from unit NFCIS.}
+\mtab{ 8113 }{Error in reading from unit NFCIS.}
+\mtab{ 8114 }{Error in reading from unit NFCIS.}
+\mtab{ 8115 }{Error in reading from unit NFCIS.}
+\mtab{ 8121 }{EOF detected in reading from unit NFCIS.}
+\mtab{ 8122 }{EOF detected in reading from unit NFCIS.}
+\mtab{ 8123 }{EOF detected in reading from unit NFCIS.}
+\mtab{ 8124 }{EOF detected in reading from unit NFCIS.}
+\mtab{ 8125 }{EOF detected in reading from unit NFCIS.}
+\mtab{ 8131 }{Error in number of types of configurations in reference.}
+\mtab{ 8132 }{Inconsistency: number of CSF, unit NFCIS.}
+\mtab{ 8201 }{Inconsistency: data read in unit NFPTB and NFCIS.}
+\mtab{ 8202 }{Inconsistency: number of CSF, unit NFPTB and NFCIS.}
+\mtab{ 8203 }{Inconsistency: orbital informations, unit NFPTB and NFCIS.}
+\mtab{ 8211 }{Error in reading from unit NFPTB.}
+\mtab{ 8301 }{Inconsistency: data read in unit NFPTB and NFCIS.}
+\mtab{ 8302 }{Inconsistency: data read in unit NFPTB and NFCIS.}
+\mtab{ 8303 }{Inconsistency: data read in unit NFPTB and NFCIS.}
+\mtab{ 8304 }{Inconsistency: number of CSF, unit NFPTB and NFCIS.}
+\mtab{ 8305 }{Inconsistency: number of CSF, unit NFPTB and NFCIS.}
+\mtab{ 8311 }{Error in reading from unit NFPTB.}
+\mtab{ 8312 }{Error in reading from unit NFPTB.}
+\mtab{ 8313 }{Error in reading from unit NFPTB.}
+\mtab{ 8321 }{Inconsistency: Energy matrix, unit NFPTH1.}
+\mtab{ 8322 }{Inconsistency: number of CSF, unit NFPTH2.}
+\mtab{ 8323 }{Inconsistency: number of selected CSF, unit NFPTB.}
+\mtab{ 8330 }{Error in reading from unit NFPTH1.}
+\mtab{ 8331 }{Error in reading from unit NFPTH2.}
+\mtab{ 8332 }{Error in reading from unit NFPTH2.}
+\mtab{ 8333 }{Error in reading from unit NFPTH2.}
+
+

@@ -1,0 +1,40 @@
+# F 2P — SD-CI with an MCSCF orbital step
+# golden: SD-CI = -99.641223
+
+title:  " F DOUBLET P "
+deck:   f.deck
+csf:    f.csf
+
+atom:
+  z:     9
+  ang:   P
+  spin:  2
+
+files:
+  cfptable:  ./CFPTBL
+  basis:     f.bas
+  format:    atomci
+  mcp:       mcp.dat
+  open:
+    - unit: 27, file: f.NO, format: binary, status: unknown
+
+orbital:
+  frozen_core:  1S
+  active:       2S, 2P
+  outer:        11S, 10P, 6D, 5F
+
+reference:
+  - scf: true, occ: 2S*2 2P*5
+
+ctrl:
+  ai:  type: 2, idprnt: 0
+  mc:  itmax: 20
+  wf:  rule: 1, npflg: 0
+  tr:
+    ind:
+      - record: 1, l: 0, first: 1, last: 13
+      - record: 1, l: 1, first: 1, last: 11
+      - record: 1, l: 2, first: 1, last: 6
+      - record: 1, l: 3, first: 1, last: 5
+  ci:  ips: 7, maxit: 100, nsdim: 100, nstate: 1
+  rs:  print: -0.001

@@ -1,0 +1,208 @@
+  process no list file 'mcmcsf.f'
+  %%subname mcmcsf%
+  %param
+ 
+  subroutine %subname  (nsym,nbf,csfs,closed,iounit,npflg,rtncd)
+  /*
+  /* changed by mas 1994-02-22 by msekiya 
+  /*
+      implicit integer (a-z) 
+      character * 4 shell(%climit,%llimit),c4
+      character * 72 csfs(%mccsfs),closed,blank,cards,clsout
+      integer nsym,nbf(%llimit),iounit,npflg,rtncd 
+      character * 1 c1
+      character*1 let0,let9,lang(21),uang(21), -- 
+         rp,lp,iquest,sharp,dquot,ast,msgn,psgn,eqsgn
+      integer   ic
+      logical   err
+      integer ipos(%llimit),locc(%llimit),nocc(%llimit)
+
+      integer byt
+
+  / data statement   SAVE
+      data byt /256/
+      DATA IQUEST /'?'/
+      data rp,lp /')','('/
+      DATA SHARP /'#'/
+      DATA dquot /'"'/
+      DATA AST,MSGN/'*','-'/
+      DATA BLANK/' '/
+      DATA PSGN,EQSGN/'+','='/
+      DATA let0,let9 /'0','9'/
+      DATA lang/'s','p','d','f','g','h','i','k','l','m',--
+                'n','o','q','r','t','u','v','w','x','y','z'/                           
+      DATA uang/'S','P','D','F','G','H','I','K','L','M',--
+                'N','O','Q','R','T','U','V','W','X','Y','Z'/                           
+  %%errid 1 %
+  %%err_exit if err then exit rtncd = %errid%
+  begin 
+      err = .false. ; rtncd = 0
+      for i = 1, nsym ; 
+      ( locc(i) = 0 ; nocc(i) = 0 )
+      for i = 1, nsym ; shell(i,1) = ' ' ;
+      exec closed_shell
+      exec WF_inf ; 
+      exec data_check
+      exec print  
+      if npflg > 1 then exec printout
+
+      if err then do 
+         rtncd = 99
+         format write id, csfs(id) ;
+         (' CSF input Error in ',i4,a)
+         end 
+      end 
+  > data_check
+     if lmax > nsym then err= .true. 
+     for i = 1, lmax ; if nbf(i) < locc(i) then err=.true.
+     end  
+ 
+  > printout 
+     for is = 1, nsym 
+     do
+        format write ( shell(i,is),i=1,locc(is))  ; ( 10a )
+        format write  --
+        ( nocc(is)+i, uang(is),i=1,nbf(is)-locc(is) ); ( 10(i3,a1))   
+        end 
+     format write  '  )' ; ( a )
+     format write  clsout ; ( a )
+     format write '   )' ; ( a )  
+     format write '   )' ; ( a )  
+     for i = 1, id ; format write csfs(i) ; ( a )
+     end 
+
+  > print 
+     for is = 1, nsym 
+     do
+        format write:iounit ( shell(i,is),i=1,locc(is))  ; 
+        ( 10a )
+        format write:iounit  --
+        ( nocc(is)+i, uang(is),i=1,nbf(is)-locc(is) ); ( 10(i3,a1))   
+        end 
+     format write:iounit  '  )' ; ( a )
+     format write:iounit  clsout ; ( a )
+     format write:iounit '   )' ; ( a )  
+     format write:iounit '   )' ; ( a )  
+     for i = 1, id ; format write:iounit csfs(i) ; ( a )
+     format write:iounit  ' )))' ; ( a )  
+     end 
+
+
+  > WF_inf
+    id = 1 ; ic = 0 ; 
+    cards=csfs(id) 
+    nte = 0 ; err=.false.
+    / nmax = 0 ; /lmax = 0
+    until code ^= %number ;  exec get_next 
+    do until c1 = rp ! err 
+      for i = 1, nsym ; ipos(i)= 0 ;
+      lprev = 0
+      do until c1 = rp ! err 
+        nnn = num1 
+        if code ^= %l then exit err = .true. 
+        iorb= isym
+        / the coupling sequence is by l, then by n: 4S before 3D
+        if iorb < lprev then exec error_order
+        lprev = iorb
+        exec get_next
+        if c1 ^='*' then exit err = .true. 
+        until code ^= %number ; exec get_next 
+        noc = num1 
+        while  c1 ^=')' ; exec get_next
+        exec shell_check
+        until code ^= %number ;  exec get_next 
+        end
+  /* next card  : new csf
+      id = id + 1 ; ic = 0 ; nte = 0 ;  
+      cards=csfs(id) 
+      until code ^= %number ;  exec get_next 
+      end 
+     end 
+
+
+  > shell_check
+      ns = 0 
+      fortran write(c4,'(i3,a1)') nnn,uang(iorb) 
+      fortran write(91,'(i3,a1)') nnn,uang(iorb) 
+      until shell(ns,iorb) = c4 ! locc(iorb) < ns ; = ns + 1  
+      if ns > locc(iorb) then (  
+         = locc(iorb)+1 ; shell(locc(iorb),iorb)= c4  ) 
+      if ns < ipos(iorb) then exec  error_csf 
+      if nnn > nocc(iorb) then nocc(iorb) = nnn  
+      if iorb > lmax then lmax = iorb  
+      
+      ipos(iorb) = ns  ; nte = nte + noc 
+     end 
+
+
+
+  > error_csf
+     err= .true. 
+     format write shell(ns,iorb), shell(ipos(iorb),iorb) 
+     (' === orbital sequence is invalid ==',a,' <--> ',a ) 
+     end 
+
+  > error_order
+     err= .true.
+     format write nnn, uang(iorb), uang(lprev)
+     (' === shell ',i2,a1,' follows a ',a1,' shell: write the',  --
+      ' shells of a CSF by l (S, P, D, ...), by n within l ==' )
+     end
+  > get_next
+     until c1 ^= ' ' ! ic >= 72 
+     ( ic = ic + 1 ; c1 = cards(ic:ic) ) 
+     if ic = 72 then exit err = .true. 
+     / read number of c orbitals
+     do case of c1 ; character  
+       '0' :
+        * 
+       '9' : exec let_number 
+       'A' :
+        * 
+       'Z' : exec let_upper
+       'a' :
+        * 
+       'z' : exec let_lower
+        otherwise code = %special
+    end  
+  > let_number 
+    if code ^= %number then num1 = 0 
+    fortran read(c1,'(i1)') num
+    num1 = num1 * 10 + num
+    code = %number
+    end 
+  > let_upper
+    isym = 1 
+    while  c1 ^= uang(isym) & isym <  21 ; isym = isym + 1 
+    if isym = 21 then code = -99
+    code = %l   
+    end 
+  > let_lower
+    isym = 1 
+    while  c1 ^= lang(isym) & isym <  21 ; isym = isym + 1 
+    if isym = 21 then exit code = -99
+    cards(ic:ic) = uang(isym) 
+    code = %l   
+    end  
+ 
+  > closed_shell
+    ic = 0 ;    nte = 0 ;  ncs = 0   
+    nmax = 0 ; lmax = 0
+    for i = 1, nsym ; ipos(i)= 0 ;
+    cards = closed
+    if cards = blank then clsout ='   1S ' 
+    else do 
+      until code ^= %number ;  exec get_next
+      do until c1 = rp ! err
+        nnn = num1
+        if code ^= %l then exit err = .true.
+        iorb= isym
+        exec shell_check
+        ncs = ncs + 1 ; 
+        until code ^= %number ;  exec get_next
+        end
+    /  write closed default shells 
+      fortran  write(clsout,'(14a5)') --
+            ((shell(ii,ll),ii=1,locc(ll)),ll=1,lmax) 
+      end 
+    end

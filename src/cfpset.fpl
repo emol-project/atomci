@@ -1,0 +1,93 @@
+   PROCESS       FILE   'cfpset.f'  
+   %%SUBNAME CFPSET%
+   PROCESS   NO LIST      MAP    HEADER  %SUBNAME
+   SUBROUTINE %SUBNAME
+   %CPYRIGHT
+   %UPDATE
+
+      /*   FUNCTION : INITITALIZATION
+      /*   CALLED   : EXTAPE
+      /*   CALLING  : <NONE>
+      /*
+      /*              update: table setting from standard cfp tables
+
+   IMPLICIT REAL*8(A-H,O-Z)
+   EXTERNAL IOR,ISP,iqs
+   integer wfad,tad,itad,nl,ne
+   %comwfa
+   %comcfp
+ 
+   /   ibel,icnn,ilfn,icmtn and icdx are the sizes of the arrays 
+   /   immint(also ilstad), iconnt, ilfunc, icmtdx and cmttbl respectively
+   begin
+      tad = 1;  / table address for nhsl, nel and wfadr 
+      wfad=1;   / address for wf
+      nl = 1;  / nl=1,2,3,... means s-,p-,d-,... shell
+
+      do while nl <= ibel; / cfp table exist
+         topadr(nl)=tad
+         exec make tables up to half filled
+         if immint(nl)=1
+         then exec copy lower half to upper half
+         = nl + 1
+         end
+      do for i = 1, wfad - 1
+         ws(i) = isp( wf(i) ) ; wr(i) = ior( wf(i) ) ;
+         end ;
+      if .false. then exec print tables
+      end
+ 
+   procedure  make tables up to half filled
+      
+      ne=0;      /number of electrons
+      nemax = 2*nl - immint(nl)
+      do until ne >  nemax
+         wfadr(tad)=wfad
+         nel(tad) = ne
+         nshl(tad)=0
+         isq = ilstad(nl)
+         if nl < ibel then isqmax = ilstad(nl+1) -1
+         else isqmax = icnn; / last address of table iconnt
+         do until isq >  isqmax
+            iq = iconnt(2,isq);      / quasi spin
+            if iq + ne >= 2*nl & mod (iq+ne,2)=0
+            then do;          / o.k.
+               = nshl(tad) + iconnt(4,isq)
+               /  lsub:  orbital angular momentum sub-species
+               /         for spin q-spin multiplet
+               do for lsub=1,iconnt(4,isq)
+                  wf(wfad)=256*isq+lsub
+                  = wfad + 1
+                  end
+               end
+            = isq + 1
+            end
+        = ne + 1
+        = tad + 1
+        end
+     end
+
+  procedure copy lower half to upper half
+
+     itad= tad - 2
+     do until ne >  4*nl-2
+        wfadr(tad)=wfadr(itad)
+        nel(tad) = ne
+        nshl(tad)=nshl(itad)
+        = ne + 1
+        = tad + 1
+        = itad -1
+        end
+     end
+
+  procedure  print tables
+
+      write(6,*) ' immint:',immint
+      write(6,*) ' ilstad:',ilstad
+      write(6,*) ' topadr:',topadr
+      write(6,*) ' nshl:  ',nshl
+      write(6,*) ' nel:   ',nel
+      write(6,*) ' wfadr: ',wfadr
+      format write :6 ' wf:    ',wf; (a/(2x,10z7))
+      end
+ 

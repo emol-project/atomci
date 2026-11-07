@@ -1,0 +1,21 @@
+{
+  "title": "ATOMCI: a non-relativistic configuration interaction program for many-electron atoms",
+  "upload_type": "software",
+  "description": "ATOMCI computes non-relativistic configuration interaction wave functions and energies of many-electron atoms in the Russell-Saunders (LS) coupling scheme. It was developed at Hokkaido University; this release builds and runs on current Fortran compilers.",
+  "creators": [
+    {"name": "Sasaki, Fukashi"},
+    {"name": "Sekiya, Masahiro"},
+    {"name": "Noro, Takeshi"},
+    {"name": "Ohtsuki, Kazumasa"},
+    {"name": "Osanai, You"}
+  ],
+  "keywords": [
+    "configuration interaction",
+    "atomic structure",
+    "LS coupling",
+    "tensor operators",
+    "coefficients of fractional parentage",
+    "MCSCF"
+  ],
+  "notes": "Non-commercial research and educational use only; commercial use is not permitted. The terms are in LEGENDS.txt, which governs this software whatever licence field this record shows."
+}

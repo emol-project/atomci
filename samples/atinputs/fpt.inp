@@ -1,0 +1,45 @@
+# F 2P — 2nd-order PT selection on natural orbitals
+# golden: SD-CI = -99.640355
+# PREREQUISITE: run f first in the same work directory and keep its f.NO
+
+title:  " F DOUBLET P (NO 1) "
+deck:   fpt.deck
+csf:    fpt.csf
+
+atom:
+  z:     9
+  ang:   P
+  spin:  2
+
+files:
+  cfptable:  ./CFPTBL
+  basis:     f.bas
+  format:    atomci
+  mcp:       mcp.dat
+  open:
+    - unit: 27, file: f.NO, format: binary, status: old
+
+orbital:
+  frozen_core:  1S
+  active:       2S, 2P
+  outer:        11S, 10P, 6D, 5F
+
+reference:
+  - scf: true, occ: 2S*2 2P*5
+
+ctrl:
+  ai:  type: 2, idprnt: 0
+  wf:  rule: 2, npflg: 0        # no mc -> NRNFG(2)=0
+  tr:
+    record: 1                   # -> ITVCI=1
+    ind:
+      - record: 2, l: 0, first: 1, last: 2
+      - record: 2, l: 0, first: 3, last: 13
+      - record: 2, l: 1, first: 1, last: 1
+      - record: 2, l: 1, first: 2, last: 11
+      - record: 2, l: 2, first: 1, last: 6
+      - record: 2, l: 3, first: 1, last: 5
+  pt:  cthr: 0.01, ethr: 0.001, how: 0, nstate: 1
+  ex:  retry: false
+  ci:  ips: 7, maxit: 100, nsdim: 100, nstate: 1
+  rs:  print: -0.001

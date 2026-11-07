@@ -1,0 +1,339 @@
+  process no list file 'fdopen.f'
+  %update
+  subroutine  fdopen(iu)
+  /*                  in,out
+  character*120  card,chars,key
+  character*64  file
+  character*16  status,access,form,append
+  character     c1*1
+  integer  *4   iu,unit
+  integer * 4 int,itype,lrecl
+  logical     opened,ferr,fend,scratch,bin
+  real * 8 real
+  %%INT 1% ; %%REAL 2% ; %%CHAR 3% ; %%LOGICAL 4% ; %%END 0% 
+  %%search call search(card,key,int,chars,real,itype,lkword)%
+  begin
+  /* read file descriptions 
+        ferr = .false. ; fend = .false. ; access='  '
+        exec newcard
+        while card(1:3) ^= 'END'
+        do
+                SCRATCH=.false. ; 
+                /* search 'CLOSE'
+                int = length 
+                key='CLOSE' ;  lkword=5; itype=%INT
+		%search
+                if itype < 0 then exec check_return_code
+                else if itype > 0 then -- 
+                exit ( unit=int ; exec close_file ; exec newcard )
+ 
+                /* search 'UNIT'
+                int = length 
+                key='UNIT' ;  lkword=4;itype=%INT
+		%search
+
+                if itype <= 0 then exec check_return_code
+                else unit = int 
+ 
+                /* search 
+                int = length 
+                key='SCRATCH' ;  lkword=7;itype=%logical
+		%search
+
+                if itype = 0 then SCRATCH=.false. ;
+                else if itype < 0 then exec check_return_code
+                else   SCRATCH=.true.
+ 
+                /* search 
+                int = length 
+                key='BINARY' ;  lkword=6;itype=%LOGICAL
+		%search
+                if itype = 0 & ^SCRATCH then BIN =.false. ;
+                else if itype < 0 then exec check_return_code
+                else  BIN =.true.
+ 
+ 
+                /* search 'STATUS'
+                int = length 
+                key='STATUS' ;  lkword=6;itype=%CHAR
+		%search
+                if itype = 0 then status='UNKNOWN' ;
+                else if itype < 0 then exec check_return_code
+                else if chars(1:int)='SCRATCH' then scratch =.true. 
+                else status = chars(1:int)
+ 
+ 
+                /* search 
+                int = length 
+                key='APPEND' ;  lkword=6;itype=%LOGICAL
+		%search
+
+                if itype = 0 then APPEND='ASIS' ;
+                else if itype < 0 then exec check_return_code
+                else  APPEND='APPEND'
+ 
+                /* search 'LRECL'
+                int = length 
+                key='LRECL' ;  lkword=5;itype=%INT
+		%search
+
+                if itype = 0 then lrecl=0 ;
+                else if itype < 0 then exec check_return_code
+                else  lrecl = int
+ 
+                if  scratch then do 
+                        status='SCRATCH'
+                        nchar = 13
+                        file = ' ==SCRATCH== '
+                        end 
+                else do 
+                        /* search 'FILE'
+                        int = length 
+                        key='FILE' ; lkword=4; itype=%CHAR
+			%search
+                        if itype <= 0 then exec check_return_code
+                        else ( nchar = int ; file = chars(1:nchar))
+                        end
+ 
+                exec open_file
+                exec newcard
+                end 
+        end 
+ 
+ procedure close_file
+        inquire(unit=unit,opened=opened)
+        if opened then close(unit=unit)
+        end 
+ 
+ procedure open_file
+        exec close_file
+        if bin then form ='BINARY'
+        else  form =' '
+ 
+        if bin  then form ='UNFORMATTED'
+        else  form ='FORMATTED'
+ 
+        if lrecl > 0 then exec alloc_dafile
+        else exec alloc_SEQfile
+        format write ' OPEN >> UNIT=',unit,' FILE=',FILE(1:nchar), --
+                                ' STATUS=',STATUS,form 
+        ( a,i2,a,a,3a )
+        end 
+ 
+ procedure alloc_dafile
+        if scratch then --
+                open ( unit=unit,status='SCRATCH', --
+                       access='DIRECT',recl=lrecl)
+        else -- 
+                open ( unit=unit,file=file(1:nchar),status=status,--
+                       access='DIRECT',recl=lrecl)
+        end 
+procedure alloc_SEQfile
+        if scratch then --
+                open ( unit=unit,status='SCRATCH',form=form)
+        else  --
+                open ( unit=unit,file=file(1:nchar),status=status,--
+                       form=form)
+        end
+ 
+ procedure newcard
+	if unit= iu then exit card='END'
+        do until length > 0 
+                format read:iu endflag=fend errflag=ferr card ; ( a )
+                if ferr then stop ' error in fdopen '
+                if fend then do
+                        close ( unit = iu ) 
+                        return 
+                        end
+                length = len(card) ;
+                /* check comment & change upper case
+                if length > 0 then exec uppercase
+                end 
+        end 
+ procedure uppercase
+        i = 0  ; 
+        do until c1 ^= ' ' ! i = length; 
+ 
+                i = i + 1 
+                c1 = card(i:i) 
+                end 
+        if i = length then length = 0 
+        else if c1 = '"' ! c1 = '#' ! c1 = '/' then length = 0 
+        else do
+        /* change upper case
+                card=card(i:)
+                length = len(card)
+                end 
+        end
+ 
+        procedure check_return_code
+        /* 
+                do case of itype 
+                        0: ( ' NO key Word ' ; PUT  KEY  C16 ; )
+                        end
+                1l ; 
+                if .true.  then stop ' error '
+                end 
+ 
+        Subroutine search (card,key,int,   chars,real,itype,lkword)
+        /*               In   In  in/out out  out  in/out
+        /* search for key in card 
+        /* int is length of card 
+        /* char return values in Char
+        /* int  return values in INT
+        /* real return values in REAL
+        /* logical return values in itype(4:.true. 0:.false.)
+	/* lkword length of key word
+        character card*(*), key*(*), chars*(*)
+        real * 8 real 
+        integer * 4 int, itype
+        character    c1*1,  buf*80
+        logical    apo,ok
+        %%key0 key(:lkword)%
+        begin 
+		/* format write ' = debug = ', card,%key0, '=';
+		/* (a,a,a,a)
+                chars=' ' ; nchar = 6 ;
+                exec search_for
+                if itype < 0 then do case of itype ; 
+                        -4 : ' charcter constant ?? '
+                        -3 : ' numeric ?? '
+                        -2 : ' no data '
+                        end 
+                end 
+        procedure search_for 
+        /* find key word
+                is=1 ; ok =.false. ; 
+                /* lkword=len(%key0) ;
+                buf =card
+                do until is = 0 ! ok 
+                        buf=buf(is:) 
+                        is=index(buf,%key0)
+                        exec check
+                        end
+                if is = 0 then exit itype= 0
+ 
+                if itype = %logical then exit int= 1 
+ 
+                is = is + lkword
+                buf=buf(is:)
+                ie=len(buf) 
+                is=0
+        /* find the starting point
+                do until c1 ^= ' ' & c1 ^= '=' 
+                        is=is+1
+                        if is > ie then exit 
+                        c1 = buf(is:is)  ; 
+                        end 
+                if is > ie  then exit itype=-2
+ 
+                buf=buf(is:)
+                ie=len(buf) 
+                ierr=itype
+                do case of itype
+                        %int  : exec VAL_INT
+                        %real : exec VAL_real
+                        %char : exec VAL_CHAR
+                        end
+                itype =ierr
+                end
+ 
+        procedure check
+                /* no key word
+                if is = 0 then exit 
+                else if is = 1 then i1 = 1
+                /* check previous character ' ' ! ',' 
+                else do 
+                        c1 = buf(is-1:is-1) 
+                        i1  = index (' ,',c1)
+                        end 
+                /* check next  character ' ' ! ',' ! '='
+                c1 = buf(is+lkword:is+lkword) 
+                i1  = index (' ,=',c1) * i1
+                if i1 > 0 then ok =.true. 
+                else is =is + lkword
+                end 
+ 
+        procedure VAL_INT
+                c1 = buf(1:1)
+                i = index('-+1234567890.',c1) 
+                /* check numeric
+                if i = 0 then exit ierr=-3 
+                i = index(buf(1:ie),' ') - 1
+                if i < 0 then i = ie ;
+                ix = i 
+                i = index(buf(1:ie),',') - 1
+                if i < 0 then i = ie ;
+                iy = i
+                ie = min0(ix,iy)
+                fortran read(buf(1:ie),*) INT
+                end 
+ 
+        procedure VAL_REAL
+                c1 = buf(1:1)
+                i = index('-+1234567890.',c1) 
+                /* check numeric
+                if i = 0 then exit  ierr=-3 
+                i = index(buf(1:ie),' ') - 1
+                if i < 0 then i = ie ;
+                ix = i 
+                i = index(buf(1:ie),',') - 1
+                if i < 0 then i = ie ;
+                iy = i
+                ie = min0(ix,iy)
+                fortran read(buf(1:ie),*) REAL
+                end 
+ 
+        procedure VAL_CHAR
+                /* i is pointer for buf 
+                /* nchar is pointer for char
+                nchar = 0 
+                c1 = buf(1:1)
+                apo = .false.
+                if c1 = '''' then  do
+                        apo = .true.
+                        /* find single "'" and replace  double '' to  single '
+                i=1
+                        do while i < ie ; 
+                                c1 = buf(i+1:i+1) ; 
+                                if c1 ^= ''''
+                                then do 
+                                        nchar=nchar+1
+                                        i=i+1
+                                        chars(nchar:nchar)=buf(i:i)
+                                        end 
+                                else do
+                                /* check double '
+                                        i = i+1
+                                        /* check end of string 
+                                        if i = ie then exit apo =.false.
+                                        c1 = buf(i+1:i+1) ; 
+                                        if c1 = '''' then do
+                                                nchar=nchar+1
+                                                i=i+1
+                                                chars(nchar:nchar)=''''
+                                                end
+                                        else apo = .false. 
+                                        end 
+                                end 
+                        if apo then exit  ierr=-4  ; 
+                        end 
+                /* No ' 
+                else do 
+                        i = index(buf(1:ie),' ') - 1
+                        if i < 0 then i = ie ;
+                        ix = i
+                        i = index(buf(1:ie),',') - 1
+                        if i < 0 then i = ie ;
+                        iy = i 
+                        nchar = min0(ix,iy) 
+                        chars = buf(1:nchar)
+
+                        end 
+		int = nchar 
+                end 
+ 
+ 
+ 
+ 
+

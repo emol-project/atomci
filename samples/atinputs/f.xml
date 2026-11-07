@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<!-- High-level ATOMCI input for msekiya.jar's deck generator.
+     F (fluorine) doublet-P, SD-CI with an MCSCF orbital step.
+     Verified: the generated deck + CSF run through atomci to the
+     golden SD-CI energy  -99.641223.
+     See README.md in this directory for how to generate & run. -->
+<atomciInput>
+  <info title=" F DOUBLET P " output="f.deck">
+    <atom ang="P" spin="2" z="9"/>
+    <cfptable file="./CFPTBL"/>
+    <csf file="f.csf" status="unknown"/>
+    <basis file="f.bas" format="atomci" status="old"/>
+    <mcp file="mcp.dat"/>
+    <open unit="27" file="f.NO" format="binary" status="unknown"/>
+  </info>
+  <orbital>
+    <frozen_core n="1" l="0"/>
+    <active id="2S"/><active id="2P"/>
+    <outer n="11" l="0"/><outer n="10" l="1"/><outer n="6" l="2"/><outer n="5" l="3"/>
+  </orbital>
+  <reference><conf scf="true"><orb id="2S" occ="2"/><orb id="2P" occ="5"/></conf></reference>
+  <ctrl>
+    <ai type="2" idprnt="0"/>
+    <mc itmax="20"/>
+    <wf rule="1" npflg="0"/>
+    <tr>
+      <ind record="1" l="0" first="1" last="13"/>
+      <ind record="1" l="1" first="1" last="11"/>
+      <ind record="1" l="2" first="1" last="6"/>
+      <ind record="1" l="3" first="1" last="5"/>
+    </tr>
+    <ci ips="7" maxit="100" nsdim="100" nstate="1"/>
+    <rs print="-0.001"/>
+  </ctrl>
+</atomciInput>

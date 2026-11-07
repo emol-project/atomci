@@ -1,0 +1,138 @@
+LEGENDS
+
+ 1.  COPYRIGHT
+
+     PROGRAM NAME:  ATOMCI
+
+    (c) COPYRIGHT FUKASHI SASAKI,  MASAHIRO SEKIYA, TAKESHI NORO,
+        KAZUMASA OHTSUKI, and YOU OSANAI,
+        1990-2003.
+
+     Developed at Hokkaido University.  Copyright in this program
+     remains with the authors named above.
+
+
+ 2.  SOFTWARE DISCLAIMER
+
+     As experimental, research software, this program is
+     provided free of charge on an "as is" basis without
+     warranty of any kind, either expressed or implied,
+     including but not limited to implied warranties of
+     merchantability and fitness for a particular
+     purpose.  We do not warrant that the functions
+     contained in this program will meet the user's
+     requirements or that the operation of this program
+     will be uninterrupted or error-free.  Acceptance
+     and use of this program constitutes the user's
+     understanding that he will have no recourse to us
+     for any actual or consequential damages, including,
+     but not limited to lost profits or savings,
+     arising out of the use or inability to use this
+     program.  Even if the user informs us of the
+     possibility of such damages, we expect the user
+     of this program to accept the risk of any harm
+     arising out of the use of this program, or the user
+     shall not attempt to use this program for any
+     purpose.
+
+     This program is old research code that has been modernized to
+     build and run on current compilers.  Known limitations and
+     unresolved issues are described in the accompanying
+     documentation.  Users should expect bugs and are asked to
+     verify results independently before relying on them.
+
+
+ 3.  TERMS OF USE
+
+     BY USING THIS PROGRAM THE USER AGREES TO THE FOLLOWING:
+
+     a.  Permission is granted to use, copy, modify, and
+         redistribute this program and its documentation, in
+         source or binary form, for non-commercial research and
+         educational purposes.
+
+     b.  All copies, modified versions, and derivative works must
+         retain the copyright notice in Section 1, the SOFTWARE
+         DISCLAIMER in Section 2, and these TERMS OF USE.
+
+     c.  This program may not be sold, licensed for a fee,
+         included in a commercial product, or otherwise
+         commercially exploited, in whole or in part.
+
+     d.  Any publication of results obtained with this program
+         must include the attribution given in Section 4.
+
+     e.  No license under any patent, patent application,
+         trademark, or other right of ours or of any third party
+         is granted, either directly or by implication or
+         estoppel, except as expressly stated here.
+
+     f.  We would welcome receiving a copy of any changes,
+         enhancements, or derivative works you create, but this
+         is a request and not a condition of use.
+
+     g.  Independent Implementations of Algorithms
+
+         The authors encourage the study and independent
+         implementation of the mathematical methods, algorithms, and
+         theoretical approaches embodied in ATOMCI, including its
+         expression-generation methods and LSQ scheme.
+
+         Independent implementations developed without copying
+         copyright-protected source code or other protected
+         expression from ATOMCI are not subject to the ATOMCI software
+         license solely by reason of using these methods or
+         algorithms.
+
+         Such independent implementations may be distributed under a
+         license chosen by their respective authors, including
+         permissive open-source licenses or commercial licenses.
+
+         Studying ATOMCI, including its source code and documentation,
+         in order to understand these methods does not by itself
+         prevent a later implementation from being independent.
+         Similarity to ATOMCI in overall structure, organization of
+         data, or sequence of operations is permitted in an independent
+         implementation and does not by itself make it a copy,
+         translation, or adaptation of ATOMCI, in particular where the
+         similarity follows from the shared theory, methods, or
+         algorithms, or from practical constraints of implementation.
+
+         Direct copying, translation, or adaptation of
+         copyright-protected ATOMCI code remains subject to the
+         applicable ATOMCI license.
+
+         Academic citation of the original ATOMCI publications is
+         encouraged.
+
+
+ 4.  ATTRIBUTION
+
+     Any publication based upon results obtained from this
+     material MUST include the following attribution:
+
+      "This work is based, in part, on results from the ATOMCI package."
+
+     and refer to the following papers:
+
+       (a) F. Sasaki, Int. J. Quantum Chem. Vol.8, pp.605 (1974);
+       (b) F. Sasaki, M. Sekiya, T. Noro, K. Ohtsuki, and Y. Osanai,
+           "Non--Relativistic Configuration Interaction
+            Calculations for Many-Electron Atoms: ATOMCI",
+            pp.163--219 : Methods and Techniques in
+            Computational Chemistry in METECC-94
+            edited by E. Clementi (ETEF, Cagliari, 1993).
+
+
+ 5.  THIRD-PARTY COMPONENTS
+
+     attic/msekiya-jar/msekiya.jar, the archived Java input-deck
+     generator written by M. Sekiya, one of the authors above, is
+     covered by these LEGENDS, except for the third-party packages it
+     embeds, which are covered by their own terms and listed in
+     attic/msekiya-jar/THIRD_PARTY_NOTICES.md.  It is not built or
+     installed; it needs the CERN Colt library (version 1.0.2), which
+     is not distributed with this program.
+
+     The build links the system BLAS/LAPACK, which is not distributed
+     with this program and carries its own license.

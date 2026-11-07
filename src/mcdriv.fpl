@@ -1,0 +1,431 @@
+process  no list file 'mcdriv.f'
+ %%subname mcdriv%
+ subroutine %subname (nrdscf, name, -- / changed by msekiya 03/24/95
+      nsol,ivcs,nfta,nfee,nsym,nbf,nob,ind,nind,--
+      npflg, itmax,ethr,c2thr,nset,nopt,flag, --
+      rtncd )
+ implicit integer ( a-z )
+ %update 
+ %param
+
+      INTEGER   * 4 VAR(%WORKCORE)
+      common/work/var
+
+ %incwork
+    integer * 4 nrdscf ; / read flag for namelist dscf in mcfock 
+    real * 8    ethr,  --  Energy Threshold for Conv MCSCF It.  
+                c2thr  -- SQCDF
+
+    integer     nsol,  -- Number of Solutions
+                ivcs,  -- Unit Number for Vector file
+                nfta,  -- Unit Number for AI file
+                nfee,  -- Unit Number for EE file
+                nbf(%llimit),nob(%llimit), --
+                nind,ind(4,100), --
+                npflg, -- Print flag ( Normaly 0 ) 
+                itmax, -- Max number of MCSCF ITerations
+                nset,  -- Records number for output vectors in IVCS 
+		nopt(%basis), --
+                flag,  -- MCSCF Flag
+                rtncd  -- Return Code  
+
+    / changed by mmsekiya 03/24/95
+    integer * 4 nameai(33)
+    integer * 4 name(30)   
+    / end
+    integer * 4 issh(%llimit)
+    integer * 4 nbft(%llimit)
+    integer * 4 nbf2t(%llimit),nbot(%llimit)
+    integer * 4 mob (%basis), --
+		mpob(%basis), --
+		npqn(%basis)
+    integer * 4 nolf(%basis),coffs(%basis)
+    integer * 4 nwlf(%basis),--
+		nwsq(%basis),--
+		nws(%basis)
+    
+    integer     flgscf 
+
+    real * 8    et(20),del (%basis),--
+		z,z0,etdiff,etold,ctdiff
+    logical conv
+    %charorb
+
+    %%error  %
+    %%debug  %
+    begin
+       exec setup
+       exec AI
+       if rtncd > 0 then exit %error  
+       exec two_elec_Integral_addr
+       exec init_vec
+       if rtncd > 0 then exit ' == error == ' ;
+       exec half_trns 
+
+       if rtncd > 0 then exit %error  
+       not2=not*not
+       ns=ncsf
+       ACTION = %ALLOC
+       %%VNAME civ % ; TYPE = %R8 ; LENGTH = ns*nsol ;  %WKCORE
+       %%VNAME oc % ; TYPE = %R8 ; LENGTH = not ;  %WKCORE
+       %%VNAME oe % ; TYPE = %R8 ; LENGTH = not ;  %WKCORE
+       %%VNAME ks % ; TYPE = %R8 ; LENGTH = not2*nsym*2 ;  %WKCORE
+       %%VNAME js % ; TYPE = %R8 ; LENGTH = not2*nsym*2 ;  %WKCORE
+       %%VNAME zbuf% ; TYPE = %R8 ; LENGTH = not;  %WKCORE
+       call zero(var(civ),ns*nsol)
+       itt = -1 
+       nobx = 0 
+       for i = 1, nsym; nobx = max0 ( nobx, nob(i) )
+       if ind(1,1) > 0 then exec CI
+       else do 
+          flgscf = -1 
+          exec dummy_CI
+	  exec SCF
+          call mcefh(var(xout),nsym,nbf,nbft,nob,nbot,--
+                var(ic),var(joff),var(koff),--
+                var(t0off),var(t1off),var(jkoff),nbfx,var(xint)) 
+          exec CI
+	  end 
+       flgscf = flag
+       itt=0 ;
+       do until ( conv ! itt> itmax) 
+	  itt = itt + 1
+          exec SCF 
+          exec CI
+          if npflg > 1 then  exec Print_Vectors
+	  end 
+       if npflg >= 0 then  exec Print_Vectors
+       exec store_vectors ; 2l ; 
+       if conv then  ' >>> SCF converged after ' ; 
+       else  ' >>> SCF NOT converged after ' ; 
+       put itt i4 ; 3x  ; ' iterations ! ' ; 2l ; 20x ;  
+       format write (et(i),i=1,nsol)
+       ('   Total Energy = ', 4(f18.8,' a.u.  ')) 
+       write (6,*) 
+       exec Time_used
+       exec wk_free
+       end 
+
+  > store_vectors
+      /* nset & name are namelist input
+      nind = nsym ; 
+      for i = 1, nsym
+      do 
+	ind(1,i) = nset 
+	ind(2,i) = i-1
+	ind(3,i) = 1
+	ind(4,i) = nob(i)
+	end 
+      call wtvec( ivcs,nsym,nob,nind,ind, -- 
+           nbf, var(ic), nset, name, rtncd )
+      end 
+        
+  %INCWKEXC 
+  > setup
+       rtncd = 0 
+       call clockm(itime0)
+       conv =.false. ; iconv = -1
+       etold = 0.d0 ; 
+       / changed by msekiya 03/24/95
+       /for i = 1, 33;  /call ctoi4 ( '    ', name(i) )
+       /end
+       ncsf=nncsf(nfee)
+       2l ; if nind > 0 then ' VECTOR HISTORY ' ; 1l ; 
+       for i = 1, nind ; format write ( ind(j,i),j=1,4 );( ' ',4i6 ) ; 
+       end
+  > Time_used
+    call clockm(itime) ; usedT=itime - itime0 
+    itime0 = itime ; itime = itime / 1000
+    ' Used CPU time ' ; put usedT i10 ; ' M sec ' ; 
+    '     Total CPU time ' ; put itime i10 ; ' Sec   ' ; 2l 
+    end 
+  > half_trns
+     ACTION = %ALLOC; 
+     %%VNAME joff% ; TYPE = %I4 ;  
+     LENGTH = nsym*nsym*nsym*2 ;  %WKCORE
+     %%VNAME koff% ; TYPE = %I4 ;  
+     LENGTH = nsym*nsym*nsym*2 ;  %WKCORE
+     last= jkadrs(nsym,nbf,nob,var(joff),var(koff))
+     %%VNAME xout% ; TYPE = %R8 ;  LENGTH = last ; %WKCORE
+     if npflg > 1 then exec allocation_list
+     call mcefh(var(xout),nsym,nbf,nbft,nob,nbot,--
+		var(ic),var(joff),var(koff),--
+		var(t0off),var(t1off),var(jkoff),nbfx,var(xint)) 
+     if npflg < 2 then exit 
+       2l ; ' >>> half Transformations '  
+       exec Time_used
+     end 
+  > two_elec_Integral_addr
+     /* dummy set nwlf */ 
+     nwt = 0
+     for i = 1, nsym
+     do 
+	 for j = 1, nbf(i)
+	 ( nwt= nwt + 1 ; nwlf(nwt)=i )  
+	 end 
+     nws(1) = 0 
+     if npflg > 1 then idprnt = npflg  ; else idprnt = 0 
+     ACTION = %ALLOC; 
+     %%VNAME t1off% ; TYPE = %I4 ;  LENGTH = nbfx2 ;  %WKCORE
+     %%VNAME t0off% ; TYPE = %I4 ;  LENGTH = nbfx2 ;  %WKCORE
+     %%VNAME jkoff% ; TYPE = %I4 ;  LENGTH = nbfx2 * nbfx2;  %WKCORE
+     if npflg > 1 then exec allocation_list
+
+     call setkad (nwt,nwlf,issh,idprnt,nws, dummy)
+     /  dummy=ksqtq(nwt,nwlf,issh,idprnt,nws)
+     /  dummy=ksqtp(npflg)
+     call tintad(npflg)
+     // change 1998 Jan
+     // call tiadrs(nbfx,var(t0off),var(t1off),var(jkoff))
+     call tiadrs(lstart, nbfx, var(t0off),var(t1off),var(jkoff))
+     end 
+  > AI
+       /* read nfta head
+       rewind nfta
+       binary read : nfta --
+	  nameai,lmax,nwt,i1,i1,loei,(nbf(i),i=1,lmax),--
+	  (mpob(i),i=1,nwt),(mob(i),i=1,nwt), z,z0, --
+	  (npqn(i),i=1,nwt),(del(i),i=1,nwt)
+	  l1h = lnoffs(lmax,nbf,nbft)
+	  if l1h ^= nwt then exit rtncd = 100001
+	  l1h = sqoffs(lmax,nbf,nbf,nbf2t)
+	  lx = 1;
+          // change 1998 Jan
+	  for i = 2, lmax 
+	  do 
+	      if nbf(i) > nbf(lx) then  lx = i;
+	  end
+	  lstart = 0;
+	  for i = 1, lx-1
+		lstart = lstart + nbf(i);
+          nbfx = nbf(lx);
+          // end of change
+	  nbfx2 = nbfx * nbfx 
+	  ACTION = %ALLOC; 
+	  %%VNAME sint% ; TYPE = %R8 ; LENGTH = l1h ;  %WKCORE
+	  %%VNAME ssqrt% ; TYPE = %R8 ; LENGTH = l1h ;  %WKCORE
+	  %%VNAME sinv% ; TYPE = %R8 ; LENGTH = l1h ;  %WKCORE
+	  %%VNAME hint% ; TYPE = %R8 ; LENGTH = l1h ;  %WKCORE
+
+	  ACTION = %REGION
+	  %%VNAME NCORC% ; TYPE = %I4 ; %WKCORE
+	  ACTION = %ALLOC ; last = NCORC/2 
+	  %%VNAME xint% ; TYPE = %R8 ; LENGTH = last ;  %WKCORE
+	  if npflg > 1 then exec allocation_list
+	  /* set of S or T+U matrix
+	  /* read S integral 
+	  ia = 1 ; /* address for int 
+	  call rdints(nfta,nsym,nbf,loei,l1h,ia,var(xint),rtncd)
+	  if rtncd > 0 then exit rtncd=10101 ; 
+          if npflg > 0 then do 
+	     1l ; ' end of S el ' ;  put ia i4 ; put rtncd i4 ; 2l 
+             end
+	  call expsqr(nsym,nbf,var(xint),var(sint)) 
+	  for i = 1, nsym 
+	  do 
+	     ij = sint +nbf2t(i)*2  
+	     ik = ssqrt +nbf2t(i)*2  
+	     im = sinv +nbf2t(i)*2  
+	     call xmove(var(ik),var(ij),nbf(i)*nbf(i))
+	     call mksinv(nbf(i),var(ik),var(im),var(xint))
+	     end 
+
+	   
+	  /* read H 1el
+	  ia = 1 ; /* address for int 
+	  call rdints(nfta,nsym,nbf,loei,l1h,ia,var(xint),rtncd)
+	  if rtncd > 0 then exit rtncd=10102 ; 
+          if npflg > 0 then do 
+	     1l ; ' end of 1 el ' ;  put ia i4 ; put rtncd i4 ; 2l 
+             end 
+	  call expsqr(nsym,nbf,var(xint),var(hint)) 
+	  if npflg > 2 then --
+	  for i = 1, nsym 
+	  do 
+	     2l ; ' T+U matrix : Symmetry ' ; put i i4 ; 1l ; 
+	     ij = hint + nbf2t(i)*2
+	     call prvc(var(ij),nbf(i),nbf(i))
+	     end 
+
+	  /* read 2el integral 
+	  ia = 1 ; imax=0; imin=0; /* address for int 
+	  call prdint(nfta,ia,last,imin,imax,rtncd,var(xint))
+	  /* rtncd = 1 : normal end 
+	  /*       = 0 : more integrals 
+	  /*       = 2 : error 
+          if npflg > 0 then do 
+	     1l ; ' end of 2 el ' ;  put ia i4 ; put rtncd i4 ; 2l 
+             end 
+	  if rtncd = 1 then rtncd = 0 ;
+	  else if rtncd = 0 then exit do 
+	     3l ;rtncd = 10003 ; 
+	     ' == error error errror errrrror == ' ; 1l ; 
+	     ' Need more storage for reading integrals ';  1l ;   
+	     ' allocated core size ' ;  1l ;  
+	     put last i10 ; '  double words ' ; 1l ;  
+	     ' Please check IGATAD in ATOMCI ' ;  3l ; 
+	     end 
+	  else if rtncd = 2 then exit rtncd = 10103 ; 
+	  ACTION = %EXPAND
+	  %%VNAME xint% ; TYPE = %R8 ; LENGTH = imax ;  %WKCORE
+	  if npflg > 1 then exec allocation_list
+       end
+
+ > init_vec
+       need = sqoffs(nsym,nbf,nob,nbot)
+       /* set nwsq, nolf, coffs 
+       call cofset(nsym,not,nbf,nob,coffs,nolf,nwsq)
+       format write ' NBF ','NORB'  ; ( 15x, 2a8 ) ; 
+       for i = 1, nsym ; format write i,nbf(i),nob(i)
+       ( ' Symmetry ', i4 , 2i8 ) ; 2l ; 
+
+       ACTION = %ALLOC
+       %%VNAME ic % ; TYPE = %R8 ; LENGTH = need ;  %WKCORE
+       %%VNAME uc % ; TYPE = %R8 ; LENGTH = need ;  %WKCORE
+       / if ind(1,1) = 0 then exit
+       exec w_alloc
+       if npflg > 1 then exec allocation_list
+       call rdvec( ivcs,nsym,nob,nind,ind,           -- input
+		   nbf, var(ic), last,   --
+		   var(w),rtncd);              /* work
+       if rtncd > 0 then exit
+       call zero(var(uc),need)
+       exec  U_vector
+       exec w_free
+       if npflg < 2 then exit 
+       exec  Print_INVectors
+       2l ;' >>> initialize ' ; 
+       exec Time_used
+       end
+  > Print_INVectors
+      2l ; '  Input Vectors ' ; 2l ; 
+      for i = 1, nsym ; 
+      do 
+      ij = ic +  nbot(i)*2 
+      2l ; ' Symmetry ' ; put i i4 ;   
+         put nbf(i) i4 ; put nob(i) i4  ; 1l ; 
+	 call prvc(var(ij),nbf(i),nob(i))
+	 end 
+      end
+  > Print_Vectors
+    / print optimized orbitals only
+    ik = 0 
+    3l; '  >>>>>>  CI  Vector  ' ; 1l  
+    call prvc(var(civ),ncsf,nsol)
+    ioe = oe ; ioc = oc ; 
+      for i = 1, nsym ; 
+      do 
+         nobprt = 0
+         for ix = 1, nob(i) ; 
+         if nopt(ix+ik) >= 0 then  nobprt = ix 
+         ij = ic +  nbot(i)*2 
+         if nobprt > 0 then do 
+            2l ; ' Symmetry ' ; put i i4 ; 1l ;  
+            1l; '  OCC Numbers  ' ;  1l ;
+            call prvc(var(ioc),1,nobprt)
+            1l; '  Eigen Values  ' ; 1l 
+            call prvc(var(ioe),1,nobprt)
+            1l; '  Eigen Vectors ' ; 1l 
+	    call prvc(var(ij),nbf(i),nobprt)
+            end 
+         ioe = ioe + nob(i)*2 ;
+         ioc = ioc + nob(i)*2 ;
+         ik = ik + nob(i) 
+	 end 
+      end
+ > U_vector
+   for i = 1, nsym
+   do
+    icx = ic + nbot(i) * 2 
+    ucx = uc + nbot(i) * 2 
+    isint = sint +nbf2t(i)*2  
+    isqrt = ssqrt +nbf2t(i)*2  
+    isinv = sinv +nbf2t(i)*2  
+    il =  nbf(i)*nbf(i)
+    iw = w + il*2
+    call zero(var(isinv),il)
+    call mxmatb(var(isinv),nbf(i),nbf(i),var(isqrt),var(isint),nbf(i))
+    call mxmab(var(ucx),nbf(i),nob(i),var(isinv),var(icx),nbf(i))
+    if npflg > 3 then do 
+       2l ; ' U Matrix  --> '; put lsym(i) c1 ;  1l 
+       call prvc (var(ucx),nbf(i),nob(i))
+       call zero(var(w),il)
+       call mxmatb(var(w),nob(i),nob(i),var(ucx),var(ucx),nbf(i))
+       2l ; ' Unit Matrix  --> '; put lsym(i) c1 ;  1l 
+       call prvc (var(w),nob(i),nob(i))
+       call zero(var(w),il)
+       call zero(var(iw),il)
+       call mxmab(var(w),nbf(i),nob(i),var(isint),var(icx),nbf(i))
+       call mxmatb(var(iw),nob(i),nob(i),var(icx),var(w),nbf(i))
+       2l ; ' S Matrix  --> '; put lsym(i) c1 ;  1l 
+       call prvc (var(isint),nbf(i),nbf(i))
+       2l ; ' Ovlap Matrix --> '; put lsym(i) c1 ;  1l 
+       call prvc (var(iw),nob(i),nob(i))
+       2l ; ' S 1/2 Matrix --> '; put lsym(i) c1 ;  1l 
+       call prvc (var(isinv),nbf(i),nbf(i))
+       2l ; ' S-1/2 Matrix --> '; put lsym(i) c1 ;  1l 
+       call prvc (var(isqrt),nbf(i),nbf(i))
+       end 
+    end
+ end 
+ > CI
+    ns=ncsf
+    ACTION = %ALLOC
+    %%VNAME hh % ; TYPE = %R8 ; LENGTH = ns*ns ;  %WKCORE
+    /* ns is using in DALLOCS
+    %DALLOCS
+    if npflg > 1 then exec allocation_list
+    call mcci(nfee, ncsf, nolf, not, nbf, nsym,nwsq,    -- 
+	      var(joff),var(koff),coffs,nbf2t, -- 
+	      var(ic),  var(xout),var(hint),--
+	      var(hh),rtncd) 
+    / if npflg > 3 then do 
+    if npflg > 0 then do 
+       2l ; '  ENERGY MATRIX ' ; 1l 
+       call prvc(var(hh),ncsf,ncsf)
+       end 
+    CALL DIAG(var(K1),var(hh),var(K2),var(K3),var(K4),--
+	      var(K5), var(K6),var(K7),var(K7),NS,nsol)
+    call xmove(et,var(k2),nsol)
+    /* copy hh to civ and check diff
+    call c2test(ctdiff,var(civ),var(hh),ns,nsol,npflg)
+    call xmove(var(civ),var(hh),nsol*ns)
+    2l; 
+    etdiff = dabs(etold - et(nsol))
+    if itt > 0 then format write itt,et(nsol),etdiff,ctdiff
+    ( i4,' iterations    Total Energy  ' , --
+      f20.10, ' a.u.   Elow  --> ', e15.3, ' a.u. ', e15.3  )
+    etold=et(nsol)
+    %DFREES
+    ACTION = %FREE
+    %%VNAME hh % ; TYPE = %R8 ; LENGTH = ns*ns ;  %WKCORE
+    if etdiff <= ethr & ctdiff <= c2thr & iconv = 1 
+    then conv = .true. 
+    if npflg > 1 then exec Print_Vectors  
+    if npflg < 2 then exit 
+          2l ; ' >>>  CI  iteration ' ; put itt i4 ;  3x ;  
+          exec Time_used
+    end
+ > dummy_CI
+    etold = 1.d0
+    call xmove(var(civ),etold,1)
+    end
+ > SCF
+    if npflg > 2 then exec allocation_list
+    call mcjsks(nfee,ncsf,nolf,not,nbf,nsym,--
+         nopt,flgscf,nwsq,var(joff),var(koff),coffs,nbf2t, -- 
+		var(ic),  var(xout),var(hint),--
+		var(civ),var(oc),var(js),var(ks), --
+		npflg, rtncd)
+    iconv= mcfock(nrdscf, -- 
+                nolf,not,nbf,nob,nsym,nbfx,nobx,nopt,flgscf,--
+		nwsq,var(joff),var(koff),coffs,nbf2t,nbft, -- 
+		var(jkoff),var(ic),var(sint),var(ssqrt),--  
+		var(sinv),var(xout),var(hint),--
+		var(xint),var(oc),var(js),var(ks),var(uc),-- 
+		var(zbuf),var(oe),npflg, rtncd)
+    if npflg < 2 then exit 
+          2l ; ' >>>  SCF iteration ' ; put itt i4 ;  3x ;  
+          exec Time_used
+    end
+    %WALLOCS

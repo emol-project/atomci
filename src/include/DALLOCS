@@ -1,0 +1,14 @@
+       ACTION = %ALLOC
+       %%VNAME k1 % ; TYPE = %R8 ; LENGTH = ns*(ns+1)/2 ;  %WKCORE
+       ACTION = %ALLOC
+       %%VNAME k2 % ; TYPE = %R8 ; LENGTH = ns ;  %WKCORE
+       ACTION = %ALLOC
+       %%VNAME k3 % ; TYPE = %R8 ; LENGTH = ns ;  %WKCORE
+       ACTION = %ALLOC
+       %%VNAME k4 % ; TYPE = %R8 ; LENGTH = ns ;  %WKCORE
+       ACTION = %ALLOC
+       %%VNAME k5 % ; TYPE = %R8 ; LENGTH = ns ;  %WKCORE
+       ACTION = %ALLOC
+       %%VNAME k6 % ; TYPE = %R8 ; LENGTH = ns ;  %WKCORE
+       ACTION = %ALLOC
+       %%VNAME k7 % ; TYPE = %R8 ; LENGTH = ns ;  %WKCORE

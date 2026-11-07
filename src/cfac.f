@@ -1,0 +1,70 @@
+C*DECK QCFAC
+      SUBROUTINE CFAC(IM,JM,JMP,LS,LR,LFAC,   C)
+*                            DEBUG OUTPUT SLIGHTLY CHANGEND
+C                            CHANGED BY TASHI ON 10/25/89 AT HUCC
+      IMPLICIT REAL*8(A-H,O-Z)
+      EXTERNAL IOR,CFP,ISP
+      include 'include/COMCFP'
+C     DIMENSION ICONNT(9,2),RT(2)
+      SAVE ITSTA
+      DATA ITSTA/0/
+      C=1.0D0
+      IF(LFAC.EQ.2.OR.LFAC.EQ.8) GO TO 124
+      IF(LFAC.EQ.4.OR.LFAC.EQ.6) GO TO 144
+      IF(LFAC.EQ.5) GO TO 153
+      IF(IM.EQ.JM) GO TO 1000
+  162 C=0.0D0
+      GO TO 1000
+  124 C=CFP(IM,JM,JMP,-1)
+      GO TO 1000
+  144 C=CFP(IM,JM,JMP,1)
+      GO TO 1000
+  153 IF(JMP.EQ.0) GO TO 162
+      LFO=ILFO(IM)
+      IS=ISP(IM)
+      IQ=IQS(IM)
+      IR=IOR(IM)
+      JQ=IQS(JM)
+      JS=ISP(JM)
+      JR=IOR(JM)
+      IJSD=IABS(IS-JS)
+      IF(LS.LT.IJSD.OR.LS.GT.IS+JS-1.OR.MOD(IJSD+LS,2).NE.1) GO TO 162
+      IJRD=IABS(IR-JR)
+      IF(LR.LT.IJRD.OR.LR.GT.IR+JR-1.OR.MOD(IJRD+LR,2).NE.1) GO TO 162
+      C=0.0D0
+      DO 2831 I=1,2
+      DO 283 J=1,2
+      KQ=IQ+3-2*I
+      KS=IS+3-2*J
+      IF(KQ+KS.GT.LFO+2) GO TO 283
+      IF(KS.LE.0.OR.KQ.LE.0.OR.IABS(JMP-LFO-1).GE.KQ) GO TO 283
+      IF(IABS(KQ-JQ).NE.1.OR.IABS(KS-JS).NE.1) GO TO 283
+      KQS=LSQN(LFO,KQ,KS)
+      LMAX=ICONNT(4,KQS)
+      DO 273 L=1,LMAX
+C     MTX=L
+C     LP4=LMTX
+C     MTX=KQS
+C     LP3=LMTX
+      KM= 256*and(255,kqs)+and(255,l)
+C     KM= LPX
+      KR=IOR(KM)
+C     write(6,*)'wig test:',WIG6J(2,2,LS,IS,JS,KS),
+C    *   WIG6J(LFO,LFO,LR,IR,JR,KR),
+C    1   CFP(KM,JM,JMP,-1),CFP(IM,KM,JMP-1,1),c
+  273 C=C+WIG6J(2,2,LS,IS,JS,KS)*WIG6J(LFO,LFO,LR,IR,JR,KR)*
+     1   CFP(KM,JM,JMP,-1)*CFP(IM,KM,JMP-1,1)
+C     write(6,*) c
+  283 CONTINUE
+ 2831 CONTINUE
+      C=C            *DFLOAT(MOD(4+IS+JS+2*LFO+IR+JR+2,4)-1)
+C     write(6,*) c
+ 1000 IF(ITSTA.NE.0) WRITE(6,9500) IM,JM,JMP,LS,LR,LFAC,C
+*9500 FORMAT(' CFAC  ',6I6,F24.13)
+ 9500 FORMAT(' CFAC  ',2X,Z4,2X,Z4,4I6,F24.13)
+      RETURN
+C
+      ENTRY TCFACA(ITSXA)
+      ITSTA=ITSXA
+      RETURN
+      END

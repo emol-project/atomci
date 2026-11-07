@@ -1,0 +1,35 @@
+ %%subname dcoda%
+ process    no list   file '%subname.f'
+ subroutine %subname (lett, mult)
+ 
+   /  return the orbital multiplicity of the angular momentum "lett"
+
+      implicit integer  ( a-h,o-z )
+      character * 1 il,is, lett
+      dimension il(26),is(26)
+      data il/'S','P','D','F','G','H','I','K','L','M','N','O','Q',--
+              'R','T','U','V','W','X','Y','Z','A','B','C','E','J'/
+      data is/'s','p','d','f','g','h','i','k','l','m','n','o','q',--
+              'r','t','u','v','w','x','y','z','a','b','c','e','j'/
+ %update 
+    begin
+      mult = 0
+      do for i=1,26
+         if  il(i) = lett ! is(i) = lett
+         then  exit  mult = 2*i-1 
+         end
+      end
+
+ %%subname lcoda%
+ function %subname (mult)
+
+      character * 1 is,  %subname
+      dimension is(26)
+      data is/'s','p','d','f','g','h','i','k','l','m','n','o','q',--
+              'r','t','u','v','w','x','y','z','a','b','c','e','j'/
+
+   begin
+      if  mult .le.0  .or. mult .gt. 51 .or. mod (mult,2).eq.0
+      then exit %subname = '?'
+      else %subname = is (( mult + 1 ) / 2 )
+      end

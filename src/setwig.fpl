@@ -1,0 +1,43 @@
+ process no list file 'setwig.f'
+
+ %%subname setwig%
+ subroutine %subname 
+      implicit   real*8(a-h,o-z)
+  %param
+ /* input
+ /* output
+     %comwig
+   begin
+
+      for K=1,154; FASQ(K)=0.
+      FAC(1)=1.0D0
+      do for K=1,57
+         IF  K ^= 1 then FAC(K)=FAC(K-1)* (K-1)
+         DEN(K)=  SQRT(FAC(K))
+         FASQ(2*K+39)=DEN(K)
+         RT(K)=   DSQRT(DFLOAT(K-1))
+         end
+
+/     EVALUATE GAMMA FUNCTION FOR HALF INTEGER AND INTEGER
+/
+/     DO  I = 1, 114
+/        GAMMA(I) = DGAMMA( DFLOAT(I)/2.D0 )
+/     GAMMA(  1) =  0.177245385090552000D+01
+/     GAMMA(  2) =  0.100000000000000000D+01
+/     GAMMA(  3) =  0.886226925452758000D+00
+/     GAMMA(  4) =  0.100000000000000000D+01
+      gamma(1)=1
+      gamma(2)=1
+      for i=1,112; gamma(i+2)=gamma(i)*i/2
+      gamma(1)=sqrt(atan(gamma(1)))*2
+      for i=1,112,2; gamma(i+2)=gamma(i+2)*gamma(1)
+/
+/     AT = PFGF3G(GAMMA)
+/
+  /   AT=QF3L  (RT,FASQ,DEN,FAC)
+  /   AT=QWIG6J(RT,FASQ,DEN,FAC)
+  /   AT=QDELTA(RT,FASQ,DEN,FAC)
+  /   CALL QSMAT1(RT)
+  /   AT=QCFTB(DEN)
+  /   RETURN
+      END

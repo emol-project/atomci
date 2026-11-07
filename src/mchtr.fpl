@@ -1,0 +1,319 @@
+ process no  list file 'mchtr.f'
+ %%subname tiadrs%
+ subroutine %subname (lt, nbfx,t0off,t1off,jkoff)
+ // change 1988 Jan subroutine %subname (nbfx,t0off,t1off,jkoff)
+ implicit integer (a-z)
+ /* 
+ /* function : create off set of sq-matrix 
+ /* 
+ integer nbfx,lt 
+ integer t0off(nbfx,nbfx),t1off(nbfx,nbfx),--
+	 jkoff(nbfx,nbfx,nbfx,nbfx)
+ integer p,q,r,s,send
+ begin 
+    ij = 0  
+    for i = 1, nbfx
+    for j = 1, i ;
+    do 
+       t0off(i,j) = ij
+       t0off(j,i) = ij 
+       ij = ij + 1 
+       end 
+    ij = 0 
+    for i = 1, nbfx
+    for j = 1, i
+    do 
+       ij = ij + t0off(i,j)   
+       t1off(i,j) = ij  
+       t1off(j,i) = ij 
+       end 
+    ij = 0 
+    call int2ad (1,lt+1,lt+1,lt+1,lt+1,  itemp)
+    iioff = itemp 
+    for p = 1, nbfx
+    for q = 1, p
+    for r = 1, p ;
+    do 
+       if p = r then send = q
+       else send = r
+       for s = 1,send
+       do 
+          call int2ad (1,lt+p,lt+q,lt+r,lt+s,  itemp)
+          ioff = itemp - iioff
+          /   ioff=ksqte(1,p,q,r,s)-1
+          /   sas 94-01-30
+          jkoff(p,q,r,s)=ioff
+          jkoff(q,p,r,s)=ioff
+          jkoff(p,q,s,r)=ioff
+          jkoff(q,p,s,r)=ioff
+
+          jkoff(r,s,p,q)=ioff
+          jkoff(s,r,p,q)=ioff
+          jkoff(r,s,q,p)=ioff
+          jkoff(s,r,q,p)=ioff
+	  /format write p,q,r,s, ioff
+	  /(' pqrs ',4i3,i10 )
+          end 
+       end 
+    end 
+ %%subname mcefh%
+ subroutine %subname --
+	    ( xout, nsym, nbf, nbft, nob,  nbot,--
+	      c,    joff, koff,  --
+	      t0off,t1off,jkoff,nbfx,xint )
+
+ /*
+ /* function : half transformation for Kpqrs to Kpqjj
+ /* 
+ implicit integer ( a - z ) 
+ / input 
+ real * 8 xint(*), -- integral
+	  c(*)     -- coef
+
+ integer  nsym,    --
+	  nbf(nsym), --
+	  nbft(nsym), --
+	  nob(nsym), --
+	  nbot(nsym), --
+	  joff(nsym,nsym,nsym*2), -- 
+	  koff(nsym,nsym,nsym*2),  -- 
+	  jkoff(nbfx,nbfx,nbfx,nbfx),--
+	  t0off(nbfx,nbfx), --
+	  t1off(nbfx,nbfx),--
+	  nbfx
+ 
+ integer kxx
+ / output 
+
+ real * 8 xout(*)
+ %charorb
+ begin
+    for isym = 1, nsym
+    for jsym = 1, nsym
+    for km =   1, nsym*2
+    do
+       kxx=km*2 -1 
+       jout = joff(isym,jsym,km)
+       if jout > -1 
+       then do 
+	  nwto = nbft(isym) ; nbfo = nbf(isym) ;
+	  nwtc = nbft(jsym) ; nbfc = nbf(jsym) ;
+	  for j = 1, nob(jsym)
+	  do 
+             jc = nbot(jsym) + nbf(jsym)*(j-1) +1 
+             ij = jout  + nbf(isym)*nbf(isym)*(j-1) + 1  
+	     call jxcc(kxx,xint,c(jc),nbfc,nwtc,nbfo,nwto,--
+		       jkoff,nbfx,xout(ij))
+	     end 
+          end 
+       kout = koff(isym,jsym,km)
+       if kout > -1 
+       then do 
+	  nwto = nbft(isym) ; nbfo = nbf(isym) ;
+	  nwtc = nbft(jsym) ; nbfc = nbf(jsym) ;
+	  for j = 1, nob(jsym)
+	  do 
+             jc = nbot(jsym) + nbf(jsym)*(j-1) +1 
+             ij = kout  + nbf(isym)*nbf(isym)*(j-1) + 1  
+	     call kxcc(kxx,xint,c(jc),nbfc,nwtc,nbfo,nwto,--
+		       jkoff,nbfx,xout(ij))
+	     end 
+          end 
+       end 
+    end 
+ %%subname kxcc%
+ subroutine %subname (km,xint,c,nbfc,nwtc,nbfo,nwto,--
+		      jkoff,nbfx,out)
+ /*
+ /* function : half transformation for Kpqrs to Kpqjj
+ /* 
+ implicit integer ( a - z ) 
+ real * 8 c(nbfc),out(nbfo,nbfo),xint(*),cc
+ integer nbfc,nwtc
+ integer nbfo,nwto,--
+	  jkoff(nbfx,nbfx,nbfx,nbfx),--
+	  nbfx
+ integer base,km,p,q,r,s
+ begin 
+    /* base addr for integrals
+    kk=nwto+1 ;  ii=nwtc+1 ; 
+    call int2ad (km,kk,ii,kk,ii,  base) ;
+    /  base = ksqte(km,kk,ii,kk,ii) ;
+    /  sas 94-01-30
+
+    call zero(out,nbfo*nbfo)
+
+
+    if nwto = nwtc then exec kxcc0
+    else if nwto < nwtc then exec kxcc1
+    else exec kxcc2
+    call xymove(out,nbfo)
+    end 
+
+ > kxcc0 
+ /* Lo = Lc 
+    for r = 1, nbfc ;
+    for s = 1, r
+    do
+       cc = c(r) * c(s)
+       if r ^= s then cc = cc + cc 
+       for p = 1, nbfo
+       do
+          for q = 1, p-1
+          do
+             m1= jkoff(p,r,q,s)+base  ; m2 = jkoff(p,s,q,r)+base
+             out(p,q) = out(p,q) --
+		+( xint(m1)+xint(m2) ) * cc
+	     end
+	  / q = p
+             m1= jkoff(p,r,p,s)+base  ; m2 = jkoff(p,s,p,r)+base
+             out(p,p) = out(p,p) --
+		+( xint(m1)+xint(m2) ) * cc*0.5d0
+          end 
+       end 
+    end 
+
+ > kxcc1 
+ /* Lo < Lc 
+    m = base 
+    for p = 1, nbfo
+    for q = 1, nbfc
+    do 
+       cc = c(q) * 2.0d0
+       for r = 1, p-1 ;
+       for s = 1, nbfc
+       do
+          out(p,r) = out(p,r) + xint(m) * c(s) * cc 
+          m = m + 1  
+	  end 
+       /* Kppss case 
+       / * r=p
+       for s = 1, q -1
+       do
+          out(p,p) = out(p,p) + xint(m) * c(s) * cc 
+          m = m + 1  
+	  end 
+       out(p,p) = out(p,p) + xint(m) * c(q) * c(s) 
+       m = m + 1
+       end 
+    end 
+     
+ > kxcc2 
+ /* Lo > Lc
+    m = base	 
+    for p = 1, nbfc
+    for q = 1, nbfo
+    do 
+       for r = 1, p-1 ;
+       do
+	  cc = c(p) * c(r) * 2.0d0
+          for s = 1, nbfo
+          do 
+	     out(s,q) = out(s,q) + xint(m) * cc
+             m = m + 1  
+	     end 
+          end 
+       /  r=p
+       cc = c(p) * c(p) * 2.0d0
+       /* Kppss case 
+       for s = 1, q-1 
+       do
+          out(s,q) = out(s,q) + xint(m) * cc
+          m = m + 1  
+	  end 
+       out(q,q) = out(q,q) + xint(m) * c(p) * c(p)
+       m = m + 1  
+       end 
+    end
+ %%subname jxcc%
+ subroutine %subname (km,xint,c,nbfc,nwtc,nbfo,nwto,--0
+		      jkoff,nbfx,out)
+ /*
+ /* function : half transformation for Kpqrs to Kpqjj
+ /* 
+ implicit integer ( a - z ) 
+
+ real * 8 c(nbfc),out(nbfo,nbfo),xint(*)
+ real * 8 cc
+ integer nbfc,nwtc
+ integer nbfo,nwto,--
+	  jkoff(nbfx,nbfx,nbfx,nbfx),--
+	  nbfx
+ integer base,km,p,q,r,s
+ begin 
+    /* base addr for integrals
+    kk=nwto+1 ;  ii=nwtc+1 ; 
+    call int2ad (km,kk,kk,ii,ii,  base) ;
+    /   base = ksqte(km,kk,kk,ii,ii) ;
+    /   sas 94-01-30
+    call zero(out,nbfo*nbfo)
+
+    if nwto = nwtc then exec jxcc0
+    else if nwto > nwtc then exec jxcco
+    else exec jxccc
+    call xymove(out,nbfo)
+    end 
+
+ > jxcc0 
+ /* Lo = Lc 
+    for r = 1, nbfc ;
+    for s = 1, r 
+    do 
+       cc = c(r)*c(s)*2.0d0
+       if r ^=s then cc = cc + cc 
+       for p = 1, nbfo
+       do
+          for q = 1, p-1
+          do 
+             m=jkoff(p,q,r,s)+base
+             out(p,q) = out(p,q) + xint(m) * cc
+	     end 
+       /  p=q
+          m=jkoff(p,p,r,s)+base
+          out(p,p) = out(p,p) + xint(m) * cc / 2.0d0
+	  end 
+       end 
+    end 
+
+ > jxcco 
+ /* Lo > Lc o runs fast  
+    m=base
+    for p = 1, nbfc
+    for q = 1, p
+    do 
+       cc = c(p)*c(q)
+       if p ^= q then cc =cc + cc 
+       for r = 1, nbfo ;
+       do
+          for s = 1, r-1
+          do
+             out(s,r) = out(s,r) + xint(m) * cc*2.0
+	     m=m+1
+	     end
+	  out(r,r)=out(r,r) + xint(m)*cc
+	  m=m+1
+	  end 
+       end 
+    end 
+     
+ > jxccc 
+ /* Lo < Lc  c runs fast
+    m=base
+    for p = 1, nbfo
+    for q = 1, p
+    do 
+       for r = 1, nbfc ;
+       do
+	  cc = c(r)
+	  if p^=q then cc = cc + cc 
+          for s = 1, r-1
+          do
+             out(p,q) = out(p,q) + xint(m) * cc * c(s)*2.0
+	     m=m+1
+	     end
+	  out(p,q)=out(p,q) + xint(m)*cc*c(r)
+	  m=m+1
+	  end 
+       end 
+    end 
+     

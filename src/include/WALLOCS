@@ -1,0 +1,15 @@
+    > w_alloc 
+       ACTION = %REGION
+       %%VNAME nwsize % ; TYPE = %I4 ;  %WKCORE
+       ACTION = %ALLOC
+       %%VNAME w % ; TYPE = %R8 ; LENGTH = nwsize /2 ;  %WKCORE
+       END 
+
+    > w_free 
+       ACTION = %FREE
+       %%VNAME w % ; TYPE = %R8 ;  %WKCORE
+       END 
+    > allocation_list
+       ACTION = %LIST ; 
+       %%VNAME dumy% ; TYPE = %R8 ;  %WKCORE
+       END

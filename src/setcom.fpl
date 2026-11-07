@@ -1,0 +1,45 @@
+ %%subname setcom%
+ process  no list file '%subname.f'
+ subroutine %subname 
+ implicit real * 8 ( a-h,o-z )
+ %update 
+
+    %comcfp
+    %comexp
+    %comstr
+    %comwfa
+    %comwig
+ 
+    begin
+       /  set comcfp
+       ibels=18
+       icnns = 100
+       ilfns = 600
+       icmtns = 100
+       icdxs = 8000
+
+       /  set comexp
+       iwads = 12
+       iwvads = 130
+
+       /  set comstr
+       lijb = 2048
+       ltrix = 32768
+       nijx = 16384
+       lisl = 2048
+
+       /  set comwfa
+       nsymax = 18
+       nstmax = 400
+       nst2mx = 2400
+
+       /  set comwig
+       factmx = 57
+       fasqmx = 154
+       gammax = 114
+
+       /   LISL,    -- LENGTH OF INTEG ADDR           1000       I4
+       /   LIJB,    -- LENGTH OF INDEX & COEFF         800       I4
+ 
+       end
+ 

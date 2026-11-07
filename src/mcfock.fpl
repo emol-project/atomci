@@ -1,0 +1,243 @@
+ process no list file 'mcfock.f'
+ %%subname mcfock%
+ function %subname --
+    (nrdscf, nolf,   not,    nbf,   nob,   lmax, nbfx,nobx,nopt,--
+     flag,  nwsq,   joff,   koff,  coff, shoff, nbft, --
+     jkoff,  c,      sh,    sinv, ssqrt,yint,  h1, xint,--
+     oc,     js,     ks,   u, -- 
+     z,      oen,    npflg, rtncd)
+ implicit integer ( a- z ) 
+  %incwork
+  %param
+      INTEGER   * 4 VAR(%WORKCORE)
+      common/work/var
+ / input 
+ integer   --
+           --   var(*), -- work region
+           nolf(not),-- L-repr (L + 1)    
+           nbf(lmax), -- 
+           nbft(lmax), -- 
+           nob(lmax), -- 
+	   not,       -- Total number of Basis functions
+	   joff(lmax,lmax,lmax*2), -- 
+	   koff(lmax,lmax,lmax*2), -- 
+	   jkoff(*),  --
+           coff(not),     --
+	   nopt(not),  -- 
+	   nwsq(not),  -- 
+	   flag,     -- SCF flag
+	   npflg,     -- Print Flag 
+	   shoff(lmax)
+
+ real * 8  --
+	   xint(*), --
+	   yint(*), --
+	   sh(*),   --
+	   sinv(*), --
+	   ssqrt(*), --
+	   h1(*),   --
+	   oc(not), --
+	   oen(not), -- orbital energy 
+	   z(not), --
+	   js(not,not,lmax*2),--
+	   ks(not,not,lmax*2), --
+	   u(*), -- Eigen Vecotrs of S*F*S
+	   dfc, c(*)
+  
+ /out put 
+
+ real * 8  wt,cthr,zz(100) 
+ logical conv,extrap
+
+ %charorb
+
+   data cthr/5.0d-07/ --
+        wt/5.0d04/    --
+        iscf/20/      --
+        dfc/0.8d0/    --
+        itmax/ 2/     -- add Jan 30 1996 
+        ismax/ 2/ 
+
+ namelist /dscf/cthr,wt,itmax,dfc,iscf,ismax
+ begin 
+   %subname = 0
+   for i = 1, not ; 
+   if oc(i) > 1.d-40 then z(i)= 1.d0 / oc(i)
+   else z(i) = 0.d0
+   exec fk_allocation
+   if nrdscf > 0  then read(5,dscf)
+   nrdscf = 0 
+   if npflg > 3 then exec debug 
+   jjj = 0
+   do until jjj >= ismax ! itotal <= 0 ! isym > 8888 
+      isym = 1 
+      itotal = 0 
+      icx = 1 ; ist = 1  
+      do until isym >  lmax
+         exec scf
+      /  if ^conv then isym = 9999
+         = isym + 1
+         = icx + nbfi*nobi
+	 = ist + nobi
+         = itotal + itx
+         end 
+      = jjj + 1 
+
+      end 
+    %subname = jjj 
+    if npflg > 1 then do 
+       if itotal = 0 then do
+          2l ; ' SCF converged after '; put jjj i4 ; 1l 
+          end 
+       else do 
+          2l ; ' SCF not yet converged after '; put jjj i4 ; 1l 
+          end 
+       end 
+    exec schmit_o
+    exec fk_free
+    end 
+
+  > schmit_o
+   icx = 1
+   for isym=1, lmax 
+   do 
+      nbfi=nbf(isym)
+      nobi=nob(isym)
+      ih = shoff(isym) + 1
+      call orthoc(u(icx),nbfi,nobi,c(icx),sh(ih),var(w1),var(w2),npflg) 
+      icx=icx+nbfi*nobi
+      end 
+   call xmove(c,u,icx-1)
+   end
+
+      
+   
+ > scf
+   itx= -1
+   conv = .false.  
+   extrap = .false. 
+   nbfi=nbf(isym)
+   nobi=nob(isym)
+   for iii= 1,nobi; zz(iii)=z(ist+iii-1)
+   ih = shoff(isym) + 1 
+   ns = nbfi
+   
+   
+   do until  conv ! itx > itmax
+      itx = itx + 1 
+      if npflg > 1 then --
+      format write lsym(isym), itx,flag
+      (' -->  Symmetry  ', a1,' iterations ',i4,'   Flag=',i2 ) ;
+      if flag >= 3 then rtncd = mcscf3 --
+	  (ist,nwsq,nolf,not,nbfi,nobi,nbfx,lmax,--
+	   xint,yint,h1(ih),sh(ih),sinv(ih),ssqrt(ih),c(icx), --  Integeral & C
+	   cthr,var(oe),u(icx),oc,js,ks,joff,koff,--
+	   jkoff,nbf,nob,nbft, nopt,iscf,-- 
+	   var(k1),var(k2),var(k3),var(k4),var(k5),var(k6),var(k7), --
+	   var(fk),var(p),zz,var(w1),var(w2),var(wk),--
+	   var(c1),var(c2),var(c3),dfc,npflg,wt)
+      else if flag = 2 then rtncd = mcscf2 --
+	  (ist,nwsq,nolf,not,nbfi,nobi,nbfx,lmax,--
+	   xint,yint,h1(ih),sh(ih),sinv(ih),ssqrt(ih),c(icx), --  Integeral & C
+	   cthr,var(oe),u(icx),oc,js,ks,joff,koff,--
+	   jkoff,nbf,nob,nbft, nopt,iscf,-- 
+	   var(k1),var(k2),var(k3),var(k4),var(k5),var(k6),var(k7), --
+	   var(fk),var(p),zz,var(w1),var(w2),var(wk),--
+	   var(c1),var(c2),var(c3),dfc,npflg,wt)
+      else if flag = 1 then rtncd = mcscf1 --
+	  (ist,nwsq,nolf,not,nbfi,nobi,nbfx,lmax,--
+	   xint,yint,h1(ih),sh(ih),sinv(ih),ssqrt(ih),c(icx), --  Integeral & C
+	   cthr,var(oe),u(icx),oc,js,ks,joff,koff,--
+	   jkoff,nbf,nob,nbft, nopt,iscf,-- 
+	   var(k1),var(k2),var(k3),var(k4),var(k5),var(k6),var(k7), --
+	   var(fk),var(p),zz,var(w1),var(w2),var(wk),--
+	   var(c1),var(c2),var(c3),dfc,npflg,wt)
+      else rtncd = mcscf0 --
+	  (ist,nwsq,nolf,not,nbfi,nobi,nbfx,lmax,--
+	   xint,yint,h1(ih),sh(ih),sinv(ih),ssqrt(ih),c(icx), --  Integeral & C
+	   cthr,var(oe),u(icx),oc,js,ks,joff,koff,--
+	   jkoff,nbf,nob,nbft, nopt,-- 
+	   var(k1),var(k2),var(k3),var(k4),var(k5),var(k6),var(k7), --
+	   var(fk),var(p),zz,var(w1),var(w2),var(wk),--
+	   var(c1),var(c2),var(c3),dfc,npflg,wt)
+      if rtncd <= 0 then conv = .true.
+      end 
+   /  debug
+   / format write lsym(isym), ist,icx,nbfi,nobi,itx 
+   / (' >>>  Symmetry  ', a1,' ist,icx,nbfi,nobi ',4i6,' itx= ',i4 )
+   call xmove(oen(ist),var(oe),nobi)
+   end 
+  
+   > fk_free
+       nsize = nbfx*nbfx ; ns = nbfx
+       ACTION = %FREE
+       %%VNAME oe % ; TYPE = %R8 ; LENGTH = nbfx ;  %WKCORE
+       %%VNAME p % ; TYPE = %R8 ; LENGTH = nsize ;  %WKCORE
+       %%VNAME fk % ; TYPE = %R8 ; LENGTH = nsize*nobx ;  %WKCORE
+       %%VNAME wk % ; TYPE = %R8 ; LENGTH = nsize ;  %WKCORE
+       %%VNAME w1% ; TYPE = %R8 ; LENGTH = nsize ;  %WKCORE
+       %%VNAME w2% ; TYPE = %R8 ; LENGTH = nsize ;  %WKCORE
+       %%VNAME c1% ; TYPE = %R8 ; LENGTH = nsize ;  %WKCORE
+       %%VNAME c2% ; TYPE = %R8 ; LENGTH = nsize ;  %WKCORE
+       %%VNAME c3% ; TYPE = %R8 ; LENGTH = nsize ;  %WKCORE
+       %%VNAME k1 % ; TYPE = %R8 ; LENGTH = ns*(ns+1)/2 ;  %WKCORE
+       %%VNAME k2 % ; TYPE = %R8 ; LENGTH = ns ;  %WKCORE
+       %%VNAME k3 % ; TYPE = %R8 ; LENGTH = ns ;  %WKCORE
+       %%VNAME k4 % ; TYPE = %R8 ; LENGTH = ns ;  %WKCORE
+       %%VNAME k5 % ; TYPE = %R8 ; LENGTH = ns ;  %WKCORE
+       %%VNAME k6 % ; TYPE = %R8 ; LENGTH = ns ;  %WKCORE
+       %%VNAME k7 % ; TYPE = %R8 ; LENGTH = ns ;  %WKCORE
+       end 
+   > fk_allocation
+       nsize = nbfx*nbfx
+       ns = nbfx
+       ACTION = %ALLOC
+       %%VNAME oe % ; TYPE = %R8 ; LENGTH = nbfx ;  %WKCORE
+       %%VNAME p % ; TYPE = %R8 ; LENGTH = nsize ;  %WKCORE
+       %%VNAME fk % ; TYPE = %R8 ; LENGTH = nsize*nobx ;  %WKCORE
+       %%VNAME wk % ; TYPE = %R8 ; LENGTH = nsize ;  %WKCORE
+       %%VNAME w1% ; TYPE = %R8 ; LENGTH = nsize ;  %WKCORE
+       %%VNAME w2% ; TYPE = %R8 ; LENGTH = nsize ;  %WKCORE
+       %%VNAME c1% ; TYPE = %R8 ; LENGTH = nsize ;  %WKCORE
+       %%VNAME c2% ; TYPE = %R8 ; LENGTH = nsize ;  %WKCORE
+       %%VNAME c3% ; TYPE = %R8 ; LENGTH = nsize ;  %WKCORE
+       %%VNAME k1 % ; TYPE = %R8 ; LENGTH = ns*(ns+1)/2 ;  %WKCORE
+       %%VNAME k2 % ; TYPE = %R8 ; LENGTH = ns ;  %WKCORE
+       %%VNAME k3 % ; TYPE = %R8 ; LENGTH = ns ;  %WKCORE
+       %%VNAME k4 % ; TYPE = %R8 ; LENGTH = ns ;  %WKCORE
+       %%VNAME k5 % ; TYPE = %R8 ; LENGTH = ns ;  %WKCORE
+       %%VNAME k6 % ; TYPE = %R8 ; LENGTH = ns ;  %WKCORE
+       %%VNAME k7 % ; TYPE = %R8 ; LENGTH = ns ;  %WKCORE
+       if npflg > 1 then exec allocation_list
+       end 
+ > allocation_list
+    ACTION = %LIST ; 
+    %%VNAME dumy% ; TYPE = %R8 ;  %WKCORE
+    END
+ > debug
+   2l ; 
+   write(6,dscf)
+   ' SCF FLAG ' ; put flag i4 ;1l 
+   format write (nolf(i),i=1,not)  
+   ( ' LF ',40i3 )
+   format write (coff(i),i=1,not)  
+   ( ' CF ',40i3 )
+   format write (nwsq(i),i=1,not)  
+   ( ' NW ',40i3 )
+   format write (nopt(i),i=1,not)  
+   ( ' OPT',40i3 )
+   format write (nbft(i),i=1,lmax)  
+   ( ' FT ',40i3 )
+   exec allocation_list
+   format write oc(1),js(1,1,1),ks(1,1,1) ; 
+   ( ' occ number js ks ',3f10.4)
+   if npflg > 4 then do 
+      2l ; ' S Matrix ' ; 1l ; 
+      call prvc(sh,ns,ns)
+      end 
+   end 
+      PROCEDURE WK_ERROR
+         ERRCD = RTNWK ; 2L ;
+         2L ; ' == ERROR OCCURED IN WORK ALLOCATION == RETURN CODE IS '
+         PUT ERRCD I4 ;
+         END

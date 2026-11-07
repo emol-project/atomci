@@ -1,0 +1,203 @@
+ process no list file 'mcscf1.f'
+ /* updated by msekiya on Oct. 09, 1995 
+ %%subname mcscf1%
+ function %subname --
+	  (ist,nwsq,nolf,not,nbfi,nobi,nbfx,lmax,--
+	   xint,yint,h1,s,sinv,ssqrt,c, --  Integeral & C
+	   cthr,oe,u,oc,js,ks,joff,koff, --
+	   jkoff,nbf,nob,nbft, nopt,iscf,-- 
+	   k1,k2,k3,k4,k5,k6,k7, --
+	   fk,p,z,w1,w2,wk,c1,c2,c3,dfc,npflg,wt)
+  %param
+ /* input
+ real  * 8 xint(*), -- AO integral 
+	   s(nbfi,nbfi),    -- S matrix
+	   sinv(nbfi,nbfi), -- S^(-1/2) matrix
+	   ssqrt(nbfi,nbfi), -- S^(-1/2) matrix
+	   h1(nbfi,nbfi),   -- T+U
+	   yint(*), -- J and K Op
+	   js(*),ks(*),-- effective Coef for J and K
+	   oc(not),      -- Occupations number
+	   z(not),   -- 1/Oc
+	   oe(nobi), -- orbital E
+	   u(nbfi,nobi), -- eigen vector for SFS
+	   c(nbfi,nobi), -- coeff
+           cthr,         -- damping factor
+	   chckcv, -- real * 8 function
+           dfc           -- damping factor
+
+ 
+ integer    -- symm # ( s = 1 p= 2  ... )
+	   ist,  -- start orbital seq # for this sym 
+	   nopt(not), -- 
+	   nwsq(not), -- 
+	   nbf(*), -- Symm #
+	   nob(*), -- Symm #
+	   nbft(not), -- Symm #
+	   nolf(not), -- Symm #
+	   not,       -- Total number of orbitals
+	   nbfi,      -- number of basis
+	   nobi,      -- number of orbitals in isym
+           lmax,      -- Max Sym #
+	   npflg,     --
+	   jkoff(*),  --
+	   joff(*),koff(*)  -- offset for Yint 
+
+ /* work 
+ real * 8  w1(nbfi,nbfi),w2(nbfi,nbfi),wk(nbfi,nbfi)
+ real * 8  fk(nbfi*nbfi,nobi), --
+	   p(nbfi,nbfi),  -- for projection operator
+	   c1(nbfi,nobi), -- coeff
+	   c2(nbfi,nobi), -- coeff
+	   c3(nbfi,nobi), -- coeff
+           k1(*),k2(*),k3(*),k4(*), --
+           k5(*),k6(*),k7(*)
+ /* local 
+ logical   conv,noopt
+ real * 8  rt,rx,wt,znorm,xnorm
+ INTEGER   * 4 RTNCD ; /  changed by msekiya Aug 30 1994
+
+ begin
+    nbfi2 = nbfi*nbfi ; noopt =.true. ; %subname = 0 
+    if npflg > 1 then exec debug
+    conv = .false.
+    exec first_time
+    itx=0 
+    for ij = 1, nobi ; oe(ij)=0.d0 
+    nc = nbfi*nobi
+    ij = 0 ; isum = 0 ; 
+    call zero(p,nbfi2)
+    call xmove(c1,c,nc)
+    call xmove(c2,c,nc)
+    until ij >=nobi 
+    do
+       in = ist + ij  
+       if ij = 0 then call zero(p,nbfi2)
+       else call mkproj(p,nbfi,1,c1(1,ij),ssqrt,w2)
+       ij  = ij + 1 
+       if nopt(in) <= 0 then exit 
+       noopt= .false. 
+       isol =ij 
+       exec solve
+       ipick = nopt(in) 
+       call xmove(c2(1,ij),w1(1,ipick),nbfi)
+       call xmove(u(1,ij),wk(1,ipick),nbfi)
+       call xmove(oe(ij),k2(ipick),1)
+       if ij = 1 then do
+           call xmove(c,w1,nbfi*nobi)
+           call xmove(oe,k2,nobi)
+           end
+       end 
+    if noopt then exit 
+    exec update_yint
+    call xmove(c,c1,nbfi*isol)
+    if rx <= cthr  then %subname = 0 ; 
+    else %subname = 1 ;
+    if npflg > 1 then exec print_vector
+    end   
+
+
+ > update_yint
+   rx= 0.d0
+   call orthoc(c3,nbfi,nobi,c2,s,w2,k3,npflg)
+   for ij = 1, isol
+   do 
+      in = ij + ist - 1 
+      rt = chckcv(c1(1,ij),c3(1,ij),nbfi,dfc) ; 
+      /* copy c3 to c1 using damp factor 
+      if npflg > 1 then --
+      format write itx,rt,cthr,in,oe(ij)
+       ( ' iterations ', i4, ' --> ',2e10.3,' Eigen -->',i4,5e12.3) 
+      rx = rx + rt
+      call mcmkyi --
+       (c1(1,ij),xint,yint,in, nolf,not, nwsq, nbf, nob, nbft, -- 
+       lmax,jkoff,joff,koff,nbfx,npflg, rtncd,c1)	
+      end 
+   if rx < cthr then conv = .true. 
+   end
+ >  solve 
+      /* update fock Matrix for in 
+      /* r = F1*z1 + R1*z1
+      call xmove(wk,fk(1,ij),nbfi2) 
+      for is = 1, nobi
+      if is ^= ij then do 
+         call mccplr(wk,fk(1,ij),fk(1,is),z(ij),z(is),--
+		  nbfi,c1(1,is),s,k1,k2,w1)
+         end 
+
+      call zero (w2,nbfi2)
+      call mxfact(w2,wk,z(ij),nbfi2)
+      call zero (w1,nbfi2)
+      call mxmab(w1,nbfi,nbfi,w2,sinv,nbfi)
+      call zero (wk,nbfi2)
+      call mxmatb(wk,nbfi,nbfi,sinv,w1,nbfi)
+      /* add projections 
+      if ij ^= 1 then call mxfact(wk,p,wt,nbfi2)
+      CALL DIAG(K1,wk,K2,K3,K4,K5,K6,K7,K7,nbfi,nbfi)
+      call zero (w1,nbfi2)
+      call mxmab(w1,nbfi,nbfi,sinv,wk,nbfi)
+      end 
+ > first_time
+   for ip=1,nobi
+   do 
+
+      in = ist - 1 + ip 
+      if nopt(in) < 0 then exit 
+      call mcmkfk(in,nwsq,nolf,not,nbfi,lmax,--
+	       fk(1,ip),oc(in),h1,yint,--
+	       js,ks,joff,koff,--
+	       npflg,rtncd)
+      end 
+   end 
+
+ > print_vector
+   2l ; ' Eigen Values  ' ; 1l ; 
+   call prvc(oe,1,nobi)
+   2l ; ' Eigen Vectors  in ' ; put jjj i4 ; 1l ; 
+   call prvc(c,nbfi,nobi)
+   if npflg > 2 & conv then exec print_ovlp 
+   end 
+ > print_ovlp
+      2l ; ' Ovlp Matrix ' ; 
+      put ist i4 ; ' --> ' ; put in i4 ; 1l ;   
+      call zero(w1,nbfi*nobi)
+      call zero(w2,nbfi*nobi)
+      call mxmab(w1,nbfi,nobi,s,c,nbfi)
+      call mxmatb(w2,nobi,nobi,c,w1,nbfi)
+      call prvcx(w2,nobi,nobi) 
+      end 
+ > debug
+   2l ; format write ist,nbfi,nobi,nbfx 
+   ( ' in mcscf1 -> ' , 6i4 ) 
+   format write (c(i,1),i=1,nbfi)
+   ( ' C  ',10e10.3)
+   format write (oc(i),i=ist,ist+nobi-1)
+   ( ' OC ',10e10.3)
+   format write (z(i),i=1,nobi)
+   ( ' ZZ ',10e10.3)
+   format write (nolf(i),i=1,not)  
+   ( ' LF ',40i3 )
+   format write (nwsq(i),i=1,not)  
+   ( ' NW ',40i3 )
+   format write (nopt(i),i=1,not)  
+   ( ' OPT',40i3 )
+   format write (nbf(i),i=1,lmax)  
+   ( ' Nbf',40i3 )
+   format write (nob(i),i=1,lmax)  
+   ( ' Nob',40i3 )
+   format write (nbft(i),i=1,lmax)  
+   ( ' FT ',40i3 )
+   if npflg > 3 then do 
+      format write ist
+      (// ' C matrix -> ',i4)
+      call prvc(c,nbfi,nobi)
+      format write ist
+      (// ' S matrix -> ',i4)
+      call prvc(s,nbfi,nbfi)
+      format write ist
+      (// ' S -1/2 matrix -> ',i4)
+      call prvc(sinv,nbfi,nbfi)
+      end  
+   end 
+
+

@@ -1,0 +1,6 @@
+      common/comwig/  rt(57),fasq(154),den(57),fac(57)
+      common/comwig/  gamma(114), dfac(114)
+      common/comwig/  factmx,fasqmx,gammax
+      real * 8        rt,fasq,den,fac,  gamma, dfac
+      integer         factmx,fasqmx,gammax
+

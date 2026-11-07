@@ -1,0 +1,68 @@
+OPEN UNIT=10 FILE=./CFPTBL BINARY STATUS=OLD
+OPEN UNIT=27 FILE=f.NO BINARY STATUS=UNKNOWN
+OPEN UNIT=3 FILE=f.bas STATUS=OLD
+OPEN UNIT=2 FILE=f.csf STATUS=UNKNOWN
+OPEN UNIT=44 FILE=mcp.dat STATUS=UNKNOWN
+END
+ &cntl
+nrnfg=1,1,1,1,0,0,1,1,
+title=' F DOUBLET P ',
+ /
+ &ai
+z=9,
+iunit=3,
+ntype=2,
+idprnt=0,
+ /
+ &mc
+ispin=2,
+iorb=3,
+ipar=1,
+itnel=9,
+nset=1,
+itmax=20,
+closed=' 1S)',
+csfs(1)=' 2S*2) 2P*5))',
+csfs(2)=' )))',
+ /
+ &wf
+ispin=2,
+iorb=3,
+ipar=1,
+itnel=9,
+iunit=2,
+rule=1,
+npflg=0,
+ /
+ &tr
+nfaii=18,
+itvci=1,
+nsym=4,
+nob=13,11,6,5,
+nbf=13,11,6,5,
+mpob=13,12,11,10,9,8,7,6,5,4,
+3,2,1,11,10,9,8,7,6,5,
+4,3,2,1,6,5,4,3,2,1,
+5,4,3,2,1,
+ /
+ &get
+nind=4,
+ivcs=27,
+ind=1,0,1,13,
+1,1,1,11,
+1,2,1,6,
+1,3,1,5,
+ /
+ &ci
+nrnfg=1,1,1,0,1,1,
+ips=7,
+maxit=100,
+nsdim=100,
+nstate=1,
+ioflg=0,-1,-1,0,0,
+ /
+ &rs
+pthr=-0.001,
+rule=2,
+ /
+

@@ -1,0 +1,262 @@
+  PROCESS       FILE      'ci.f'
+  process       no list
+      %param
+      PROGRAM CI
+      PARAMETER ( MCORE = %WORKCORE / 2 )
+      %CPYRIGHT
+      %UPDATE
+      COMMON /work/VAR(MCORE)
+      REAL*8 VAR
+   BEGIN
+      call FDOPEN(5)
+      call setcom
+      NCORE = MCORE * 2
+      CALL ATOMCI
+      END
+  %%SUBNAME ATOMCI %
+  PROCESS    NO LIST      MAP    HEADER  %SUBNAME
+  SUBROUTINE %SUBNAME
+  %UPDATE
+      %FILESTRC
+      IMPLICIT INTEGER * 4 (A-Z)
+      INTEGER   * 4  JNAME(80)  ; /  --
+      %JOBNAME
+      %param
+      INTEGER   * 4 VAR(%WORKCORE)
+      common/work/var
+      INTEGER   * 4 WKSET
+      INTEGER   * 4  USCPU(10)
+      INTEGER   * 4  NRNFG(10)
+      CHARACTER * 12 SUBNAM(10)
+      / SAS 89-10-30
+      CHARACTER * 8  METHOD
+      INTEGER   * 4  RCPU
+      REAL      * 8  JOBID(10)
+      EQUIVALENCE (JOBID(1),JNAME(1))
+      / CHARACTER * 8  JOBID(10)
+      CHARACTER * 72 TITLE
+
+      INTEGER   * 4  --
+                      NFWFB0    ,--
+                      NFWFB1    ,--
+                      NFWFB2    ,--
+                      NFWFP     ,--
+                      NFWFE     ,--
+                      NFWFW     ,--
+                      NFTBL     ,--
+                      NFAII     ,--
+                      NFAII2    ,--
+                      NFAIO     ,--
+                      NFTRI     ,--
+                      NFTRI2    ,--
+                      NFTRC1    ,--
+                      NFTRC2    ,--
+                      NFTD      ,--
+                      NFPTV     ,--
+                      NFPTH1    ,--
+                      NFPTH2    ,--
+                      NFPTL     ,--
+                      NFPTB     ,--
+                      NFPTS     ,--
+                      NFEXE     ,--   / SAS RMFORTRAN?
+                      NFEXW     ,--
+                      NFCIH     ,--
+                      NFCID     ,--
+                      NFCIC     ,--
+                      NFCIW     ,--
+                      NFCIV     ,--
+                      NFCIH1    ,--
+                      NFCIH2    ,--
+                      NFCII     ,--
+                      NFCIS     ,--
+                      NFTF       ;
+      SAVE 
+      / SAS 89-10-30   MOVED
+      DATA            SUBNAM        --
+                                /'MCMAIN ',--  SCF PROGRAM ( S. HUZINAGA )
+                                 'WFMAIN ',--  CSF USING GENERAL
+                                 'AIMAIN ',--  INTEGRAL DRIVER
+                                 'TRMAIN ',--  TRANS FM DRIVER
+                                 'PTMAIN ',--  BK SELECTED CSF
+                                 'EXMAIN ',--  EE TAPE CREATION
+                                 'CIMAIN ',--  CI DRIVER
+                                 'RSMAIN ',--  PROPERTY & SUMMARY
+                                 'SUMMARY',--  STORE VSAM FILES
+                                 '       '/--  NOT YET IMPLEMENTED
+
+     DATA             --
+                      NFWFB0    /11/,--
+                      NFWFB1    /12/,--
+                      NFWFB2    / 0/,--
+                      NFWFP     /14/,--
+                      NFWFE     /15/,--
+                      NFWFW     /09/,--
+                      NFTBL     /88/,--
+                      NFAII     /18/,--
+                      NFAII2    /19/,--
+                      NFAIO     /55/,--
+                      NFTRI     /16/,--
+                      NFTRI2    /17/,--
+                      NFTRC1    /27/,--
+                      NFTRC2    /21/,--
+                      NFTD      /20/,--
+                      NFPTV     /31/,--
+                      NFPTH1    /32/,--
+                      NFPTH2    /33/,--
+                      NFPTL     /35/,--
+                      NFPTB     /11/,--
+                      NFPTS     / 0/,--
+                      NFEXE     /15/,--
+                      NFEXW     / 0/,--
+                      NFCIH     /22/,--
+                      NFCID     /24/,--
+                      NFCIC     /27/,--
+                      NFCIW     /28/,--
+                      NFCIV     /37/,--
+                      NFCIH1    /38/,--
+                      NFCIH2    /39/,--
+                      NFCII     / 0/,--
+                      NFCIS     /71/,--
+                      NFTF      /10/
+      NAMELIST /CNTL/ METHOD, NRNFG,  NCPU,   TITLE , FILES, --
+                      NFWFB0, NFWFB1, NFWFB2, NFWFE,  NFWFP, --
+                      NFWFW , NFTBL ,--
+                      NFAII , NFAII2, NFAIO ,--
+                      NFTRI , NFTRI2, NFTRC1, NFTRC2, NFTD  ,--
+                      NFPTV , NFPTH1, NFPTH2, NFPTL , NFPTB ,--
+                      NFEXE , NFEXW ,                        --
+                      NFCIH , NFCID , NFCIC , NFCIW , NFCIV ,--
+                      NFCIH1, NFCIH2, NFCII , NFCIS ,--
+                      NFTF   --
+
+
+   BEGIN
+      EXEC SETUP
+      READ(5,CNTL)
+      EXEC SET_JNAME
+      IF  NCPU <= 0 THEN NCPU = 7200
+      NCPU = NCPU * 1000
+      EXEC HEADER PRINT
+      CALL SETCFP(NFTF)
+      CALL SETWIG
+      DUMMY = WKSET ( %WORKCORE )  ; LIST -2 2L ;
+      DO UNTIL RTNCD > 0 ! nrnfg(10) > 0 ; /* 5000 MEANS 5 SEC
+      /DO UNTIL RCPU < 5000 ! RTNCD > 0 ; /* 5000 MEANS 5 SEC
+	 FOR III=1,10 ; USCPU(III)=0. ;
+         EXEC ATOMCI
+         EXEC PRINT_CPU
+         CALL CLOCKM(RCPU)
+         RCPU = NCPU - RCPU
+         READ (5,CNTL,END=999,ERR=999,IOSTAT=IOS)
+         END
+      FORTRAN 999 CONTINUE
+      EXEC SUMMARY
+      END
+   %%MSEC 5 %
+   %%DUMMY SUBNAM(%ID) = '%SUB' ; IF NRNFG(%ID) > 0 THEN --
+     ' CALL %SUB ( TITLE, FILES, JNAME, USCPU(%ID), RTNCD) ';1L; --
+     IF RTNCD > 0 THEN EXIT % ;
+   %%CALLING SUBNAM(%ID) = '%SUB' ; IF NRNFG(%ID) > 0 THEN DO ; --
+     CALL %SUB ( TITLE, FILES, JNAME, USCPU(%ID), RTNCD) ; --
+     JNAME(%ID+20) = USCPU(%ID) ; --
+     FORMAT WRITE:FILES --
+          SUBNAM(%ID) , ( JNAME(I),I=1,8 ), RTNCD ; --
+          ( 2X, A8 ,' > ',4(2A4,1X),' RETURN CODE >',I6 ) ; END ; --
+     IF RTNCD > 0 THEN ( EXEC ERROR_STOP ; CALL ERSTOP('%SUB') ) ; %
+   > ERROR_STOP
+      EXEC PRINT_CPU
+      EXEC SUMMARY
+      CALL IQEXIT
+      END
+   > SETUP
+      TITLE = ' ' ; FILES = 7
+      RTNCD = 0 ;
+      FOR I =  1, 18 ; call ctoi4 ('    ',JNAME(I))
+      FOR I = 19, 80 ; JNAME(I) = 0   ; JNAME(30) = 1 ;
+      METHOD = 'ATOM CI' ;
+      FOR I = 2, 8  ; NRNFG(I) = 1 ;
+      CALL IQDATE(JNAME(9))
+      CALL IQTIME(JNAME(11))
+      END
+
+   PROCEDURE ATOMCI
+      %%SUB AIMAIN% ; %%ID  1 % ; %CALLING
+      %%SUB MCMAIN% ; %%ID  2 % ; %CALLING
+      %%SUB WFMAIN% ; %%ID  3 % ; %CALLING
+      %%SUB TRMAIN% ; %%ID  4 % ; %CALLING
+      %%SUB PTMAIN% ; %%ID  5 % ; %CALLING
+      %%SUB EXMAIN% ; %%ID  6 % ; %CALLING
+      %%SUB CIMAIN% ; %%ID  7 % ; %CALLING
+      %%SUB RSMAIN% ; %%ID  8 % ; %CALLING
+      END
+   %%STAR ' ><' %
+   PROCEDURE HEADER PRINT
+      LIST - 2 DO
+              3L ;
+              ' <<<< NEW VERSION OF ATOMCI SUMMARY >>>> ' ; 2L ;
+           /  '       USER NAME   = ' ; / PUT JOBID( 1) C8 ;/1L
+           /  '       JOB SEQID   = ' ; / PUT JOBID( 2) C8 ;/1L
+           /  '       STEP NAME   = ' ; / PUT JOBID( 3) C8 ;/1L
+           /  '       METHOD      = ' ; / PUT JOBID( 4) C8 ;/1L
+           /  '       START DATE  = ' ; / PUT JOBID( 5) C8 ;/1L
+           /  '       START TIME  = ' ; / PUT JOBID( 6) C8 ;/1L
+      FORMAT  WRITE:7   '       START DATE  = ', jobid(5), --            C4 ;
+                        '      TIME  = ', jobid(6) ;
+                        (' ',a,a8,a,a8//)
+              ' TITLE : ' ; PUT TITLE  C60 ;         2L
+           /  '       NCPU        = ' ; / PUT NCPU     I8 ;/ 3L ;
+              FORMAT WRITE:7  (NRNFG(I),I=1,8)
+              ('   RUN FLAGS ', 8I5//)
+         END
+      END
+   PROCEDURE SUMMARY
+      CALL CLOCKM(ITOUT) ; JNAME(29) = ITOUT/1000
+      JNAME(20) = RTNCD
+      CALL IQDATE(JNAME(13))
+      CALL IQTIME(JNAME(15))
+      LIST - 2 DO
+         3L ;
+         '   <<< SUMMARY OF RESULTS IN ' ; PUT FILES I5 ; ' >>> ' ; 2L
+             /'       USER NAME   = ' ; / PUT JOBID( 1) C8 ;/1L
+             /'       JOB SEQID   = ' ; / PUT JOBID( 2) C8 ;/1L
+             /'       STEP NAME   = ' ; / PUT JOBID( 3) C8 ;/1L
+             /'       METHOD      = ' ; / PUT JOBID( 4) C8 ;/1L
+             /'       END   DATE  = ' ; / PUT JOBID( 7) C8 ;/1L
+             /'       END   TIME  = ' ; / PUT JOBID( 8) C8 ;/1L
+      FORMAT  WRITE:7   '       END   DATE  = ', jobid(7), --            C4 ;
+                        '      TIME  = ', jobid(8) ;
+                        (' ',a,a8,a,a8 )
+         3L ; '   <<< END OF ATOMCI RETURN CODE IS ' ; PUT RTNCD I5 ;
+         ' >>> SEE YOU AGAIN ! ' ; 2L
+         END
+      END
+   > PRINT_CPU
+      FORMAT WRITE:7 ' STEP  ','RUN','    USED CPU TIME '
+       (/ 8X,A, 12X, 2A )
+      FOR I = 1, 8  ;
+      FORMAT WRITE:7 --
+              SUBNAM(I),NRNFG(I),USCPU(I)/1000,MOD(USCPU(I),1000)
+           ( 8X,A, ' >>> ' , I4, I6, ' SEC',I4, ' M SEC '  )
+      FORMAT WRITE:7  (NRNFG(I),I=1,8)
+           (///'   RUN FLAGS ', 8I5//)
+      END
+      %FILETBL
+      > SET_JNAME
+         JNAME ( %NFWFB0 ) =  NFWFB0    ;  JNAME ( %NFWFB1 )=  NFWFB1
+         JNAME ( %NFWFB2 ) =  NFWFB2    ;  JNAME ( %NFWFE ) =  NFWFE
+         JNAME ( %NFWFP  ) =  NFWFP     ;  JNAME ( %NFWFW ) =  NFWFW
+         JNAME ( %NFTBL  ) =  NFTBL     ;  JNAME ( %NFAII ) =  NFAII
+         JNAME ( %NFAII2 ) =  NFAII2    ;  JNAME ( %NFAIO ) =  NFAIO
+         JNAME ( %NFTRI  ) =  NFTRI     ;  JNAME ( %NFTRI2 )=  NFTRI2
+         JNAME ( %NFTRC1 ) =  NFTRC1    ;  JNAME ( %NFTRC2 )=  NFTRC2
+         JNAME ( %NFTD   ) =  NFTD      ;  JNAME ( %NFPTV ) =  NFPTV
+         JNAME ( %NFPTH1 ) =  NFPTH1    ;  JNAME ( %NFPTH2 )=  NFPTH2
+         JNAME ( %NFPTL  ) =  NFPTL     ;  JNAME ( %NFPTB ) =  NFPTB
+         JNAME ( %NFPTS  ) =  NFPTS     ;  JNAME ( %NFEXE ) =  NFEXE
+         JNAME ( %NFEXW  ) =  NFEXW     ;  JNAME ( %NFTBL ) =  NFTBL
+         JNAME ( %NFCIH  ) =  NFCIH     ;  JNAME ( %NFCID ) =  NFCID
+         JNAME ( %NFCIC  ) =  NFCIC     ;  JNAME ( %NFCIW ) =  NFCIW
+         JNAME ( %NFCIV  ) =  NFCIV     ;  JNAME ( %NFCIH1 )=  NFCIH1
+         JNAME ( %NFCIH2 ) =  NFCIH2    ;  JNAME ( %NFCII ) =  NFCII
+         JNAME ( %NFCIS  ) =  NFCIS     ;  JNAME ( %NFTF )  =  NFTF
+         END

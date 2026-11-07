@@ -1,0 +1,276 @@
+   PROCESS      FILE      'mcmain.f'
+   %%SUBNAME  MCMAIN %
+   PROCESS   NO LIST      MAP    HEADER  %SUBNAME
+   SUBROUTINE %SUBNAME (TITLE, FILES, METHOD, USCPU,  RTNCD)
+  %CPYRIGHT
+  %UPDATE
+  /             CREATED  BY M. SEKIYA ON 1992-12-22 AT HUCC
+  /*     FUNCTION :  MCSCF
+  /*
+  /*     CALLED   : ATOMCI
+  /*     CALLING  : WFGENS
+  /*                WFETAP -+---> EXIJ 
+  /*                        +---> SMAT
+  /*                mcdriv -+---> MCEFH 
+  /*                        +---> MKSINV
+  /*                        +---> RDINTS -+ RDINS ... 
+  /*                        +---> MCCI   -+ DIAG ... 
+  /*                        +---> MCFOCK -+ mcscf0 
+  /*                                      + mcscf1 
+  /*                                      + mcscf2 
+  /*
+  /*     INPUT    : NAMELIST  MC
+  /*
+  /*
+  IMPLICIT INTEGER   * 4 (A-Z)
+  %INCMAIN
+  %INCMACRO
+  %INCWORK
+  %param
+      INTEGER   * 4 VAR(%WORKCORE)
+      common/work/var
+
+   /*
+   /* DCL FOR LOCAL VAR
+   /*
+   INTEGER   * 4  NWFSG,       -- ADDR FOR  WORK REGION
+                  NAMEai(33),    -- COMMENT ON NFTB
+                  NPFLG,       --  /0/,-- DEBUG FLAG
+                  ISMAX,       --  /21/,--
+                  IRMAX,       --  /31/,--
+                  TBLSIZ,      --  /5000/,-- K BYT
+                  FILE,        --  /'NEW '/,--
+                  STATUS,      --  /'DEL '/,--
+                  NCOUNT,      --  /50/,--
+                  NSKIP,       --  /1/,--
+                  TBLINF,      --  /0/,--
+                  IBLNK;
+  
+   / change by msekiya for new compiler
+   character * 72 name ;
+   integer * 4 namemc(30) ;
+   / all name  
+   INTEGER * 4    nbf(%llimit),-- Number of Basis in each symm
+                  nob(%llimit),-- Number of Basis in each symm
+                  lmax,        -- Max symm
+                  nsol,        -- Solutions
+                  nfta,        -- Unit number for AI file 
+                  nfee,        -- Unit number for EE file ( Work) 
+                  ind(4,100),  -- 
+                  nind,        --
+                  nset,        -- Record Number to be stored in IVCS
+                  itmax,       -- Max number of Iterations
+                  nopt(%basis), --
+                  flag         -- MCSCF Flags
+              
+  REAL * 8        ethr,       -- Energy Threshold
+                  c2thr        -- SQCDF
+
+ /* CSF
+   character * 72 csfs(%mccsfs),closed
+ 
+   DATA           NPFLG    /0/-- DEBUG FLAG
+                  ISMAX   /21/--
+                  IRMAX   /31/--
+                  RULE    /0/--
+                  nrdscf    /0/--
+                  nsol     /1/--
+                  nfta    /18/--
+                  ivcs    /27/--
+                  nfee    /8/--
+                  nset    /0/--
+                  nind    /0/--
+                  ind    /400*0/ --
+                  itmax   /99/--
+                  nopt  /%basis*1/ -- 
+                  flag   / 1/ -- 
+                  ethr  /1.0d-7/--
+                  c2thr  /1.0d-6/
+ 
+   DATA    closed/' '/
+   DATA    name/' '/; -- clear by msekiya
+   DATA    LRPS0,LWFL0--
+          /10000, 2000  /
+   %INCDATA
+   %DATALTRI
+   %%NAMELIST MC %
+   /* NAMELIST ITEM
+   NAMELIST /%NAMELIST/ --                    STATUS   METHOD     TYPE
+            NFTF,    -- CFP TABLE            INPUT       80       I4
+            NFWFA ,  -- WF  : RETURN FILES   OUTPUT      31       I4
+            NFWFX,   -- MCSCF RETURN FILES   OUTPUT      35       I4
+            NFWFW,   -- WORK FILE            IN/OUT      36       I4
+            NFTBL,   -- WIG SYM TABLE        IN/OUT      37       I4
+                     --                              DEFAULT
+            NAME,    -- COMMENT ON NFTB                NONE       c*80
+            ITNEL,   -- # OF ELECTRON                  NONE       I4
+            ISPIN,   -- SPIN    MULTIPLICITY           NONE       I4
+            IORB,    -- ORBITAL MULTIPLICITY           NONE       I4
+            IPAR,    -- PARITY                         NONE       I4
+            ISMAX,   -- SPIN MAX ( INTERMEDIATE )        21       I4
+            IRMAX,   -- SPIN MAX ( INTERMEDIATE )        31       I4
+            RULE,    -- 0: MCSCF                          0       I4
+            NPFLG,   -- DEBUG PRINT FLAG                  0       I4
+            LRPS,    -- LENGTH OF WRITE BUFFER(NFTB)  20000       I4
+            LTRI,    -- LENGTH OF WRITE BUFFER(NFTB)              I4
+            LWFL,    -- LENGTH OF WRITE BUFFER(NFTB)   2000       I4
+            TBLSIZ,  -- TABLE SIZE FOR WIG ( K BYTE)   5000       I4
+            TBLINF,  -- PRINT FLAG FOR INFORMATION LIST   1       I4
+            NCOUNT,  -- COUNTER                          50       I4
+            NSKIP,   -- SKIP                              1       I4
+            FILE,    -- NEW  OR OLD                    NEW        C4
+            STATUS,  -- SAVE OR DEL                    DEL        C4
+            IUNIT,   -- IREAD FREE FORMAT READ UNIT       5       I4
+            csfs,    --  csf input 
+            closed,  --  closed shell  write 1S 2S 2P 
+            nrdscf,  --
+            nsol,    --
+            nfta,    -- unit number for AI file
+            nfee,    -- unit number for ee file
+            ivcs,    -- unit number for vecter file
+            nset,    --
+            nind,    --
+            ind ,    --
+            itmax,   --
+            nopt,    --
+            flag,    --
+            ethr,   --
+            c2thr    --
+ 
+   %%CHECK IF ERRCD > 0 THEN EXIT %FINISH %
+
+   BEGIN
+      ERRCD =0 ; RTNCD = 0 ;
+      call ctoi4 ('    ', iblnk)
+      %START
+      EXEC SETUP
+      FORTRAN READ(5,%NAMELIST,END=900)
+      / copy name to namemc
+      for i = 1, 18;  call ctoi4 (name(4*(i-1)+1:4*i),namemc(i))
+
+      EXEC PRINT_HEADDER
+      rewind nfta
+      binary read : nfta nameai,lmax,nwt,i1,i1,loei,(nbf(i),i=1,lmax)
+      EXEC DATA_CHECK
+                                       /* NFTC IS TEMP USING */
+      EXEC WAVE_FUNCTIONS_DATA ; %CHECk
+      EXEC WAVE_FUNCTIONS ; %CHECK
+       
+      EXEC MC_EXP  ; %CHECK
+      ACTION = %FREEALL ; %WKCORE
+      /* changed by mas */ 
+      IF RULE = 0 then EXEC MC_SCF
+      %FINISH
+      RETURN 
+      FORTRAN 900 CONTINUE
+      FORMAT WRITE '    NAMELIST - &MC - IS NOT FOUND IN INPUT DATA  '
+      (/' ',A,20('*')////)
+      ERRCD = 2000
+      %FINISH
+      END
+ 
+      PROCEDURE MC_SCF
+        format write flag ; ( ' SCF flag = ', i4 ) 
+        call mcdriv ( nrdscf, namemc, --  changed by msekiya 03/24/95
+            nsol,ivcs,nfta,nfee,nsym,nbf,nob,ind,nind,--
+            npflg, itmax,ethr,c2thr,nset,nopt,flag, --
+            errcd) 
+        end  
+
+      PROCEDURE WAVE_FUNCTIONS_DATA
+        iounit = nfee ; 
+        rewind iounit
+        call mcmcsf(lmax, nbf, csfs, closed, iounit,npflg,errcd)
+        /* changed  by msekiya 1994-02-22
+        end 
+      PROCEDURE WAVE_FUNCTIONS
+         rewind iounit
+         ACTION = %ALLOC
+         %%VNAME NWFSG  % ; TYPE = %I2 ; LENGTH = LRPS ; %WKCORE
+         CALL IRISET(IOUNIT)
+         CALL WFGENS (VAR(NWFSG),NAMEMC,LRPS,NFWFA ,NFTF,    --
+           NPFLG,ISMAX,IRMAX,ISPIN,IORB,IPAR,ITNEL,RULE,   -- INPUT
+           NREF, MAXRPS, MXLBUF,  ERRCD)                   -- OUTP
+
+         ACTION = %FREE
+         %%VNAME NWFSG  % ; TYPE = %I2 ; LENGTH = LRPS ; %WKCORE
+         END
+
+  > MC_EXP 
+      rewind iounit
+      NFTCX = 0 ; RETRY = 0 ; MCFLAG=nfee 
+      /* MODIFY BY MAS   AUG 15 90
+      FORTRAN REWIND NFWFW
+      CALL EXTAP1  --
+         (NAMEMC,                     -- WORK REGION
+          NFWFA,NFWFW,NFTCX,NFTF,         -- UNIT NUMBER
+          NPFLG,LWFL, -- PARAMETER LIST
+          RETRY,MCFLAG,ERRCD )
+      REWIND NFWFW 
+      END
+
+      PROCEDURE SETUP
+         /FOR  I= 1,18 ; /NAMEMC(I) = TITLE(I)
+         FOR  I=19,30 ; NAMEMC(I) = IBLNK
+         NFWFA  = METHOD(31)
+         NFWFW  = METHOD(36)
+         NFTBL  = METHOD(37)
+         NFTF   = METHOD(80)
+         RULE = 0 ; NFWFX = 8 
+         LRPS  = LRPS0  ; LWFL = LWFL0
+         IUNIT = 5
+         END
+
+  > DATA_CHECK
+      METHOD(31) = NFWFA
+      METHOD(36) = NFWFW
+      METHOD(19) = RULE
+      METHOD(37) = NFTBL
+     /* Create NIND and IND 
+      if ind(1,1) = 0  & NIND = 0 --
+      then do 
+         nind = lmax 
+         for i = 1, lmax ;
+         ( ind(1,i)=0; ind(2,i)=i-1; 
+           ind(3,i)= 1; ind(4,i)=nbf(i))
+         END
+      ELSE if NIND = 0 --
+      then ( i= 0 ; until ind(1,i) = 0 ; i = i+1 ; nind = i - 1 )  
+      /* calc NOB and nsym from ind
+      nsym = 0 ;
+      for i = 1 , lmax ; nob(i) = 0 ;
+      do for i = 1, nind ;
+         nsym = max0 ( nsym, ind(2,i) + 1 )
+         = nob(ind(2,i)+1) + ind(4,i) - ind (3,i) + 1
+         end
+      if lmax ^= nsym then exit rtncd = 10205 ;
+      end
+
+  > PRINT_HEADDER
+     FORMAT WRITE (TITLE(I),I=1,18),(NAMEMC(I), I=1,18),  --
+                   METHOD(80),  NFTF,  --CFP TAPE
+                   METHOD(31),  NFWFA , -- WAVE FUNCTION FOR GEN
+                   METHOD(35),  NFWFX,  -- EE TAPE       FOR MCSCF
+                   METHOD(36),  NFWFW , -- WORK FILE 1
+                   METHOD(37),  NFTBL , -- LABEL FILE
+                   RULE,           --
+                   LWFL0,  LWFL,   --
+                   LRPS0,  LRPS,   --
+                   FILES,  NPFLG
+     ('1',45('*'),3X,'SCF         (%SUBNAME)'/      --
+        /' TITLE:  ',18A4 /                                   --
+        /' NAME :  ',18A4 /                                   --
+        /'  NFTF  : CFP TABLE            (',I3,') =',I6,      --
+        /'  NFWFB1: CSF TAPE FOR MCSCF   (',I3,') =',I6,      --
+        /'  NFWFX : EE  TAPE FOR MCSCF   (',I3,') =',I6,      --
+        /'  NFWFW : WORK FILE 1          (',I3,') =',I6,      --
+        /'  NFTBL : STORE CFP ETC        (',I3,') =',I6,      --
+        //'     PARAMETER LIST                        ',   --
+        //'      RULE           =',I6,  --
+          '      LWFL  (',I6,') =',I6,  --
+         /'      LRPS  (',I6,') =',I6,  --
+        //'  SUMMARY FILES UNIT = ',I3,'     PRINT  FLAG = ',I3/)
+     END
+     %INCWKEXC
+
+

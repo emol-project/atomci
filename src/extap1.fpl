@@ -1,0 +1,242 @@
+   PROCESS FILE 'extap1.f'
+
+   %%SUBNAME  EXTAP1%
+   PROCESS    NO LIST      MAP    HEADER  %SUBNAME
+      SUBROUTINE %SUBNAME  --
+         (NAME,             -- WORK REGION
+          NFTB,NFTE,NFTCX,NFTF,  -- UNIT NUMBER
+          NPFLG,LWFL, -- PARAMETER LIST
+          RETRY,MCFLAG,RTNCD )
+  %UPDATE
+  /   MODIFIED BY M.S.  01/12/1987   AT IMS
+  /   MODIFIED BY TASHI 10/25/1989   AT HUCC
+  /*
+  /*     FUNCTION :  EE TAPE CREATION
+  /*
+  /*     CALLED   : EXMAIN
+  /*     CALLING  : EXTAPE -+-EXIJ--> SMAT ( QXXXXX, TXXXXX )
+  /*                        +---> WIGSET
+  /*                QTISQT
+  /*
+  /*
+  IMPLICIT INTEGER   * 4 (A-Z)
+  /* DCL FOR INPUT PARAMETER & USING PARM
+  INTEGER   * 4   --
+                  -- VAR(*)   , -- WORK REGION SIZE IS RETURNS BY WKCORE
+                  NAME(30),  --
+                  NFTB,      --
+                  NFTE,      --
+                  NFTCX,     --
+                  NFTF,      --
+                  LWFL,      --
+                  RETRY,     --
+                  RTNCD      -- ERROR CODE
+
+
+  INTEGER   * 4  ERRCD
+
+  /*
+  %INCWORK
+   /*
+   /* DCL FOR LOCAL VAR
+   /*
+   INTEGER   * 4 INAME(18)
+   %param
+      INTEGER   * 4 VAR(%WORKCORE)
+      common/work/var
+   /* Typed view of the /work/ heap as VAR (INTEGER*4), Bucket-1
+   /* convention.  VARI2(2j-1:2j) overlays VAR(j) -- an I2 datum at VAR(k)
+   /* is VARI2(2k-1).
+      INTEGER   * 2 VARI2(%WORKCORE*2)
+      EQUIVALENCE (VAR(1),VARI2(1))
+
+   LOGICAL    IOERR,IOEND
+   %%VNAME NDUMY %
+   %%IOR ERRFLAG = IOERR ENDFLAG = IOEND IOSTAT = IOSTAT %
+   %%IOCHECK IF IOEND ! IOERR THEN EXIT ERRCD = %ERRCD %
+   %%CHECK IF ERRCD > 0 THEN EXIT EXEC ERROR_INFORMATION %
+
+      BEGIN
+         ERRCD =0 ; RTNCD = 0 ; IOERR = .FALSE. ; IOEND = .FALSE.
+         L20 = 20 ; IOSTAT = 0 ;
+         EXEC SET_CFPTABLE  ; %CHECK
+         IF RETRY = 0 THEN EXEC READ_NFTB
+         ELSE EXEC READ_NFTCX_HEAD
+         %CHECK
+         EXEC PRINT
+         EXEC CALC_EXPRESSION ; %CHECK
+
+         END
+
+      > PRINT
+         2L ;
+         FORMAT WRITE ISPIN, IORB, IPAR, ITNEL
+         (/'  > SPIN       MULTIPLICITY : ',I3, --
+          /'  > ORBITAL    MULTIPLICITY : ',I3, --
+          /'  > PARITY                  : ',I3, --
+          /'  > NUMBER OF ELECTRONS     : ',I3// )
+          END
+
+      > READ_NFTB
+         REWIND NFTB
+         BINARY READ : NFTB %IOR --
+            (NDUMY,I=1,30),NWT,NWF,ISPIN,IORB,IPAR,ITNEL
+         REWIND NFTB
+         %%ERRCD  6101 % ; %IOCHECK
+      /*   READ INF OF ORBITAL & STATE
+         ACTION = %ALLOC  ; LMAX = 20 ; L100 = %BASIS
+         %%VNAME NWTN % ; TYPE = %I4 ; LENGTH = NWT    ; %WKCORE
+         %%VNAME NWTC % ; TYPE = %I4 ; LENGTH = NWF    ; %WKCORE
+         %%VNAME NWSQ % ; TYPE = %I4 ; LENGTH = L100   ; %WKCORE
+         %%VNAME ISSH % ; TYPE = %I4 ; LENGTH = L20    ; %WKCORE
+         ACTION = %REGION ;
+         %%VNAME NGOT % ; TYPE = %I4 ; %WKCORE
+         NGOT2 = NGOT * 2
+         ACTION = %ALLOC ;
+         %%VNAME NWFSG % ; TYPE = %I2 ; LENGTH = NGOT2     ; %WKCORE
+         IF NPFLG > 2 THEN %WK_LIST
+         
+         CALL EXNFTB --
+              ( NFTB, VARI2(2*NWFSG-1),   NGOT2,  --  fixed by msekiya NGTO2 -> NGOT2
+                VAR(NWTN),  NWT,            --  Sep 05  1994
+                VAR(NWTC),  NWF,            --
+                VAR(NWSQ),  L100,           --
+                INAME,                      --
+                NREF,  ITSTV, NTYPE,--
+                MXRPS, INTMAX,       ERRCD )
+         ACTION = %FREE ;
+         %%VNAME NWFSG % ; TYPE = %I2 ; LENGTH = NGOT2     ; %WKCORE
+         ACTION = %ALLOC ;
+         %%VNAME NWFSG % ; TYPE = %I2 ; LENGTH = INTMAX    ; %WKCORE
+         REWIND NFTB
+         IF NPFLG > 2 THEN %WK_LIST
+         END
+      > READ_NFTCX_HEAD
+         REWIND NFTCX
+         BINARY READ : NFTCX %IOR --
+            (NDUMY,I=1,30),ISPIN,IORB,IPAR,NWT,NWF,ITSTV,ITNEL,LIJB,--
+             IDIAG,LMAX,INTMAX,LWFL,NTYPE,NREF,MXRPS
+         %%ERRCD  6121 % ; %IOCHECK
+         /*KGN CHANGE L100
+         ACTION = %ALLOC  ; L100 = %BASIS
+         %%VNAME ISSH % ; TYPE = %I4 ; LENGTH = L20    ; %WKCORE
+         %%VNAME NWTN % ; TYPE = %I4 ; LENGTH = NWT    ; %WKCORE
+         %%VNAME NWTC % ; TYPE = %I4 ; LENGTH = NWF    ; %WKCORE
+         %%VNAME NWSQ % ; TYPE = %I4 ; LENGTH = L100   ; %WKCORE
+         BINARY READ : NFTCX %IOR --
+                (VAR(ISSH+I),I=0,LMAX-1), --
+                (VAR(NWTN+I),I=0,NWT-1),  --
+                (VAR(NWTC+I),I=0,NWF-1),  --
+                (VAR(NWSQ+I),I=0,L100-1)
+         %%VNAME NWFSG % ; TYPE = %I2 ; LENGTH = INTMAX    ; %WKCORE
+         IF NPFLG > 2 THEN %WK_LIST
+         END
+      > CALC_EXPRESSION
+         NIJX = MXRPS * MXRPS
+         /*KGN CHANGE L100
+         ACTION = %ALLOC ;  L100 = %BASIS
+         %%VNAME NWTH % ; TYPE = %I4 ; LENGTH = NWT    ; %WKCORE
+         ACTION = %REGION
+         %%VNAME LTRIX% ; TYPE = %I4 ; %WKCORE
+
+         IF NPFLG > 2 THEN %WK_LIST
+
+         CALL EXTAPE --
+          ( NFTE,NFTCX,            --    FILE UNIT
+            VAR(NWFSG),             INTMAX,   -- CSF
+            VAR(NWTC),              NWF,      -- ORBITAL
+            VAR(NWTN),  VAR(NWTH),  NWT,      -- SHELL STATE
+            VAR(ISSH),              LMAX,     -- # OF ORB IN SYM I
+            VAR(NWSQ),              L100,     -- COUPLING SEQ
+            ISPIN,   IORB,  IPAR,   ITNEL,    --
+            ITSTV,      NTYPE,      NREF,     --
+            NAME,       MXRPS,          --
+            LWFL, NPFLG,RETRY,MCFLAG, ERRCD)
+            /-  cfptables (comcfp) and temporary storages for integrals
+            /-  (comstr) are transfered to subprograms through common area
+            /-  sas     94-02-03
+         IF ERRCD  > 0 THEN RTNCD = ERRCD
+         END
+      PROCEDURE SET_CFPTABLE
+         CALL SETCFP (NFTF)
+         END
+
+      PROCEDURE WK_ERROR
+         2L ; ' ** ERROR OCCURRED IN %SUBNAME ( WORK REGION ) ** ' ; 1L
+         END
+      %EXERINF
+
+   %%SUBNAME EXNFTB%
+   PROCESS    NO LIST      MAP    HEADER  %SUBNAME
+      SUBROUTINE %SUBNAME                    --
+                (NFTA,  NWFSG,        NGOT2, --
+                 NWTN,  NWT,   --
+                 NWTC,  NWF,   --
+                 NWSQ, L100,   --
+                 INAME, NREF, ITSTV, NTYPE, --
+                 MXRPS, INTMX, --
+                 RTNCD)
+ %UPDATE
+ /
+ /            CODED    BY M. SEKIYA  ON 1987-12-12  AT IMS
+ /            CHANGE   BY TASHI      ON 1989-10-25  AT HUCC
+ /*
+ /*     FUNCTION :  READ WAVE FUNCTION TAPE
+ /*     CALLED   :  EXTAP1
+ /*     CALLING  :  NONE
+ /*
+ /*
+      IMPLICIT INTEGER *4 (A-Z)
+      INTEGER   * 2  NWFSG(NGOT2)
+      INTEGER   * 4  --
+                     NFTA,           --
+                     NWTN(NWT),     --
+                     NWTC(NWF),     --
+                     NWSQ(L100),    --
+                     INAME(18),      --
+                     INTMX,          --
+                     MXRPS,           --
+                     ITSTV,          --
+                     NTYPE,          --
+                     ERRCD           --
+
+      INTEGER   * 4  RTNCD
+      LOGICAL    IOERR,IOEND
+   %%CHECK IF ERRCD > 0 THEN EXIT EXEC ERROR_INFORMATION ; %
+   %%IOR     ENDFLAG = IOEND ERRFLAG = IOERR IOSTAT = IOSTAT %
+   %%IOCHECK  IF IOERR ! IOEND THEN EXIT ERRCD = %ERRCD %
+   %%SET   IOERR = .FALSE. ; IOEND = .FALSE. ; ERRCD = 0 ; RTNCD = 0 %
+
+      BEGIN
+         %SET ; IOSTAT = 0 ;
+         EXEC READ_WAVE_FUNCTION ; %CHECK
+         END
+
+   > READ_WAVE_FUNCTION
+      BINARY READ : NFTA %IOR --
+             (NDUMY,I=1,36),(NWTN(I),I=1,NWT),(NWTC(I),I=1,NWF), --
+              NREF, (NWSQ(I),I=1,NWT)
+   /*KGN 07/90 CHANGE NWSQ
+      %%ERRCD  6110 % ; %IOCHECK
+      BINARY READ : NFTA %IOR INAME
+      %%ERRCD  6111 % ; %IOCHECK
+      INT=0  ; ITSTV=0  ;  NTYPE = 0
+      BINARY READ : NFTA %IOR ITOT,(NWFSG(INT+I),I=1,ITOT)
+      DO WHILE ITOT > 0 & ^IOEND & ^IOERR ;
+         ITSTV=ITSTV+NWFSG(INT+2) ; NTYPE = NTYPE + 1 ;  INT=INT+ITOT
+         BINARY READ : NFTA %IOR ITOT,(NWFSG(INT+I),I=1,ITOT)
+         END
+      %%ERRCD 6112 % ; %IOCHECK
+      / debug by mas
+      / format write NFTA,IOEND,IOERR,IOSTAT,itot ; 
+      / (' >1<',i4,2l2,2i4 )
+      BINARY READ : NFTA %IOR  MXRPS
+      %%ERRCD 6113 % ; %IOCHECK
+      INTMX = INT
+      END
+
+ > ERROR_INFORMATION
+      %ERMSG
+      END
+
+

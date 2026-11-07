@@ -1,0 +1,89 @@
+# Build, install and run artifacts of ATOMCI.
+
+# Compiled objects and static libraries
+*.o
+*.a
+
+# src/ build outputs (src/CFPDATA is tracked)
+/src/atomci
+/src/atgen
+/src/fpl
+/src/cfpa
+/src/cfpb
+/src/tfpl
+/src/CFPTBL
+/src/gDKsapporo/dkint
+
+# .f files generated from the matching .fpl by every build
+/src/fpl90.f
+/src/fpl90lib.f
+/src/fplnews.f
+/src/wt9x.f
+/src/atgen.f
+/src/cfpset.f
+/src/ciai.f
+/src/cici.f
+/src/ciex.f
+/src/ci.f
+/src/cipt.f
+/src/ciptrs.f
+/src/cirs.f
+/src/citr.f
+/src/ciutil.f
+/src/ciwf.f
+/src/dcoda.f
+/src/extap1.f
+/src/extape.f
+/src/fdopen.f
+/src/jacjac.f
+/src/mcadrs.f
+/src/mcci.f
+/src/mcdriv.f
+/src/mcfock.f
+/src/mchtr.f
+/src/mcjsks.f
+/src/mcmain.f
+/src/mcmcsf.f
+/src/mcscf0.f
+/src/mcscf1.f
+/src/mcscf2.f
+/src/mcscf3.f
+/src/mcscf4.f
+/src/mcsut.f
+/src/mcvut.f
+/src/ntisqt.f
+/src/readia.f
+/src/setcfp.f
+/src/setcom.f
+/src/setwig.f
+/src/shmsrc.f
+/src/wfetap.f
+/src/wfgens.f
+/src/wkcore.f
+/src/FPL77LIB.f
+/src/FPLM680.f
+/src/FPLRMFT.f
+/src/FPLVS.f
+
+# `make install` default prefix
+/local
+
+# Fortran scratch files of a calculation
+fort.*
+
+# Default work directories of the sample scripts
+/samples/native/work/
+/samples/inp/work/
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.hypothesis/
+
+# scripts/build_san.sh output
+/build_san_*/
+
+# Editor and OS files
+.DS_Store
+._*

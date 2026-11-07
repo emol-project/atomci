@@ -1,0 +1,23 @@
+OPEN UNIT=10 FILE=./CFPTBL BINARY STATUS=OLD
+OPEN UNIT=27 FILE=f.NO BINARY STATUS=OLD 
+OPEN UNIT=2 FILE=fpt.csf STATUS=OLD
+OPEN UNIT=3 FILE=f.bas STATUS=OLD
+OPEN UNIT=7 FILE=fpt.time
+END
+ &CNTL NRNFG=1,0,1,1,1,1,1,1, TITLE=' F DOUBLET P (NO 1) ', /                
+ &AI IUNIT=3, Z=9.0D0, NTYPE=2, IDPRNT=0, /                                  
+ &WF ITNEL=9, ISPIN=2, IORB=3, IPAR=1, RULE=2, NPFLG=0, IUNIT=2, /           
+ &TR NSYM=4, NBF=13,11,6,5, NOB=13,11,6,5,                              
+     MPOB=13,12,11,10,9,8,7,6,5,4,3,2,1,                                        
+          11,10,9,8,7,6,5,4,3,2,1,                                              
+          6,5,4,3,2,1,                                                          
+          5,4,3,2,1,     ITVCI=1, /                                          
+ &GET IVCS=27, NIND=6,                                                          
+      IND=2,0,1,2,  2,0,3,13, 2,1,1,1, 2,1,2,11,                                
+          2,2,1,6,  2,3,1,5,   /                         
+ &PT NSOLVE=1, ISTATE=1, ETHR=0.001, CTHR=0.01, HOW=0, 
+     NRNFG=1,1,1, /
+ &EX RETRY=0, / 
+ &CI NSTATE=1, NSDIM=100, IPS=7, NRNFG=1,1,1,0,1,1,                             
+     MAXIT=100, IOFLG=0,-1,-1,0,0, /                                         
+ &RS RULE=2, PTHR=-0.001, NRNFG=1, /                                       

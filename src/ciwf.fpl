@@ -1,0 +1,217 @@
+   PROCESS       FILE      'ciwf.f'
+   %%SUBNAME  WFMAIN %
+   PROCESS    NO LIST      MAP    HEADER  %SUBNAME
+
+      SUBROUTINE %SUBNAME (TITLE, FILES, METHOD, USCPU,  RTNCD)
+  %CPYRIGHT
+  %UPDATE
+  /             REVISED  BY M. SEKIYA ON 1987- 2-29 AT IMS
+  /             REVISED  BY TASHI     ON 1989-10-24 AT HUCC
+  /*     FUNCTION :  CSF CREATOR FOR GENERAL CSF
+  /*
+  /*     CALLED   : ATOMCI
+  /*     CALLING  : WFGENS
+  /*                WFETAP -+---> EXIJ -+----> SMAT -+----> SHMS
+  /*                        +---> SMAT
+  /*                        +---> TBLSAV(TBLSET)
+  /*                        +---> IRISET
+  /*
+  /*     INPUT    : NAMELIST  WF
+  /*
+  /*
+  IMPLICIT INTEGER   * 4 (A-Z)
+  %INCMAIN
+  %INCMACRO
+  %INCWORK
+  %param
+      INTEGER   * 4 VAR(%WORKCORE)
+      common/work/var
+
+   /*
+   /* DCL FOR LOCAL VAR
+   /*
+   INTEGER   * 4  NWFSG,       -- ADDR FOR  WORK REGION
+                  NAME(30),    -- COMMENT ON NFTB
+                  NPFLG,       --  /0/,-- DEBUG FLAG
+                  ISMAX,       --  /21/,--
+                  IRMAX,       --  /31/,--
+                  TBLSIZ,      --  /5000/,-- K BYT
+                  FILE,        --  /'NEW '/,--
+                  STATUS,      --  /'DEL '/,--
+                  NCOUNT,      --  /50/,--
+                  NSKIP,       --  /1/,--
+                  TBLINF,      --  /0/,--
+                  IBLNK;
+
+
+   DATA           NPFLG    /0/-- DEBUG FLAG
+                  ISMAX   /21/--
+                  IRMAX   /31/--
+
+   DATA    LRPS0,LWFL0--
+          /10000, 2000 /
+   %INCDATA
+   %DATALTRI
+   %%NAMELIST WF %
+   /* NAMELIST ITEM
+   NAMELIST /%NAMELIST/ --                    STATUS   METHOD     TYPE
+            NFTF,    -- CFP TABLE            INPUT       80       I4
+            NFWFA ,  -- WF  : RETURN FILES   OUTPUT      31       I4
+            NFWFB ,  -- WORK FILE IN WFETAP  IN/OUT      32       I4
+            NFWFE,   -- EE-SD RETURN FILES   OUTPUT      34       I4
+            NFWFP,   -- EE-PT RETURN FILES   OUTPUT      35       I4
+            NFWFW,   -- WORK FILE            IN/OUT      36       I4
+            NFTBL,   -- WIG SYM TABLE        IN/OUT      37       I4
+                     --                              DEFAULT
+            NAME,    -- COMMENT ON NFTB                NONE    30*I4
+            ITNEL,   -- # OF ELECTRON                  NONE       I4
+            ISPIN,   -- SPIN    MULTIPLICITY           NONE       I4
+            IORB,    -- ORBITAL MULTIPLICITY           NONE       I4
+            IPAR,    -- PARITY                         NONE       I4
+            ISMAX,   -- SPIN MAX ( INTERMEDIATE )        21       I4
+            IRMAX,   -- SPIN MAX ( INTERMEDIATE )        31       I4
+            RULE,    -- 1: SD-FULL 2: BLOCK DIAG 3:H(I,I) 2       I4
+            NPFLG,   -- DEBUG PRINT FLAG                  0       I4
+            LRPS,    -- LENGTH OF WRITE BUFFER(NFTB)  20000       I4
+            LTRI,    -- LENGTH OF WRITE BUFFER(NFTB)              I4
+            LWFL,    -- LENGTH OF WRITE BUFFER(NFTB)   2000       I4
+            TBLSIZ,  -- TABLE SIZE FOR WIG ( K BYTE)   5000       I4
+            TBLINF,  -- PRINT FLAG FOR INFORMATION LIST   1       I4
+            NCOUNT,  -- COUNTER                          50       I4
+            NSKIP,   -- SKIP                              1       I4
+            FILE,    -- NEW  OR OLD                    NEW        C4
+            STATUS,  -- SAVE OR DEL                    DEL        C4
+            IUNIT    -- IREAD FREE FORMAT READ UNIT       5       I4
+   %%CHECK IF ERRCD > 0 THEN EXIT %FINISH %
+
+   BEGIN
+      ERRCD =0 ; RTNCD = 0 ;
+      call ctoi4 ('    ', iblnk)
+      %START
+      EXEC SETUP
+      FORTRAN READ(5,%NAMELIST,END=900)
+      EXEC PRINT_HEADDER
+      EXEC DATA_CHECK
+
+                                       /* NFTC IS TEMP USING */
+      IF RULE < 3 THEN DO
+     	 EXEC WAVE_FUNCTIONS ; %CHECK
+         END
+      IF RULE = 0 THEN EXIT %FINISH
+
+      EXEC SET_CFPTABLE ; %CHECK
+      /* DONT USE
+      EXEC SELECTION_CSF   ;
+      %CHECK
+
+      %FINISH
+      EXIT
+      FORTRAN 900 CONTINUE
+      FORMAT WRITE '    NAMELIST - &WF - IS NOT FOUND IN INPUT DATA  '
+      (/' ',A,20('*')////)
+      ERRCD = 2000
+      %FINISH
+      END
+
+      PROCEDURE WAVE_FUNCTIONS
+         ACTION = %ALLOC
+         %%VNAME NWFSG  % ; TYPE = %I2 ; LENGTH = LRPS ; %WKCORE
+         CALL IRISET(IUNIT)
+         CALL WFGENS (VAR(NWFSG),NAME,LRPS,NFWFA ,NFTF,    --
+           NPFLG,ISMAX,IRMAX,ISPIN,IORB,IPAR,ITNEL,RULE,   -- INPUT
+           NREF, MAXRPS, MXLBUF,  ERRCD)                   -- OUTP
+
+         ACTION = %FREE
+         %%VNAME NWFSG  % ; TYPE = %I2 ; LENGTH = LRPS ; %WKCORE
+         END
+
+      PROCEDURE SET_CFPTABLE
+         CALL SETCFP (NFTF)
+         END
+
+
+     PROCEDURE SELECTION_CSF
+         -- locally allocated in wfetap  SAS 94-01-16
+         NIJX =  MAXRPS * MAXRPS ;
+         LTRIX = MAXRPS * LIJB  * 100
+         LTRIX = MIN0( LTRIX, LTRI )
+         2L ; ' > RESERVED LTRI  IS ' ; PUT LTRIX I8 ; 1L
+         ACTION = %REGION ;
+         %%VNAME LRPS  % ; TYPE = %I4 ;  %WKCORE
+         LRPSX = LRPS * 2
+         ACTION = %ALLOC
+         %%VNAME NWFSG % ; TYPE = %I2 ; LENGTH = LRPSX      ; %WKCORE
+         ' > RESERVED LRPSX IS ' ; PUT LRPSX I8 ; 2L
+         IF NPFLG > 2 THEN %WK_LIST
+
+         IF RULE = 1 THEN NFTE = NFWFE ; ELSE NFTE = NFWFP
+         /* MODIFY BY MAS   AUG 15 90
+         MCFLAG = 0 ; 
+         /* 0 means CI EXP 
+         /* MODIFY BY MAS 1992-12-22  
+         FORTRAN REWIND NFTE
+         CALL WFETAP --
+          ( VAR(NWFSG), LRPSX, MXLBUF,  -- WORK REGION
+            NFWFA,NFWFB,NFTE,NFWFW,    -- FILES
+            LWFL,  --
+            NAME,NPFLG,RULE,NREF,       --
+            MCFLAG,                     -- 1 means CI exp
+            ERRCD )
+         END
+
+      PROCEDURE SETUP
+         FOR  I= 1,18 ; NAME(I) = TITLE(I)
+         FOR  I=19,30 ; NAME(I) = IBLNK
+         NFWFA  = METHOD(31)
+         NFWFB  = METHOD(32)
+         NFWFE  = METHOD(34)
+         NFWFP  = METHOD(35)
+         NFWFW  = METHOD(36)
+         NFTBL  = METHOD(37)
+         NFTF   = METHOD(80)
+         RULE = 1
+         LRPS  = LRPS0  ; LWFL = LWFL0
+         IUNIT = 5
+         END
+
+      > DATA_CHECK
+          METHOD(31) = NFWFA
+          METHOD(32) = NFWFB
+          METHOD(34) = NFWFE
+          METHOD(35) = NFWFP
+          METHOD(36) = NFWFW
+          METHOD(19) = RULE
+          METHOD(37) = NFTBL
+          END
+
+  > PRINT_HEADDER
+     FORMAT WRITE (TITLE(I),I=1,18),(NAME(I), I=1,18),  --
+                   METHOD(80),  NFTF,  --CFP TAPE
+                   METHOD(31),  NFWFA , -- WAVE FUNCTION FOR GEN
+                   METHOD(32),  NFWFB , -- WAVE FUNCTION FOR SD
+                   METHOD(34),  NFWFE,  -- EE TAPE       FOR SD
+                   METHOD(35),  NFWFP,  -- EE TAPE       FOR SD
+                   METHOD(36),  NFWFW , -- WORK FILE 1
+                   METHOD(37),  NFTBL , -- LABEL FILE
+                   RULE,           --
+                   LWFL0,  LWFL,   --
+                   LRPS0,  LRPS,   --
+                   FILES,  NPFLG
+     ('1',45('*'),3X,'WAVE FUNCTION(%SUBNAME)'/      --
+        /' TITLE:  ',18A4 /                                   --
+        /' NAME :  ',18A4 /                                   --
+        /'  NFTF  : CFP TABLE            (',I3,') =',I6,      --
+        /'  NFWFB0: CSF TAPE FOR GENERAL (',I3,') =',I6,      --
+        /'  NFWFB1: CSF TAPE FOR SD-CI   (',I3,') =',I6,      --
+        /'  NFWFE : EE  TAPE FOR SD-CI   (',I3,') =',I6,      --
+        /'  NFWFP : EE  TAPE FOR PT-EE   (',I3,') =',I6,      --
+        /'  NFWFW : WORK FILE 1          (',I3,') =',I6,      --
+        /'  NFTBL : STORE CFP ETC        (',I3,') =',I6,      --
+        //'     PARAMETER LIST                        ',   --
+        //'      RULE           =',I6,  --
+          '      LWFL  (',I6,') =',I6,  --
+         /'      LRPS  (',I6,') =',I6,  --
+        //'  SUMMARY FILES UNIT = ',I3,'     PRINT  FLAG = ',I3/)
+     END
+     %INCWKEXC
+

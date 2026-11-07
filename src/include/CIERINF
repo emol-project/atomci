@@ -1,0 +1,115 @@
+   PROCEDURE ERROR_PRINT
+      2l ; ' === ERROR OCCURRED IN SECTION '; PUT  STEP I2 ; 1L
+      %ERMSG
+      DO CASE OF RTNCD ;
+      1001 : ( ' == UNABLE TO MAKE ENERGY MATRIX  == ' )
+      7011 : ( ' == I/O ERROR IN READING FROM NFEXE    == '
+                 PUT NFTE I4 ; ' === ' ; 1L )
+      7101 : ( ' ==  PLEASE CHECK INPUT ==' ; 1L )
+
+      7110 :
+      7111 :
+      7120 :
+      7121 :
+      7122 : ( ' === IO ERROR IN READING FROM NFTRI ' ;
+               PUT NFTA I4 ; ' === ' ; 1L )
+      7131 :
+      7132 : ( ' ==  STORAGE OVERFLOW  ===' ; 1L )
+      7134 :
+      7135 :
+      7201 : ( ' ==  PLEASE CHECK INPUT ==' ; 1L )
+      7211 :
+      7212 : ( ' === IO ERROR IN READING FROM NFCIH1 OR NFCIH2 ' ;
+               PUT NFHD I4 ; PUT NFHO I4 ; ' === ' ; 1L )
+      7230 : (' ==  STORAGE OVERFLOW == '
+              '  NEED MORE CORE ( RESERVED = '; PUT NCOR I10 ;
+              '  USING CORE = '; PUT NEED I10 ; ' WORDS ) ' ; 1L )
+      7231 : ('  INITIAL VECTORS ARE NOT AVAILABLE       ' ; 1L
+              '  I RECOMMEND YOU TO INPUT "NFIV=0,NSDIM=500" ' ; 1L )
+      7250 : (' == CANNOT OBTAIN EIGENVECTOR  '; 1L  )
+      7291 : ('  M. Y. SAYS STORAGE OVERFLOW'  ; 1L )
+      7292 : ('  B. L. SAYS STORAGE OVERFLOW'  ; 1L )
+      7310 : (' ==  STORAGE OVERFLOW == '
+              '  NEED MORE CORE ( RESERVED = '; PUT NCOR I10 ;
+              '  USING CORE = '; PUT NEED I10 ; ' WORDS ) ' ; 1L )
+      7321 :
+      7322 : ( ' === IO ERROR IN READING/WRITING ON NFCID  ' ;
+               PUT NFTD I4 ; ' === ' ; 1L )
+      7331 :
+      7341 :
+      7342 :
+      7343 :
+      7351 :
+      7352 :
+      7353 : ( ' === IO ERROR IN READING/WRITING ON NFCIW ' ;
+               PUT NFTW I4 ; ' === ' ; 1L )
+      7361 : ( ' === IO ERROR IN WRITING ON NFCIH ' ;
+               PUT NFTH I4 ; ' === ' ; 1L )
+      7501 : ( ' === IO ERROR IN READING FROM NFTRC2  ' ;
+               PUT NFTT I4 ; ' === ' ; 1L )
+      7502 : ( ' === IO ERROR IN WRITING ON NFTRC2  ' ;
+               PUT NFTT I4 ; ' === ' ; 1L )
+      7511 : ( ' === IO ERROR IN READING FROM NFTRC2  ' ;
+               PUT NFTT I4 ; ' === ' ; 1L )
+      7512 :
+      7513 :
+      7514 : ( ' === IO ERROR IN WRITING ON NFTRC2  ' ;
+               PUT NFTT I4 ; ' === ' ; 1L )
+      7521 : ( ' === IO ERROR IN WRITING ON NFCIW OR NFCIH  ' ;
+               PUT NFT  I4 ; ' === ' ; 1L )
+      7531 : ( ' === UNABLE TO CONVERGE IN JACOBI == ' ; 1L )
+      7540 : ('  ===  STORAGE OVERFLOW   NEED CORE=' ;
+                PUT LAST I10 ; 1L )
+      7551 :
+      7552 : ( ' === IO ERROR IN READING/WRITING ON NFCIW  ' ;
+               PUT NFTW I4 ; ' === ' ; 1L )
+      7560 : ( ' === INPUT DATA, IOFLG(2) & IOFLG(3), INCONSISTENT ',
+               '   PLEASE CHECK YOUR INPUT DATA ' ; 1L )
+      7611 :
+      7612 :
+      7613 : ( ' === IO ERROR IN READING  FROM NFEXE  ' ;
+               PUT NFTE I4 ; ' )  ERROR CODE IS '
+               PUT IOSTAT I6 ; 2L )
+      7614 :
+      7615 :
+      7616 : ( ' === IO ERROR IN WRITING ON NFCIS  ' ;
+               PUT NFCIS I4 ; ' )  ERROR CODE IS '
+               PUT IOSTAT I6 ; 2L )
+      7617 : ( ' === IO ERROR IN COPYING FROM NFEXE TO NFCIS ' ; 1L ;
+               ' === ERROR CODE IS ' ; PUT IOSTAT I6 ; 2L )
+      7618 : ( ' === IO ERROR IN READING  FROM NFEXE  ' ;
+               PUT NFTE I4 ; ' )  ERROR CODE IS '
+               PUT IOSTAT I6 ; 2L )
+      7621 :
+      7622 : ( ' === IO ERROR IN READING  FROM NFCIH1  ' ;
+               PUT NFHD I4 ; ' )  ERROR CODE IS '
+               PUT IOSTAT I6 ; 2L )
+      7623 :
+      7624 : ( ' === IO ERROR IN WRITING  NFCIS  ' ;
+               PUT NFCIS I4 ; ' )  ERROR CODE IS '
+               PUT IOSTAT I6 ; 2L )
+      7631 :
+      7632 :
+      7633 :
+      7634 : ( ' === IO ERROR IN WRITING ON  NFCIH2  ' ;
+               PUT NFHO I4 ; ' )  ERROR CODE IS '
+               PUT IOSTAT I6 ; 2L )
+
+      7635 : ( ' === IO ERROR IN WRITING ON  NFCIS  ' ;
+               PUT NFCIS I4 ; ' )  ERROR CODE IS '
+               PUT IOSTAT I6 ; 2L )
+      7641 :
+      7642 :
+      7643 :
+      7644 :
+      7645 :
+      7646 : ( ' === IO ERROR IN READING FROM  NFCIV  ' ;
+               PUT NFCV I4 ; ' )  ERROR CODE IS '
+               PUT IOSTAT I6 ; 2L )
+      7647 : ( ' === IO ERROR IN WRITING ON  NFCIS  ' ;
+               PUT NFCIS I4 ; ' )  ERROR CODE IS '
+               PUT IOSTAT I6 ; 2L )
+
+        OTHERWISE  ' == ERROR ERROR == '
+    2L ;
+    END

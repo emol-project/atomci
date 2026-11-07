@@ -1,0 +1,305 @@
+process no list file 'jacjac.f'
+%%subname xtest%
+subroutine %subname (x,w,r,ns,npflg)
+  real * 8 x(ns),w(ns),r(ns),rt,rm
+  begin 
+    rt = 0.d0 ; rm = 0.d0
+    for i = 1, ns
+    do 
+       x(i) = dabs(dabs(w(i))-dabs(r(i)))
+       rt = rt + x(i)
+       rm = dmax1(rm,x(i))
+       end 
+    if npflg > 2 then format write rt,rm ; 
+    ( ' total ',e10.3,3x,' max = ',e10.3)
+    end 
+%%subname c2test%
+subroutine %subname (x,w,r,ns,nx,npflg)
+  real * 8 x,w(ns,nx),r(ns,nx),rt,rm
+  begin 
+    x = 0.d0 ; rt = 0.d0 ; rm = 0.d0 
+    for i = 1, ns
+    do 
+       rt =  dabs(w(i,nx)*w(i,nx)-r(i,nx)*r(i,nx))
+       x = x + rt 
+       rm = dmax1(rm,rt)
+       end 
+    if npflg > 2 then  format write x, rm; 
+    ( /' total difference of C**2 ',e10.3,3x,' max = ',e10.3)
+    end 
+
+%%subname jacobi%
+subroutine %subname --
+    (ns,a,u,w)
+/*   1/2
+/*  S
+/* 
+implicit integer  ( a - z ) 
+real * 8 a(ns,ns), --
+	 u(ns,ns),--
+	 w(*)
+real * 8 eps
+
+begin 
+   itemj=3000 ; eps= 0.1d-12
+   call zero(u,ns*ns)
+   call zero(w,ns)
+   for k = 1, ns ; u(k,k) = 1.0d0
+   call jacyct(ns,ns,itemj,eps,a,u,w)
+   end 
+%%subname mksinv%
+subroutine %subname --
+    (ns,a,u,w)
+/*   
+/*  S
+/* 
+implicit integer  ( a - z ) 
+real * 8 a(ns,ns), --
+	 u(ns,ns),--
+	 w(*)
+real * 8 eps
+
+begin 
+   itemj=300 ; eps= 0.1d-13
+   call zero(u,ns*ns)
+   call zero(w,ns)
+   for k = 1, ns ; u(k,k) = 1.0d0
+   call jacyct(ns,ns,itemj,eps,a,u,w)
+   for i =1 ,ns ; w(i)=1.d0/dsqrt(a(i,i))
+   for j = 1,ns ; 
+   for i = 1, ns ;
+   do 
+      a(i,j) = u(i,j)*w(j) ;
+      end
+   /* make sinv
+   call zero(u,ns*ns)
+   call mxmatb(u,ns,ns,a,a,ns)
+   end 
+%%subname mkproj%
+subroutine %subname --
+    (p,ns,nb,c,s,w1)
+/*  Create Projection operator 
+implicit integer  ( a - z ) 
+real * 8 c(ns,nb), -- coef
+	 p(ns,ns),s(ns,ns),w1(ns,nb)
+
+begin 
+   call zero(w1,ns*nb)
+   call mxmab(w1,ns,nb,s,c,ns)
+   call mxmabt(p,ns,ns,w1,w1,nb) 
+   end  
+%%subname ckproj%
+subroutine %subname --
+    (p,ns,nb,c,w1)
+/*  Create Projection operator 
+implicit integer  ( a - z ) 
+real * 8 c(ns,nb), -- coef
+	 p(ns,ns),w1(ns,ns)
+
+begin 
+   call zero(w1,ns*ns)
+   call mxmab(w1,ns,nb,p,c,ns)
+   2l ; ' Check projection Op '; 1l ;
+   call prvc (w1,ns,nb)
+   end  
+ %%subname mcmkfk%
+ subroutine %subname --
+	   (iorb,nwsq,nolf,not,nbfi,lmax, --
+	    fk,  oc,  h1,  y2,      --
+	    js,  ks,  joff,koff,     --
+	    npflg, rtncd)
+
+ implicit integer ( a - z )
+ real * 8 fk(nbfi,nbfi), --
+	  h1(nbfi,nbfi), --
+	  y2(*),         --
+	  oc, --
+	 ks(not,not,lmax*2) ,--     
+	 js(not,not,lmax*2) ,--
+	 fx,wt
+
+integer  lmax,-- 
+	 nbfi,--
+	 iorb, --
+	 isq, --
+	 isym, --
+	 nolf(not),--
+	 nwsq(not), --
+	 not,--
+	 npflg,--
+	 rtncd, --
+	 joff(lmax,lmax,lmax*2) ,--     
+	 koff(lmax,lmax,lmax*2)    
+
+ %charorb
+
+ begin 
+    fx = 1.d0 
+    if npflg > 3 then exec debug_1
+    nbfi2 = nbfi * nbfi 
+    isym = nolf(iorb)
+    isq = nwsq(iorb)
+    call zero(fk,nbfi2)
+    wt = oc * fx
+    call mxfact(fk,h1,wt,nbfi2)
+    for j = 1, not
+    do 
+
+       nskip = nbfi2*(nwsq(j)-1) + 1
+       jsym=nolf(j)
+       for k = 1, lmax*2 
+       do
+          jout = joff(isym,jsym,k)  ;
+	  	  wt = js(iorb,j,k)*fx
+	      if (dabs(wt)  > 0.1d-52 & jout > -1 )  
+	      then ( call mxfact(fk,y2(jout+nskip),wt,nbfi2)
+   /format write iorb,j,k, jout,nskip,wt
+   /(' >jjj< iorb,j,k,adr,wt ->' ,3i5,2i10,f10.3)
+	      )
+          kout = koff(isym,jsym,k)   ; 
+	      wt = ks(iorb,j,k)*fx
+	      if (dabs(wt)  > 0.1d-52 & kout > -1 )  
+	      then (call mxfact(fk,y2(kout+nskip),wt,nbfi2)
+   /format write iorb,j,k, kout,nskip,wt
+   /(' >kkk< iorb,j,k,adr,wt ->' ,3i5,2i10,f10.3)
+	      )
+	      end 
+        end 
+    if npflg > 2 then exec debug
+    end 
+ > debug_1
+   1l ; ' nbfi -> ' ;put nbfi i4 ; 1l 
+   format write (nolf(i),i=1,not)  
+   ( ' LF ',40i3 )
+   format write (nwsq(i),i=1,not)  
+   ( ' NW ',40i3 )
+   end 
+ > debug
+    format write iorb,isq,isym,nbfi,lmax,nskip,oc 
+    (' >debug< iorb,is,isym,nbfi,lmax,nskip,oc ->' ,6i5,f10.3)
+    if npflg > 4 then do 
+       2l ; ' Fock Matrix ' ; put isq i4 ; 
+       put lsym(isym)  c1; 1l 
+       call prvc(fk,nbfi,nbfi)
+       end 
+    end 
+
+ %%subname mcmkyi%
+ subroutine %subname (c,xint,yint, in, nolf, not, nwsq, --
+		      nbf,nob, nbft, lmax, --
+                      jkoff,joff,koff,nbfx,npflg, rtncd,cd)	    
+  implicit integer ( a - z )
+  real * 8 yint(*), --
+	   xint(*), --
+	   c(*),    --
+	   cd(*)
+
+  integer  in, -- input orbitals
+	   not, -- # of orbitals
+	   nolf(not), -- orbital symm 1,2,3,4 ... s,p,d,f, ...
+	   nwsq(not),  -- orbital seq # in  symmetry 
+	   nbf(lmax),nob(lmax), -- 
+	   nbft(lmax), --
+	   jkoff(*), --
+	   joff(lmax,lmax,lmax*2), --
+	   koff(lmax,lmax,lmax*2) --
+
+ begin 
+   if npflg > 2 then exec debug
+   insym = nolf(in)
+   nbfc  = nbf(insym)
+   nwtc  = nbft(insym)
+   inseq = nwsq(in)
+   for i = 1, lmax
+   for k = 1, lmax*2
+   do 
+      kxx = k*2 - 1
+      jout = joff(i,insym,k)
+      if jout > - 1 then do 
+	 nwto = nbft(i) ; nbfo = nbf(i) 
+	 ij = jout + nbfo*nbfo*(inseq-1) + 1
+         call jxcc(kxx,xint,c,nbfc,nwtc,nbfo,nwto, --
+		   jkoff,nbfx,yint(ij))
+ / outx = 0.d0;/call slow(outx,1.0d0,cd,yint(ij),nbfo)
+ / format write inseq,nbfc,nwtc,nbfo,nwto,k,ij,outx,outy
+ / (' >j> ',3i3,'  out>',2i3,'  km>',i3,i8,2e12.3)
+         end 
+      kout = koff(i,insym,k)
+      if kout > - 1 then do 
+	 nwto = nbft(i) ; nbfo = nbf(i) 
+	 ij = kout + nbfo*nbfo*(inseq-1) + 1
+         call kxcc(kxx,xint,c,nbfc,nwtc,nbfo,nwto, --
+		   jkoff,nbfx,yint(ij))
+ / outx = 0.d0;/call slow(outx,1.0d0,cd,yint(ij),nbfo)
+ / format write inseq,nbfc,nwtc,nbfo,nwto,k,ij,outx,outy
+ / (' >k> ',3i3,'  out>',2i3,'  km>',i3,i8,2e12.3)
+         end 
+      end 
+   end  
+ > debug
+   2l ; 
+   format write (nolf(i),i=1,not)  
+   ( ' LF ',40i3 )
+   format write (nwsq(i),i=1,not)  
+   ( ' NW ',40i3 )
+   format write (nbft(i),i=1,lmax)  
+   ( ' FT ',40i3 )
+   end
+ %%subname chckcv%
+ function  %subname (c,cnew,n,dfc)
+ real * 8 %subname
+ real * 8 c(n),cnew(n),dfc,df2
+ real * 8 rt,rx
+ begin 
+    rt = 0.d0 ; rx = 0 ;df2 = 1.d0 -dfc 
+    for i = 1, n
+    do 
+       rt = rt + dabs(c(i)-cnew(i))
+       rx = rx + dabs(c(i)+cnew(i))
+       end 
+    %subname = dmin1(rt,rx)
+    if %subname < 1.d-5 then  do
+       for i = 1, n 
+       c(i)=cnew(i)
+       end 
+    else if rt < rx then do 
+       for i = 1, n 
+       c(i)=cnew(i)*dfc + c(i)*df2
+       end 
+    else do
+       for i = 1, n 
+       c(i)=cnew(i)*dfc - c(i)*df2
+       end 
+    end 
+
+ %%subname orthoc%
+ subroutine %subname -- 
+       (cnew,nbf,mo,c,s,w1,w2,npflg)
+ implicit integer ( a - z )
+ real * 8 c(nbf,mo),s(nbf,nbf)
+ real * 8 w1(nbf,nbf),cnew(nbf,mo),w2(nbf) 
+ real * 8 wx(300,300)
+ integer nbf,mo
+ begin 
+    if mo = 1 then exit --
+    call xmove(cnew,c,nbf)
+    call zero(w1,nbf*mo)
+    call zero(cnew,mo*mo)
+    call mxmab(w1,nbf,mo,s,c,nbf)
+    call mxmatb(cnew,mo,mo,c,w1,nbf)
+    if npflg > 2 then do 
+       2l ; ' OLD Ovlp Matrix ' ; 1l 
+       call prvcx(cnew,mo,mo)
+       end 
+    call schmit(mo,cnew,w1,w2)
+    call zero(cnew,nbf*mo)
+    call mxmabt(cnew,nbf,mo,c,w1,mo)
+    call zero(w1,nbf*mo)
+    call zero(wx,mo*mo)
+    call mxmab(w1,nbf,mo,s,cnew,nbf)
+    call mxmatb(wx,mo,mo,cnew,w1,nbf)
+    if npflg > 2 then do 
+       2l ; ' New Ovlp Matrix ' ; 1l 
+       call prvcx(wx,mo,mo)
+       end 
+    end

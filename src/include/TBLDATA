@@ -1,0 +1,13 @@
+   /* == recommend == TBLSIZ is 1/6 of CORE
+   /* == 12M VERSION  2000
+   /* == 32M VERSION  5000
+   /* == 80M VERSION 15000
+   DATA           TBLSIZ/ 5000/-- K BYT
+                  NCOUNT  /20/--
+                  NSKIP   /10/--
+                  TBLINF   /0/--
+
+   DATA           IBLNK/'    '/ --
+                  FILE  /'NEW '/--
+                  STATUS/'DEL '/--
+

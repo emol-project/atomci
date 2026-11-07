@@ -1,0 +1,488 @@
+\vspace*{20mm}
+\begin{center}
+{\huge ATOMCI}
+\xspace
+{\Large Input \& Output Documentation}
+\vspace*{15mm}
+\xspace
+\Ttitle{Masahiro Sekiya, Takeshi Noro, Fukashi Sasaki}
+\xspace
+Division of Chemistry\\
+Graduate School of Science\\
+Hokkaido University\\
+Sapporo 060 Japan\\
+\vspace*{10mm}
+\xsp
+\Ttitle{Kazumasa Ohtsuki}
+\xspace
+Division of Natural Science, \\
+University of Electro-Communications,\\
+Chofu 182 Japan\\
+\vspace*{10mm}
+\xsp
+\Ttitle{Antonio Rizzo}
+\xsp
+I. C. Q. E. M. del CNR, \\
+Via Risorgimento 35, I-56126, Pisa, Italy\\
+%%\vspace*{10mm}
+%%\xsp
+%%\Ttitle{Enrico Clementi}
+%%\xsp
+%%      CRS4, Cagliari, Italy\\
+%%      and\\
+%%      Universit\'{e} L. Pasteur, Strasbourg, France\\
+\end{center}
+ 
+
+\newpage
+\section*{Acknowledgments}
+The first version of ATOMCI was prepared in 1972 at the IBM Research
+Center in San Jose. 
+In the present version
+of ATOMCI the routines for the generation of the energy expression
+have been completely rewritten to increase the speed and decrease the
+disk space requirements of the code. Routines for the
+perturbative selection of the configurations have been
+implemented, and high performance code for the diagonalization, written
+by N. Kosugi, has been used. Dr. Nagashima helped in preparing the
+ATGEN utility.
+
+\xspace
+\section*{Introduction}
+ATOMCI is a Configuration Integration, CI, program for atoms in the
+Russell-Saunders coupling
+scheme. The method for the calculation of the matrix
+elements is based on the vacuum expectation value of tensor operators
+and on the recoupling transformation coefficients
+(F. Sasaki, IJQC, {\bf 8}, 605,
+(1974); F. Sasaki, M. Sekiya, T. Noro,
+K. Ohtsuki and Y. Osanai, in "Methods and Techniques in Computational
+Chemistry: METECC-94", E. Clementi ed., 
+STEF, Cagliari, 1993, pp 163-219).
+A conventional formula tape approach
+is used for the construction of the Hamiltonian matrix.
+\xsp
+The reader should refer to the "Overall Installation Guide"
+which came with the MOTECC tape for specific instructions on how
+to load the ATOMCI package on RS/6000.
+The package inserted in METECC-94 includes the actual ATOMCI program,
+ FPL (Fortran Preprocessing Language) program, and
+two utilities which allow to prepare the coefficients of
+fractional parentage (CFP) table
+and the configuration state functions
+(CSF) input data for a Singles and Doubles CI,
+SD-CI, calculation.
+\xsp
+{\bf  The contents of directory (See README in the directory atomci) }
+\\
+\\
+\mtab{{\bf seed} }{Shell script for making ATOMCI, ATGEN, CFP table and FPL.}
+\\
+\mtab{{\bf root} }{ Makefiles, shell scripts, manual of FPL and some sample input.}
+\\%.br
+\mtab{{\bf source} }{ Source files for ATOMCI, ATGEN, CFPA, CFPB, and FPL.}
+\\%.br
+\mtab{{\bf include} }{ Include files for ATOMCI.}
+\\%.br
+\mtab{{\bf utility} }{ utility files.}
+\\%.br
+\mtab{{\bf fplincl} }{ Include files for FPL.}
+\\%.br
+\mtab{{\bf output} }{ output files of the sample input.}
+%
+%
+%
+\xspace
+\section*{Overview of ATOMCI}
+\xsp
+{\bf Features}
+\xsp
+The following features are available in the present version
+of the program :
+\begin{indention}{5mm}%%
+\begin{enumerate}
+\item  Full exploitation of the atomic symmetry.
+\item  Use of Slater Type Functions with azimuthal
+quantum number {\it l} up to
+9 or of Gaussian Type Functions with {\it l} up to 7.
+\item  Doing SCF calculation or MCSCF calculation with
+  restrictions: different CSF's must differ by an even shell
+occupation number in each other.
+\item  Possibility of doing either a general CI calculation or a
+SD-CI calculation.
+\item  Perturbative selection of the most important
+configurations and estimate of the contribution to the energy
+from the rejected CSF.
+\item  Analysis of the contribution to the total energy from individual
+CSF.
+\item  Determination of the Natural Orbitals, NO's,
+with estimation of the
+contribution from each NO to the total energy.
+\item  Determination of the first order density matrices.
+\end{enumerate}
+\end{indention}%%
+\xsp
+{\bf Limits}
+\xsp
+This version of the code can handle up to 150 basis functions.
+The table of coefficient of fractional parentage (CFP table) computed
+through the CFPA and CFPB utilities is
+extended up to the {\it m} shell.
+ATOMCI cannot handle configurations with an occupation number
+greater than two in each single shell having {\it l} $>$ 3
+(beyond the {\it f} shell), i.e. for instance
+a configuration including a 5g\xsup{3} shell is
+not allowed, but a combination of shells including more than two
+shells with {\it l} $>$ 3 is permitted provided that the total
+number of open shells in the resulting
+configuration does not exceed 10.
+The program has been conceived as "open ended", with eight independent
+steps each one connected to the others through I/O files, and thus
+any other limitation is dictated in principle by the memory size
+requirements.
+
+
+\xsp
+{\bf Memory management and memory size requirements}
+\xsp
+The core memory is dynamically allocated at the time of execution.
+The dimensions in the main codes are defined so that ATGEN can run
+with 8Mbytes and ATOMCI with 32Mbytes of allocated core memory.
+Should the memory be insufficient to run a specific case, the
+program will stop and in most cases
+a warning message indicating the required
+amount of core memory will be printed. The user should then
+change to the appropriate value the constant MCORE, in the
+{\sf include/PARAM} file, 
+MCORE gives the size of the
+work memory in single precision words.
+The source codes require an average of 2 to 4 Megabytes of memory to
+load, exclusive of the dynamically allocated part. Thus for the
+version provided here an approximate 12Mbytes and 36Mbytes
+of memory are sufficient for ATGEN and ATOMCI respectively.
+ATOMCI will not be able to
+run if the dynamically allocated memory is less than 8Mbytes. ATGEN
+requires a minimum of 2Mbytes of dynamically allocated memory.
+\xsp
+{\bf Restart capabilities for ATOMCI}
+\xsp
+The program being structured in eight separate steps connected through
+I/O files, it can be stopped and restarted by enabling the run options
+for the appropriate steps (see \cntlnamelist NAMELIST)
+and by providing all the necessary file
+informations. The user should refer to the 'I/O files description'
+section of this documentation for a list of the files allocated
+in an ATOMCI run and their use and contents.
+\xsp
+If the program stops within the AIMAIN, MCMAIN, or WFMAIN routines,
+it should be restarted from the beginning. Actually, when RULE=1
+and the program stops within WFMAIN, it is possible to restart
+from EXMAIN with RETRY=1 (i.e. set NRNFG(3)=0, NRNFG(6)=1 in the \cntlnamelist
+NAMELIST and RETRY=1 in the \exnamelist NAMELIST).
+Refer to the
+description of the \cntlnamelist, \wfnamelist and \exnamelist
+NAMELIST for a description of NRNFG, RULE and RETRY variables
+respectively.
+\xsp
+A restart within TRMAIN
+requires the existence of the
+atomic orbitals integrals file (unit NFAII, usually number 18).
+\xsp
+To restart the execution within the PTMAIN module, units NFWFP
+(energy expression for the Perturbative Selection, usually number
+14) and NFTRI (transformed integrals, usually number 16) should be
+supplied.
+\xsp
+When the user wants to continue the execution with the
+EXMAIN routines, it has to furnish units NFPTB (selected CSF,
+usually number 11) if RULE=2 or unit NFWFB0 (CSF list
+for general CI, usually number 11) if RULE=0. For informations on
+how to restart
+after an abort occurred within EXMAIN the user is referred to
+the paragraph on the description of the \exnamelist NAMELIST.
+\xsp
+Restarting after an abort occurred within the CIMAIN step
+implies supplying several files, i.e. units NFTRI, NFTRC1
+(the transformation coefficients, usually number 27), NFWFE
+(the energy expression file, usually number 15), NFCIV (the
+CI vector, usually number 37), NFCIH1, NFCIH2 (the Hamiltonian
+matrix, usually numbers 38 and 39). By supplying the necessary
+file informations, the user should be able to restart from any
+of the sections of the CIMAIN step (see NRNFG input data in the
+discussion of the \cinamelist NAMELIST).
+\xsp
+Finally, the execution can
+restart from within RSMAIN if units NFCIS (CI summary file, usually
+number 71), NFPTB and NFPTH1 and NFPTH2 exist.
+\xsp
+{\bf Input}
+\xsp
+No input data are required for CFP. The user will use this utility
+when installing the ATOMCI package, to create the CFP table, and rerun
+it only to regenerate the table should it be necessary. In the following
+a detailed description of the input which should be supplied by the
+user for ATGEN and ATOMCI is given.
+%% insert by msekiya Mar 10, 1996
+\newpage
+\section*{Input for FDOPEN} 
+\xsp
+  This UNIX versions have file allocatiton routine, FDOPEN. 
+\begin{enumerate}
+\item KEYWORD ( Uppercase only )
+
+      UNIT= {\sf unit number}\\ 
+      FILE= {\sf file-name}\
+      STATUS=\{UNKNOWN,OLD,NEW\}\\
+      OPEN\\
+      CLOSE\\
+      BINARY\\
+      SCRATCH\\
+      END
+
+\item  Typical usage
+
+ You should set input of FDOPEN at the top of the standard input file.
+ If you put the command of "OPEN UNIT=5", the present input file is automatically closed without END keyword and all the data after the command of "OPEN UNIT=5" in this input file are ignored. The data will be read from the file given by UNIT=5.  
+ If you do not put "OPEN UNIT=5", you should put the keyword "END" at the end of OPEN file definitions. The data of atomci should be followed.   
+
+ If you set the symbol of " at the top of columns, this line is recognized as the comment card and it is skipped. 
+
+ a)  Formatted, OLD files( STATUS=UNKNOWN is default)\\
+ OPEN UNIT=2 FILE=f.orb STATUS=OLD
+
+ b) Unformatted binary files\\
+  OPEN UNIT=10 FILE=/home/user/etc/CFPTBL  BINARY
+
+ c) Unformatted SCRATCH files\\
+  OPEN UNIT=14 SCRATCH
+
+  
+\item Example 
+
+OPEN UNIT=7 FILE=HISTORY STATUS=UNKNOWN\\
+"  Comment line  \\
+OPEN UNIT=10 FILE=/home/user/etc/CFPTBL  BINARY\\
+OPEN UNIT=11 SCRATCH           \\
+OPEN UNIT=15 FILE=EE01 BINARY \\
+END\\
+" atomci or atgen input\\
+
+\item Example 
+       
+OPEN UNIT=7 FILE=HISTORY STATUS=UNKNOWN\\
+OPEN UNIT=10 FILE=/home/user/etc/CFPTBL  BINARY\\
+OPEN UNIT=11 SCRATCH           \\
+OPEN UNIT=15 FILE=EE01 BINARY \\
+OPEN UNIT=5 FILE=ATOMCI.INPUT STATUS=OLD\\
+"  ATOMCI.INPUT is swiched by new INPUT file \\
+
+\end{enumerate}
+%% insert end
+\xsp
+ATGEN is an utility program which should be used to generate the input
+\xspace
+\section*{Input for ATGEN}
+\xsp
+ATGEN is an utility program which should be used to generate the input
+data of the CSF for a SD-CI calculation. In general the list of CSF
+in a CI run needs to be keyed in by the user and inserted after the
+\wfnamelist NAMELIST set of data in the ATOMCI input file. The reader is
+referred to the discussion of the 'Input data for the CSF' section
+for a description of the
+input conventions. For the case of SD-CI calculation the list
+may be much more conveniently generated by using ATGEN. The user needs
+only
+to supply informations on the characteristics of the occupied
+and of the correlating orbitals,
+on the reference configurations and on the
+order of coupling. ATGEN will provide in output the full list of
+CSF, in the correct format to be used in input for the subsequent run
+of ATOMCI. All the possible configurations which may be obtained by
+single or double excitations from the occupied orbitals in the reference
+to all correlating orbitals are generated. A check is done on the
+correct parity of the resulting CSF, but no check is done on the
+correct spin or spatial symmetries. The list will thus be in general
+larger than necessary, including configurations giving rise to CSF
+of all possible spin and spatial symmetry types. CSF of the wrong
+spin-spatial symmetry are discarded
+by ATOMCI in the WFMAIN step, and thus the appearance of unnecessary
+configurations in the ATGEN output file is not harmful.
+\xsp
+The input to ATGEN consists in series of cards in free format. Lines
+with the {\sf '"'} character in the first column are treated as comment lines.
+Lines with a blank on the first column are considered as
+valid input cards. Each input card ends with a {\sf ')))'} sequence.
+\xsp
+As an example we
+will refer to the ATGEN input file supplied with the
+ATOMCI package.
+\xspace
+{\bf CARDS}
+\xsp
+\mtab{{\bf CARD 1} }{Number and symmetries of the correlating orbitals.}
+\begin{indention}{12mm}%%
+List here the number of correlating orbitals for each symmetry and
+the corresponding symmetry label. The orbitals must be listed in
+ascending quantum orbital momentum number
+(i.e. {\it s, p, d, f} ... etc.)
+and in order to be able to include orbitals with quantum angular
+momentum {\it l} at least one correlating orbital
+for each quantum number from 0 to {\it l}-1 has to be
+included (i.e. one cannot include {\it g} orbitals in the
+correlating space without including at least one correlating orbital
+for each of the {\it s, p, d} and {\it f} symmetries).
+Limit the number of correlating orbitals in each symmetry type to less
+than 40.
+\xsp
+A valid input is for example
+\xsp
+{\sf 2S 2P 2D 2F )))}
+\xsp
+which indicates that two orbitals on each of
+the {\it s, p, d} and {\it f}
+symmetries constitute the correlating space. All single and double
+excitations from the reference orbitals to these
+orbitals will be generated.
+\end{indention}%%
+\xsp
+\mtab{{\bf CARD 2} }{Occupied orbitals in the reference configurations.}
+\begin{indention}{12mm}%%
+Input here the orbitals which are used to specify the reference
+configurations. Arrange the orbitals with ascending order of principal
+quantum number and angular momentum. Do not list frozen core orbitals.
+Since, as previously specified, shells with {\it l} $>$ 3
+cannot have an occupation number $>$ 2 in ATOMCI, orbitals with
+azimuthal quantum number $>$ 3 should not be
+occupied in the reference configurations.
+\xsp
+In ATGEN, for example:
+\xsp
+{\sf 2S 2P 3P )))}
+\xsp
+which indicates that the 2s, 2p and 3s orbitals will be included
+in the reference configurations listed in the following input cards.
+\end{indention}%%
+\xsp
+\mtab{{\bf CARD 3} }{Reference state configurations.}
+\begin{indention}{12mm}%%
+The reference configurations are input
+using the following conventions
+\xsp
+{\sf
+1. The orbitals must be arranged in ascending order of principal quantum
+number and angular momentum.
+\\%.br
+2. The occupation of each orbital (say n) is indicated by
+typing '*n' after the orbital label.
+\\%.br
+3. Each shell is separated from the other by a {\sf ')'} character.
+\\%.br
+4. An extra {\sf ')'} separates two configurations.
+\\%.br
+5. A {\sf ')))'} sequence ends the list of configurations.
+}
+\xsp
+The frozen core orbitals should not be included.
+\xsp
+For example
+\xsp
+{\sf %%
+ 2S*2) 2P*4) 3P*0)) \\
+ 2S*2) 2P*3) 3P*1)) \\
+ ))) \\
+}
+\xsp
+is the correct input for a reference including
+the (2s)\xsup{2} (2p)\xsup{4}
+and the (2s)\xsup{2} (2p)\xsup{3} (3p) configurations.
+\end{indention}%%
+\xsp
+\mtab{{\bf CARD 4} }{Order of coupling.}
+\begin{indention}{12mm}%%
+Input here the order in which the shells in the reference configurations
+will be coupled (in the Russell-Saunders scheme). Use the same
+input conventions of CARD 2. If the coupling order is the same as
+the one used in CARD 2, simply type {\sf ')'}.
+\xsp
+In our example, for instance,
+\xsp
+{\sf 2S 2P 3P )))}
+\xsp
+or
+\xsp
+ {\sf ) }
+\xsp
+could be used equivalently to indicate that the 2s shell should be
+first coupled to the 2p, and the resulting multiplet should then
+be coupled to the 3p.
+Notice that, while the order in CARD 2 is fixed
+(ascending order in principal and azimuthal quantum numbers), the user
+is free to choose his own coupling order in CARD 4, i.e.
+\xsp
+ {\sf 2P 2S 3P ))) }
+\xsp
+is another valid choice for our example. Notice also that the order
+chosen at this moment must be maintained and reproduced in the ATOMCI
+input (see \trnamelist NAMELIST).
+\end{indention}%%
+\xsp
+\mtab{{\bf CARD 5} }{Frozen Core.}
+\begin{indention}{12mm}%%
+List here the orbitals which will be maintained frozen (no excitations
+allowed from them). For this and the next card no termination symbol
+is needed.
+\xsp
+Example
+\xsp
+ {\sf 1S}
+\xsp
+which states that the 1s orbital will be
+doubly occupied in each excited configuration.
+\end{indention}%%
+\xsp
+\mtab{{\bf CARD 6} }{End of Input}
+\begin{indention}{12mm}%%
+The ATGEN input ends with either a -1 or 0 in CARD 6. ATGEN will
+insert a {\sf ')'} between the reference state configurations and the
+singly and doubly excited configurations if -1 is entered in CARD 6.
+The parenthesis is required by ATOMCI when RULE $>$ 0 in the
+\wfnamelist NAMELIST input data (see \wfnamelist NAMELIST). No extra {\sf ')'} will be
+inserted when 0 is input in CARD 6. The resulting list of configurations
+in this case could be used either as part of an input for a general CI
+(RULE=0) or for another run of ATGEN, for instance to generate
+triple and/or quadruple excitations from the initial reference state.
+\end{indention}%%
+\xspace
+\section*{Input for ATOMCI}
+\xsp
+Free format NAMELIST are used to input the data to ATOMCI.
+Lines beginning with {\sf '"'} are treated as comment lines.
+Informations on the run are contained in the initial \cntlnamelist NAMELIST.
+Each one of the eight steps requires a NAMELIST input data.
+A description of all the
+NAMELIST follows. Special attention will be
+given to the conventions used
+to supply the list of configurations,
+the basis set and the orbital coefficients.
+\xsp
+The user will probably notice by looking at the code that the
+list of variables included in each NAMELIST instruction is much
+larger than it appears from the contents of these documentation
+notes. Only those variables which will be used in normal, problem-free
+applications shall be documented here. The remaining variables are
+intended for debug purposes, or in some cases
+for the purpose of rearranging sizes and structure of the arrays
+in the dynamically allocated memory. The default values in the
+present version of the program should be sufficient to handle all
+possible cases. The user should contact us if problems arise.
+\xsp
+The eight steps of ATOMCI being independent from each other,
+options are provided to change the unit number for each of the relevant
+I/O files at each step in the execution. A list of the unit names,
+numbers and file contents is given in a following section of this
+documentation. Of course for a normal run the default values for the
+unit numbers are more than appropriate, and the user should not
+have reasons to modify them. Changing the unit number for a file at
+the time of execution implies changing correspondingly the  file allocations.
+The user might find this option
+of some utility in restart procedures.

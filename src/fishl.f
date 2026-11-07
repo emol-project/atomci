@@ -1,0 +1,49 @@
+C*DECK FISHL
+      SUBROUTINE FISHL(N1,N2,IM,IMP,M,LS,    ISH,INP,IMS)
+C                                 CHECKED TASHI 10/25/89 HUCC
+      DIMENSION IMS(9)
+      include 'include/COMCFP'
+C     ENTRY  QFISHL(ICONNT)
+C
+      INP=IMP
+      IF(N1.NE.M.AND.N2.NE.M)  GO TO 14
+C     LPX=IM
+C     LMTX=LP3
+C     IMSQ=MTX
+      imsq = im/256
+      ISH=0
+      LFO=ICONNT(1,IMSQ)
+      IQ= ICONNT(2,IMSQ)
+      IS= ICONNT(3,IMSQ)
+      IF(N1.EQ.N2) GO TO 24
+      IF(N1.EQ.M) GO TO 42
+      INP=IMP-1
+      GO TO 53
+   42 INP=IMP+1
+   53 DO 83 I=1,2
+      DO 83 J=1,2
+      IQP=IQ+3-2*I
+      ISP=IS+3-2*J
+      IF(ISP+IQP.GT.LFO+2) GO TO 83
+      IF(ISP+IQP.EQ.((ISP+IQP)/2)*2) GO TO 83
+      IF(ISP.LE.0.OR.IQP.LE.0.OR.IABS(INP-LFO).GE.IQP) GO TO 83
+      ISH=ISH+1
+      IMS(ISH)=LSQN(LFO,IQP,ISP)
+   83 CONTINUE
+      RETURN
+   14 ISH=-1
+      IMS( 1 )=IM
+      RETURN
+   24 DO 64 I=1,3
+      DO 64 J=1,3
+      IF(LS.EQ.1.AND.J.NE.2) GO TO 64
+      IQP=IQ+4-2*I
+      ISP=IS+4-2*J
+      IF(ISP+IQP.GT.LFO+2) GO TO 64
+      IF(ISP+IQP.EQ.((ISP+IQP)/2)*2) GO TO 64
+      IF(ISP.LE.0.OR.IQP.LE.0.OR.IABS(INP-LFO).GE.IQP) GO TO 64
+      ISH=ISH+1
+      IMS(ISH)=LSQN(LFO,IQP,ISP)
+   64 CONTINUE
+      RETURN
+      END

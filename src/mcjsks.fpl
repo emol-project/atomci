@@ -1,0 +1,164 @@
+ process no list file 'mcjsks.f'
+ %%subname mcjsks%
+ subroutine %subname --
+	    (nfee,   ncsf,  nolf,   not,   nbf,   lmax,  --
+	     nopt,   flag, nwsq,   jadr,   kadr,  coff, shoff,  --
+	     c,      xint,    h1, civ,   --
+	     oc,     js,      ks, npflg, rtncd)
+  %param
+ implicit integer ( a- z ) 
+ / input 
+ integer   nfee, -- unit number for ee tape
+           nolf(not),-- L-repr (L + 1)    
+           nbf(lmax), -- 
+	   not,       -- Total number of Basis functions
+	   jadr(lmax,lmax,lmax*2), -- 
+	   kadr(lmax,lmax,lmax*2), -- 
+           coff(not),     --
+	   nopt(not),    --
+	   nwsq(not),    --
+	   flag,         -- 
+	   shoff(lmax)
+
+ real * 8  xint(*), --
+	   h1(*),   --
+	   civ(ncsf),   --
+	   oc(not), --
+	   js(not,not,lmax*2),--
+	   ks(not,not,lmax*2), --
+	   c(*)
+  
+ /out put 
+ integer   ncsf   -- number of CSFs
+
+ real * 8  wt,out1,out2
+
+ / external 
+ integer   iadr -- function for integral address
+
+ / local 
+ logical eof,err
+ begin 
+    rtncd = 0 ; 
+    nl=not*not*lmax*2
+    call zero(oc,not)
+    call zero(js,nl)
+    call zero(ks,nl)
+    not2 = not*not
+    if npflg > 2 then exec debug
+    exec read_exp
+    exec truncate_orbitals
+    if npflg > 2 then exec print
+    end 
+ > truncate_orbitals
+   /*   not changed by mas dated on 8 Dec 1993
+   for i = 1, not
+   if dabs(oc(i)) < 1.0d-20 then do 
+      oc(i) = 0.d0
+      nopt(i) = -abs(nopt(i))
+      for j = 1, not ; for km = 1, lmax*2
+      ( js(i,j,km)= 0.d0 ; js(j,i,km) =0.d0 ;
+        ks(i,j,km)= 0.d0 ; ks(j,i,km) =0.d0 )
+      end 
+   else nopt(i) = abs(nopt(i))
+   end
+ > read_exp
+    rewind nfee ; eof = .false. ;err=.false.
+    i = 1 ;
+    out2 = 0.d0
+    do until eof 
+       format  read:nfee  errflag= err endflag = eof --
+	  l,r,n1oe,n2oe,noe
+	  ( 5i5 )
+       out1=0.d0
+       if eof then exit
+       for i = 1, n1oe
+       do 
+	  format read:nfee errflag = err endflag = eof  --
+	  i1,i2,i3,i4,km, wt ; ( 10x, 5i5,d25.16 ) 
+//   fix by msekiya Apr 14 1998
+//	  wt = wt*civ(l)*civ(l)
+  	  wt = wt*civ(l)*civ(r)
+	  oc(i1)=oc(i1)+wt
+
+	  end 
+       for i = 1, n2oe
+       do
+	  format read:nfee errflag = err endflag = eof  --
+	  i1,i2,i3,i4,km, wt ; ( 10x, 5i5,d25.16 ) 
+	  km=km/2+1
+	  if flag < 0 then exit
+	  if l^=r then wt = wt + wt 
+	  wt = wt*civ(l)*civ(r)
+	  if i1 = i2 then do
+	  /* J case 
+	     if i1 = i3 then do 
+	        js(i1,i3,km)=js(i1,i3,km)+wt*4.0d0
+	        ks(i1,i3,km)=ks(i1,i3,km)-wt*2.0d0
+		end 
+	     else do 
+	        js(i1,i3,km)=js(i1,i3,km)+wt
+	        js(i3,i1,km)=js(i3,i1,km)+wt
+		end 
+	     end 
+	  else do
+	  /* K case 
+	     ks(i1,i2,km)=ks(i1,i2,km)+wt
+	     ks(i2,i1,km)=ks(i2,i1,km)+wt
+	     end
+          end
+       end 
+    end 
+
+ > debug
+   2l ; 
+   ' SCF flag ' ; put flag i4 ; 1l 
+   format write (nolf(i),i=1,not)  
+   ( ' LF ',40i3 )
+   format write (coff(i),i=1,not)  
+   ( ' CF ',40i3 )
+   format write (nwsq(i),i=1,not)  
+   ( ' NW ',40i3 )
+   end 
+ > Print
+    2l ; ' CI vector ' ; 1l ;
+    call prvc(civ,ncsf,1)
+    2l ; ' OCC number ' ; 1l ; 
+    call prvc(oc,not,1)
+    out1=0.d0
+    for i = 1, not ;
+    do
+       ic = coff(i)+1; iadr=shoff(nolf(i))+1
+       call slow(out1,oc(i),c(ic),h1(iadr),nbf(nolf(i)))
+       end 
+    out2 = 0.d0 
+    for i = 1, not 
+    for j = 1, not 
+    for k = 1, lmax*2
+    do 
+       isym=nolf(i) ; jsym=nolf(j) 
+       jout = jadr(isym,jsym,k)
+       if (dabs(js(i,j,k)) > 0.1d-52 & jout > -1 ) then do
+          iadr = jout + nbf(isym)*nbf(isym)*(nwsq(j)-1)+1
+          ic = coff(i) + 1
+          call slow(out2,js(i,j,k),c(ic),xint(iadr),nbf(isym))
+        / out3 = 0.d0 ; 
+        / call slow(out3,1.0d0,c(ic),xint(iadr),nbf(isym))
+	/ format write i,j,k,ic,js(i,j,k),oc(i),oc(j)
+	/ (' i,j,k ',4i5,' js-> ',3e10.3,i8 )
+          end 
+       kout = kadr(isym,jsym,k)
+       if (dabs(ks(i,j,k)) > 0.1d-52 & kout > -1 ) then do
+          iadr = kout + nbf(isym)*nbf(isym)*(nwsq(j)-1) + 1
+          ic = coff(i) + 1
+          call slow(out2,ks(i,j,k),c(ic),xint(iadr),nbf(isym))
+	/ out3 = 0.d0 ; 
+        / call slow(out3,1.0d0,c(ic),xint(iadr),nbf(isym))
+	/ format write i,j,k,ic,ks(i,j,k),oc(i),oc(j)
+	/ (' i,j,k ',4i5,' ks-> ',3e10.3,i8 )
+          end 
+      end 
+  / out2 = out2 * 0.5d0
+    format write out1+out2*0.5d0
+    (// ' === Total Energy === ',4f20.10 )
+    end 
