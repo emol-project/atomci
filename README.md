@@ -101,6 +101,7 @@ each a closed set of inputs), with the same answers.
 
 | Document | Contents |
 |----------|----------|
+| [Program description and input guide](https://doi.org/10.5281/zenodo.24045980) | **Guide** (PDF, on Zenodo): the structure of the program, its input and output, and the test calculations |
 | [docs/TUTORIAL.md](docs/TUTORIAL.md) | **Tutorial**: clone, build, install, run the examples in both input forms, check the answers |
 | [docs/INPUT_MANUAL.md](docs/INPUT_MANUAL.md) | **Input manual**: the deck, every NAMELIST group a calculation needs, basis and CSF-list formats, `atgen` and `atinpgen` input, output, restarts, limits, worked examples |
 | [INSTALL.md](INSTALL.md) | Requirements, build, installation, verifying the build, platform notes |
