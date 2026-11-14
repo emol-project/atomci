@@ -1,5 +1,13 @@
 # ATOMCI
 
+> **This repository is deprecated and no longer supported.** The ATOMCI
+> project continues in **ATOMCI2**
+> ([emol-project/atomci2](https://github.com/emol-project/atomci2),
+> doi:[10.5281/zenodo.24222901](https://doi.org/10.5281/zenodo.24222901)),
+> which contains the same Fortran program together with C tools for the
+> Breit–Pauli Hamiltonian and atomic properties. This repository keeps
+> ATOMCI as first released (v1.0.0).
+
 **ATOMCI** is a non-relativistic Configuration Interaction (CI) program for
 many-electron atoms. It computes atomic electronic structure in the
 Russell–Saunders (LS) coupling scheme, building the CI Hamiltonian matrix from
